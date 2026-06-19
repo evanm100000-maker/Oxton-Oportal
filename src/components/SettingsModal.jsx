@@ -1,0 +1,218 @@
+import React, { useState, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
+import { X, Moon, Sun, Save, User, Image as ImageIcon } from 'lucide-react';
+
+export default function SettingsModal({ isOpen, onClose }) {
+  const { currentUser, updateUserProfile, theme, toggleTheme } = useApp();
+  
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [profilePicture, setProfilePicture] = useState('');
+  
+  useEffect(() => {
+    if (currentUser) {
+      setFirstName(currentUser.firstName || '');
+      setLastName(currentUser.lastName || '');
+      setProfilePicture(currentUser.profilePicture || '');
+    }
+  }, [currentUser, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    updateUserProfile(firstName, lastName, profilePicture);
+    onClose();
+  };
+
+  return (
+    <div style={styles.overlay}>
+      <div className="glass-panel slam-element" style={styles.modal}>
+        <div style={styles.header}>
+          <h2 style={styles.title}>User Settings</h2>
+          <button onClick={onClose} style={styles.closeBtn}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSave} style={styles.form}>
+          <div style={styles.row}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>First Name</label>
+              <div style={styles.inputInner}>
+                <User size={16} style={styles.inputIcon} />
+                <input
+                  type="text"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="input-field"
+                  style={{ paddingLeft: '36px' }}
+                />
+              </div>
+            </div>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Last Name</label>
+              <div style={styles.inputInner}>
+                <User size={16} style={styles.inputIcon} />
+                <input
+                  type="text"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="input-field"
+                  style={{ paddingLeft: '36px' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Profile Picture URL</label>
+            <div style={styles.inputInner}>
+              <ImageIcon size={16} style={styles.inputIcon} />
+              <input
+                type="url"
+                value={profilePicture}
+                onChange={(e) => setProfilePicture(e.target.value)}
+                placeholder="https://example.com/image.png"
+                className="input-field"
+                style={{ paddingLeft: '36px' }}
+              />
+            </div>
+          </div>
+
+          <div style={styles.themeToggleContainer}>
+            <span style={styles.label}>App Theme</span>
+            <button 
+              type="button" 
+              onClick={toggleTheme}
+              style={styles.themeToggleBtn}
+              className="btn-secondary"
+            >
+              {theme === 'dark' ? (
+                <><Sun size={16} /> Switch to Light Mode</>
+              ) : (
+                <><Moon size={16} /> Switch to Dark Mode</>
+              )}
+            </button>
+          </div>
+
+          <div style={styles.footer}>
+            <button type="button" onClick={onClose} className="btn-secondary" style={styles.cancelBtn}>
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary" style={styles.saveBtn}>
+              <Save size={16} /> Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+const styles = {
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    background: 'rgba(0, 0, 0, 0.6)',
+    backdropFilter: 'blur(4px)',
+    zIndex: 1000,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modal: {
+    width: '100%',
+    maxWidth: '480px',
+    padding: '24px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: '1.25rem',
+    fontWeight: '700',
+    color: 'inherit',
+  },
+  closeBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--color-text-muted)',
+    cursor: 'pointer',
+    padding: '4px',
+  },
+  form: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '16px',
+  },
+  row: {
+    display: 'flex',
+    gap: '16px',
+  },
+  inputGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    flex: 1,
+  },
+  label: {
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    color: 'var(--color-text-muted)',
+  },
+  inputInner: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  inputIcon: {
+    position: 'absolute',
+    left: '12px',
+    color: 'var(--color-text-muted)',
+  },
+  themeToggleContainer: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '12px 0',
+    borderTop: '1px solid var(--color-border)',
+    borderBottom: '1px solid var(--color-border)',
+    marginTop: '8px',
+  },
+  themeToggleBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 16px',
+    borderRadius: '8px',
+    fontSize: '0.9rem',
+  },
+  footer: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: '12px',
+    marginTop: '16px',
+  },
+  cancelBtn: {
+    padding: '10px 16px',
+    borderRadius: '8px',
+  },
+  saveBtn: {
+    padding: '10px 20px',
+    borderRadius: '8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+};

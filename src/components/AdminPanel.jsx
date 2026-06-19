@@ -1,0 +1,751 @@
+import React, { useState, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
+import { 
+  UserCheck, Users, Plane, Calendar, 
+  Plus, Check, X, ShieldAlert, Trash2, Settings, Activity, Key, Award, FileText
+} from 'lucide-react';
+
+export default function AdminPanel() {
+  const { 
+    users, 
+    currentUser, 
+    superAdminEmail, 
+    approveUser, 
+    rejectUser, 
+    removeUser,
+    addPoints,
+    promoteToAdmin, 
+    demoteFromAdmin,
+    setCustomRole,
+    suspendUser,
+    unsuspendUser,
+    infractions,
+    addInfraction,
+    deleteInfraction,
+    addFlight, 
+    flightLogs,
+    approveFlightLog,
+    rejectFlightLog,
+    loaRequests, 
+    updateLoaStatus,
+    warningConfig,
+    maintenanceConfig,
+    setWarning,
+    setMaintenance,
+    auditLogs,
+    passwordResets,
+    approvePasswordReset,
+    rejectPasswordReset
+  } = useApp();
+
+  const [activeSubTab, setActiveSubTab] = useState('approvals');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  // Flight Creator states
+  const [flightCode, setFlightCode] = useState('');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [location, setLocation] = useState('');
+  const [serverLink, setServerLink] = useState('');
+
+  // LOA Review comments
+  const [loaComments, setLoaComments] = useState({});
+
+  // Points state
+  const [pointsAmounts, setPointsAmounts] = useState({});
+  const [pointsReasons, setPointsReasons] = useState({});
+
+  // Roles state
+  const [roleInputs, setRoleInputs] = useState({});
+
+  // Suspensions state
+  const [suspendHours, setSuspendHours] = useState({});
+
+  // Infractions state
+  const [infStaffEmail, setInfStaffEmail] = useState('');
+  const [infType, setInfType] = useState('Warning');
+  const [infMainMessage, setInfMainMessage] = useState('');
+  const [infConfidentialMessage, setInfConfidentialMessage] = useState('');
+
+  // Password reset state
+  const [newPasswords, setNewPasswords] = useState({});
+
+  // System Status state
+  const [warnActive, setWarnActive] = useState(warningConfig?.isActive || false);
+  const [warnTitle, setWarnTitle] = useState(warningConfig?.title || '');
+  const [warnMessage, setWarnMessage] = useState(warningConfig?.message || '');
+  const [warnType, setWarnType] = useState(warningConfig?.type || 'warning');
+
+  const [maintActive, setMaintActive] = useState(maintenanceConfig?.isActive || false);
+  const [maintMessage, setMaintMessage] = useState(maintenanceConfig?.message || '');
+
+  // Audit modal state
+  const [selectedAuditLog, setSelectedAuditLog] = useState(null);
+
+  const displaySuccess = (msg) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const handleCreateFlight = (e) => {
+    e.preventDefault();
+    if (!flightCode || !date || !time || !location || !serverLink) return;
+    addFlight({ flightCode, date, time, location, serverLink });
+    setFlightCode(''); setDate(''); setTime(''); setLocation(''); setServerLink('');
+    displaySuccess(`Flight ${flightCode} successfully scheduled!`);
+  };
+
+  const handleLoaAction = (loaId, status) => {
+    const comment = loaComments[loaId] || '';
+    updateLoaStatus(loaId, status, comment);
+    setLoaComments(prev => ({ ...prev, [loaId]: '' }));
+    displaySuccess(`LOA request status updated to ${status}.`);
+  };
+
+  const handleAddPoints = (email) => {
+    const amount = parseInt(pointsAmounts[email], 10);
+    const reason = pointsReasons[email] || 'Manual admin addition';
+    if (!amount) return;
+    addPoints(email, amount, reason);
+    setPointsAmounts(prev => ({...prev, [email]: ''}));
+    setPointsReasons(prev => ({...prev, [email]: ''}));
+    displaySuccess(`Added ${amount} points to ${email}.`);
+  };
+
+  const handleSetRole = (email) => {
+    const role = roleInputs[email];
+    if (role === undefined) return;
+    setCustomRole(email, role);
+    displaySuccess(`Role updated to ${role}`);
+  };
+
+  const handleSuspend = (email) => {
+    const hours = parseFloat(suspendHours[email]);
+    if (!hours || hours <= 0) return alert('Please enter a valid number of hours.');
+    suspendUser(email, hours);
+    setSuspendHours(prev => ({...prev, [email]: ''}));
+    displaySuccess(`User suspended for ${hours} hours.`);
+  };
+
+  const handleAddInfraction = (e) => {
+    e.preventDefault();
+    if (!infStaffEmail || !infMainMessage.trim()) return;
+
+    const wasLogged = addInfraction({
+      staffEmail: infStaffEmail,
+      type: infType,
+      mainMessage: infMainMessage,
+      confidentialMessage: infConfidentialMessage
+    });
+
+    if (!wasLogged) {
+      alert('The infraction could not be logged. Please check the staff member and message.');
+      return;
+    }
+
+    setInfStaffEmail('');
+    setInfType('Warning');
+    setInfMainMessage('');
+    setInfConfidentialMessage('');
+    displaySuccess('Infraction successfully logged against staff member.');
+  };
+
+  const handleSaveSystemStatus = (e) => {
+    e.preventDefault();
+    setWarning(warnActive, warnTitle, warnMessage, warnType);
+    setMaintenance(maintActive, maintMessage);
+    displaySuccess('System status configuration updated!');
+  };
+
+  const handleApprovePassword = (reqId, email) => {
+    const pwd = newPasswords[reqId];
+    if (!pwd) return alert('Please enter a new password to approve this request.');
+    approvePasswordReset(reqId, email, pwd);
+    setNewPasswords(prev => ({...prev, [reqId]: ''}));
+    displaySuccess(`Password reset approved for ${email}.`);
+  };
+
+  // Derived lists
+  const pendingUsers = users.filter(u => !u.approved);
+  const approvedUsers = users.filter(u => u.approved);
+  const pendingLoas = loaRequests.filter(req => req.status === 'Pending');
+  const pendingFlightLogs = flightLogs.filter(log => log.status === 'Pending');
+  const pendingPasswords = passwordResets.filter(r => r.status === 'Pending');
+
+  const isSuperAdmin = currentUser.email === superAdminEmail;
+
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id.replace('section-', '');
+          setActiveSubTab(id);
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+
+    ['approvals', 'roles', 'staff', 'infractions', 'flights', 'flight_logs', 'loas', 'passwords', 'status', 'audit'].forEach(tab => {
+      const el = document.getElementById('section-' + tab);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div style={styles.layoutContainer}>
+      {/* Sub tabs navigation */}
+      <div style={styles.sidebar}>
+        <button type="button" onClick={() => document.getElementById('section-approvals')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'approvals')}>
+          <UserCheck size={16} /> Approvals ({pendingUsers.length})
+        </button>
+        <button type="button" onClick={() => document.getElementById('section-roles')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'roles')}>
+          <Users size={16} /> Roles
+        </button>
+        <button type="button" onClick={() => document.getElementById('section-staff')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'staff')}>
+          <UserCheck size={16} /> Staff Actions
+        </button>
+        <button type="button" onClick={() => document.getElementById('section-infractions')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'infractions')}>
+          <ShieldAlert size={16} /> Infractions ({infractions.length})
+        </button>
+        <button type="button" onClick={() => document.getElementById('section-flights')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'flights')}>
+          <Plane size={16} /> Schedule
+        </button>
+        <button type="button" onClick={() => document.getElementById('section-flight_logs')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'flight_logs')}>
+          <FileText size={16} /> Flight Logs ({pendingFlightLogs.length})
+        </button>
+        <button type="button" onClick={() => document.getElementById('section-loas')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'loas')}>
+          <Calendar size={16} /> LOAs ({pendingLoas.length})
+        </button>
+        <button type="button" onClick={() => document.getElementById('section-passwords')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'passwords')}>
+          <Key size={16} /> Passwords ({pendingPasswords.length})
+        </button>
+        <button type="button" onClick={() => document.getElementById('section-status')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'status')}>
+          <Settings size={16} /> System Status
+        </button>
+        <button type="button" onClick={() => document.getElementById('section-audit')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'audit')}>
+          <Activity size={16} /> Audit Log
+        </button>
+      </div>
+
+      <div style={styles.mainContent}>
+      {successMsg && (
+        <div style={styles.successAlert}><span>{successMsg}</span></div>
+      )}
+
+      {/* Sub Tab: Approvals */}
+      <div id="section-approvals">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>Pending User Registrations</h3>
+          {pendingUsers.length === 0 ? (
+            <div style={styles.emptyGrid}><UserCheck size={36} color="rgba(255,255,255,0.15)" /><p style={styles.emptyText}>No pending user accounts.</p></div>
+          ) : (
+            <div style={styles.tableWrapper}>
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.trHead}>
+                    <th style={styles.th}>Name</th>
+                    <th style={styles.th}>Email</th>
+                    <th style={styles.th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingUsers.map(user => (
+                    <tr key={user.email} style={styles.trBody}>
+                      <td style={styles.td}><strong>{user.firstName} {user.lastName}</strong><br/>@{user.robloxUsername}</td>
+                      <td style={styles.td}>{user.email}</td>
+                      <td style={styles.td}>
+                        <div style={styles.actionRow}>
+                          <button type="button" onClick={() => {approveUser(user.email); displaySuccess('User approved!');}} className="btn-success" style={styles.actionMiniBtn}><Check size={14} /> Approve</button>
+                          <button type="button" onClick={() => {rejectUser(user.email); displaySuccess('User rejected.');}} className="btn-danger" style={styles.actionMiniBtn}><X size={14} /> Reject</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sub Tab: Infractions */}
+      <div id="section-infractions">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>Staff Infractions</h3>
+          <form onSubmit={handleAddInfraction} style={styles.form}>
+            <div style={styles.formRow}>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Staff Member *</label>
+                <select required value={infStaffEmail} onChange={e => setInfStaffEmail(e.target.value)} className="input-field">
+                  <option value="">Choose active staff...</option>
+                  {approvedUsers.filter(user => user.email !== currentUser.email).map(user => (
+                    <option key={user.email} value={user.email}>
+                      {user.firstName} {user.lastName} (@{user.robloxUsername})
+                      {user.suspendedUntil ? ' - Suspended' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Action Level</label>
+                <select value={infType} onChange={e => setInfType(e.target.value)} className="input-field">
+                  <option value="Warning">Official Warning</option>
+                  <option value="Strike 1">Strike 1</option>
+                  <option value="Strike 2">Strike 2</option>
+                  <option value="Suspension">Suspension</option>
+                  <option value="Final Warning">Final Warning</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={styles.inputWrapper}>
+              <label style={styles.label}>Main Message * (Visible to the staff member)</label>
+              <textarea
+                required
+                value={infMainMessage}
+                onChange={e => setInfMainMessage(e.target.value)}
+                placeholder="e.g. Unexcused absence from flight shift on June 12."
+                className="input-field"
+                rows="4"
+                style={styles.textarea}
+              />
+            </div>
+
+            <div style={styles.inputWrapper}>
+              <label style={styles.label}>Confidential Message (Admins Only)</label>
+              <textarea
+                value={infConfidentialMessage}
+                onChange={e => setInfConfidentialMessage(e.target.value)}
+                placeholder="Optional private admin note."
+                className="input-field"
+                rows="3"
+                style={styles.confidentialTextarea}
+              />
+            </div>
+
+            <button type="submit" className="btn-danger" style={styles.submitBtn}>
+              <ShieldAlert size={16} /> Publish Infraction Log
+            </button>
+          </form>
+
+          <div style={styles.tableWrapper}>
+            <table style={styles.table}>
+              <thead>
+                <tr style={styles.trHead}>
+                  <th style={styles.th}>Staff Member</th>
+                  <th style={styles.th}>Type</th>
+                  <th style={styles.th}>Message</th>
+                  <th style={styles.th}>Logged By</th>
+                  <th style={styles.th}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {infractions.map(inf => (
+                  <tr key={inf.id} style={styles.trBody}>
+                    <td style={styles.td}><strong>{inf.staffName}</strong><br />{inf.staffEmail}</td>
+                    <td style={styles.td}><span style={styles.infractionBadge}>{inf.type}</span></td>
+                    <td style={styles.td}>
+                      <div>{inf.mainMessage}</div>
+                      {inf.confidentialMessage && <div style={styles.confidentialNote}>Admin note: {inf.confidentialMessage}</div>}
+                    </td>
+                    <td style={styles.td}>{inf.adminName}<br />{inf.date}</td>
+                    <td style={styles.td}>
+                      <button type="button" onClick={() => deleteInfraction(inf.id)} className="btn-danger" style={styles.actionMiniBtn}>
+                        <Trash2 size={14} /> Remove
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {infractions.length === 0 && <p style={{padding: '20px', color: '#9ca3af', textAlign: 'center'}}>No infractions logged.</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* Sub Tab: Roles */}
+      <div id="section-roles">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>Staff Role Management</h3>
+          {!isSuperAdmin && (
+            <div style={styles.securityAlert}><ShieldAlert size={18} /><span>RESTRICTED ACTION: Only the primary super admin can modify account roles.</span></div>
+          )}
+          <div style={styles.tableWrapper}>
+            <table style={styles.table}>
+              <thead>
+                <tr style={styles.trHead}>
+                  <th style={styles.th}>Staff Member</th>
+                  <th style={styles.th}>Permissions</th>
+                  <th style={styles.th}>Custom Role Name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {approvedUsers.map(user => {
+                  const isUserSuperAdmin = user.email === superAdminEmail;
+                  return (
+                    <tr key={user.email} style={styles.trBody}>
+                      <td style={styles.td}><strong>{user.firstName} {user.lastName}</strong><br/>{user.email}</td>
+                      <td style={styles.td}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {user.isAdmin ? <span className="badge badge-admin">Admin</span> : <span className="badge">Staff</span>}
+                          {!isUserSuperAdmin && (user.isAdmin ? (
+                            <button type="button" disabled={!isSuperAdmin} onClick={() => {demoteFromAdmin(user.email); displaySuccess('Role updated');}} className="btn-danger" style={styles.roleBtn}>Demote</button>
+                          ) : (
+                            <button type="button" disabled={!isSuperAdmin} onClick={() => {promoteToAdmin(user.email); displaySuccess('Role updated');}} className="btn-success" style={styles.roleBtn}>Promote</button>
+                          ))}
+                        </div>
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{display: 'flex', gap: '8px'}}>
+                          <input type="text" placeholder={user.customRole || "e.g. Owner"} value={roleInputs[user.email] !== undefined ? roleInputs[user.email] : user.customRole} onChange={e => setRoleInputs({...roleInputs, [user.email]: e.target.value})} className="input-field" style={{width: '150px', padding: '6px'}} />
+                          <button type="button" onClick={() => handleSetRole(user.email)} className="btn-primary" style={{padding: '6px 10px', borderRadius: '6px'}}>Save</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub Tab: Staff Actions (Remove, Points) */}
+      <div id="section-staff">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>Staff Management & Points</h3>
+          <div style={styles.tableWrapper}>
+            <table style={styles.table}>
+              <thead>
+                <tr style={styles.trHead}>
+                  <th style={styles.th}>Staff Member</th>
+                  <th style={styles.th}>Points</th>
+                  <th style={styles.th}>Add Points</th>
+                  <th style={styles.th}>Suspension</th>
+                  <th style={styles.th}>Remove Staff</th>
+                </tr>
+              </thead>
+              <tbody>
+                {approvedUsers.map(user => {
+                  const isSuspended = user.suspendedUntil && new Date(user.suspendedUntil).getTime() > Date.now();
+                  return (
+                  <tr key={user.email} style={styles.trBody}>
+                    <td style={styles.td}>
+                      <strong>{user.firstName} {user.lastName}</strong><br/>{user.email}
+                      {isSuspended && <div style={{color: '#ef4444', fontSize: '0.8rem', marginTop: '4px'}}>Suspended until: {new Date(user.suspendedUntil).toLocaleString()}</div>}
+                    </td>
+                    <td style={styles.td}>{user.points || 0}</td>
+                    <td style={styles.td}>
+                      <div style={{display: 'flex', gap: '8px'}}>
+                        <input type="number" placeholder="Amt" value={pointsAmounts[user.email] || ''} onChange={e => setPointsAmounts({...pointsAmounts, [user.email]: e.target.value})} className="input-field" style={{width: '70px', padding: '6px'}} />
+                        <input type="text" placeholder="Reason" value={pointsReasons[user.email] || ''} onChange={e => setPointsReasons({...pointsReasons, [user.email]: e.target.value})} className="input-field" style={{width: '120px', padding: '6px'}} />
+                        <button type="button" onClick={() => handleAddPoints(user.email)} className="btn-primary" style={{padding: '6px 10px', borderRadius: '6px'}}><Plus size={14}/></button>
+                      </div>
+                    </td>
+                    <td style={styles.td}>
+                      {isSuspended ? (
+                        <button type="button" onClick={() => {unsuspendUser(user.email); displaySuccess('User unsuspended.');}} className="btn-success" style={styles.actionMiniBtn}>
+                          Unsuspend
+                        </button>
+                      ) : (
+                        <div style={{display: 'flex', gap: '8px'}}>
+                          <input type="number" placeholder="Hrs" value={suspendHours[user.email] || ''} onChange={e => setSuspendHours({...suspendHours, [user.email]: e.target.value})} className="input-field" style={{width: '60px', padding: '6px'}} />
+                          <button type="button" onClick={() => handleSuspend(user.email)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px'}}>Suspend</button>
+                        </div>
+                      )}
+                    </td>
+                    <td style={styles.td}>
+                      {user.email !== currentUser.email && (
+                        <button type="button" onClick={() => {removeUser(user.email); displaySuccess('Staff removed.');}} className="btn-danger" style={styles.actionMiniBtn}>
+                          <Trash2 size={14} /> Remove
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )})}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Sub Tab: Flight Logs Review */}
+      <div id="section-flight_logs">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>Pending Flight Logs</h3>
+          {pendingFlightLogs.length === 0 ? (
+            <div style={styles.emptyGrid}><FileText size={36} color="rgba(255,255,255,0.15)" /><p style={styles.emptyText}>No pending logs.</p></div>
+          ) : (
+             <div style={styles.loaList}>
+               {pendingFlightLogs.map(log => (
+                 <div key={log.id} style={styles.loaCard} className="glass-panel">
+                   <div style={styles.loaCardHeader}>
+                     <div><h4 style={{color:'#fff'}}>{log.flightCode}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>Pilot: {log.pilot} | CoPilot: {log.coPilot}</span></div>
+                     <span style={styles.loaDateText}>{new Date(log.timestamp).toLocaleDateString()}</span>
+                   </div>
+                   <div style={styles.loaReasonBox}>
+                     <span style={styles.loaReasonLabel}>Notes & Details:</span>
+                     <p style={styles.loaReasonText}>{log.notes}</p>
+                     <p style={{fontSize: '0.85rem', color: '#9ca3af', marginTop: '4px'}}>Passengers: {log.passengers} | Submitted by: {log.submitterName}</p>
+                   </div>
+                   <div style={styles.loaActionButtons}>
+                     <button type="button" onClick={() => {approveFlightLog(log.id); displaySuccess('Log approved and points added.');}} className="btn-success" style={styles.loaActionBtn}><Check size={14}/> Approve</button>
+                     <button type="button" onClick={() => {rejectFlightLog(log.id); displaySuccess('Log rejected.');}} className="btn-danger" style={styles.loaActionBtn}><X size={14}/> Reject</button>
+                   </div>
+                 </div>
+               ))}
+             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sub Tab: Schedule Flight */}
+      <div id="section-flights">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>Schedule New Flight</h3>
+          <form onSubmit={handleCreateFlight} style={styles.form}>
+            <div style={styles.formRow}>
+              <div style={styles.inputWrapper}><label style={styles.label}>Flight Code *</label><input type="text" required value={flightCode} onChange={e=>setFlightCode(e.target.value)} className="input-field" /></div>
+              <div style={styles.inputWrapper}><label style={styles.label}>Location *</label><input type="text" required value={location} onChange={e=>setLocation(e.target.value)} className="input-field" /></div>
+            </div>
+            <div style={styles.formRow}>
+              <div style={styles.inputWrapper}><label style={styles.label}>Date *</label><input type="date" required value={date} onChange={e=>setDate(e.target.value)} className="input-field" /></div>
+              <div style={styles.inputWrapper}><label style={styles.label}>Time (UTC) *</label><input type="time" required value={time} onChange={e=>setTime(e.target.value)} className="input-field" /></div>
+            </div>
+            <div style={styles.inputWrapper}><label style={styles.label}>Roblox Server Direct Link *</label><input type="url" required value={serverLink} onChange={e=>setServerLink(e.target.value)} className="input-field" /></div>
+            <button type="submit" className="btn-primary" style={styles.submitBtn}><Plus size={16} /> Schedule Flight</button>
+          </form>
+        </div>
+      </div>
+
+      {/* Sub Tab: LOA Review */}
+      <div id="section-loas">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>Pending LOAs</h3>
+          {pendingLoas.length === 0 ? (
+            <div style={styles.emptyGrid}><Calendar size={36} color="rgba(255,255,255,0.15)" /><p style={styles.emptyText}>No pending LOAs.</p></div>
+          ) : (
+            <div style={styles.loaList}>
+              {pendingLoas.map(req => (
+                <div key={req.id} style={styles.loaCard} className="glass-panel">
+                  <div style={styles.loaCardHeader}>
+                    <div><h4 style={{color:'#fff'}}>{req.userName}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>{req.userEmail}</span></div>
+                    <div style={styles.loaDates}>
+                      <span style={styles.loaDateText}>{req.startDate}</span> <span style={{color:'#9ca3af'}}>to</span> <span style={styles.loaDateText}>{req.endDate}</span>
+                    </div>
+                  </div>
+                  <div style={styles.loaReasonBox}>
+                    <span style={styles.loaReasonLabel}>Reason:</span>
+                    <p style={styles.loaReasonText}>{req.reason}</p>
+                  </div>
+                  <div style={styles.loaActionPanel}>
+                    <div style={styles.commentWrapper}>
+                      <label style={styles.commentLabel}>Decision Note:</label>
+                      <input type="text" value={loaComments[req.id] || ''} onChange={e => setLoaComments({...loaComments, [req.id]: e.target.value})} className="input-field" style={{padding: '8px 12px'}} />
+                    </div>
+                    <div style={styles.loaActionButtons}>
+                      <button type="button" onClick={() => handleLoaAction(req.id, 'Approved')} className="btn-success" style={styles.loaActionBtn}><Check size={14}/> Approve</button>
+                      <button type="button" onClick={() => handleLoaAction(req.id, 'Denied')} className="btn-danger" style={styles.loaActionBtn}><X size={14}/> Deny</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sub Tab: Password Resets */}
+      <div id="section-passwords">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>Password Reset Requests</h3>
+          {pendingPasswords.length === 0 ? (
+            <div style={styles.emptyGrid}><Key size={36} color="rgba(255,255,255,0.15)" /><p style={styles.emptyText}>No reset requests.</p></div>
+          ) : (
+            <div style={styles.tableWrapper}>
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.trHead}>
+                    <th style={styles.th}>Email</th>
+                    <th style={styles.th}>Date</th>
+                    <th style={styles.th}>New Password</th>
+                    <th style={styles.th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingPasswords.map(req => (
+                    <tr key={req.id} style={styles.trBody}>
+                      <td style={styles.td}>{req.email}</td>
+                      <td style={styles.td}>{new Date(req.timestamp).toLocaleString()}</td>
+                      <td style={styles.td}>
+                        <input type="text" placeholder="Enter new password" value={newPasswords[req.id] || ''} onChange={e => setNewPasswords({...newPasswords, [req.id]: e.target.value})} className="input-field" style={{padding: '6px'}} />
+                      </td>
+                      <td style={styles.td}>
+                        <div style={styles.actionRow}>
+                          <button type="button" onClick={() => handleApprovePassword(req.id, req.email)} className="btn-success" style={styles.actionMiniBtn}><Check size={14} /> Approve</button>
+                          <button type="button" onClick={() => {rejectPasswordReset(req.id, req.email); displaySuccess('Request rejected');}} className="btn-danger" style={styles.actionMiniBtn}><X size={14} /> Reject</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sub Tab: System Status */}
+      <div id="section-status">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>System Status Configuration</h3>
+          <p style={styles.panelSubtitle}>Configure warning banners and full site maintenance lockouts.</p>
+          <form onSubmit={handleSaveSystemStatus} style={styles.form}>
+            <div style={{ padding: '16px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+              <h4 style={{ color: '#f59e0b', marginBottom: '12px' }}>Warning Banner</h4>
+              <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'}}>
+                <input type="checkbox" id="warnActive" checked={warnActive} onChange={e => setWarnActive(e.target.checked)} style={{width: '20px', height: '20px'}} />
+                <label htmlFor="warnActive" style={{fontSize: '1rem', color: '#fff', fontWeight: '600'}}>Enable Global Warning Banner</label>
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Banner Title</label>
+                <input type="text" value={warnTitle} onChange={e=>setWarnTitle(e.target.value)} placeholder="e.g. Goalbound Outfits Issue" className="input-field" disabled={!warnActive} />
+              </div>
+              <div style={{...styles.inputWrapper, marginTop: '12px'}}>
+                <label style={styles.label}>Banner Message</label>
+                <textarea value={warnMessage} onChange={e=>setWarnMessage(e.target.value)} className="input-field" rows="2" disabled={!warnActive} />
+              </div>
+              <div style={{...styles.inputWrapper, marginTop: '12px'}}>
+                <label style={styles.label}>Banner Type</label>
+                <select value={warnType} onChange={e=>setWarnType(e.target.value)} className="input-field" disabled={!warnActive}>
+                  <option value="warning">Warning (Yellow)</option>
+                  <option value="issue">Issue (Red)</option>
+                  <option value="resolved">Resolved (Green)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <h4 style={{ color: '#ef4444', marginBottom: '12px' }}>Site Maintenance Mode</h4>
+              <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'}}>
+                <input type="checkbox" id="maintActive" checked={maintActive} onChange={e => setMaintActive(e.target.checked)} style={{width: '20px', height: '20px'}} />
+                <label htmlFor="maintActive" style={{fontSize: '1rem', color: '#fff', fontWeight: '600'}}>Enable Full Site Lockout</label>
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Maintenance Message</label>
+                <textarea value={maintMessage} onChange={e=>setMaintMessage(e.target.value)} className="input-field" rows="3" disabled={!maintActive} placeholder="The system is currently undergoing scheduled maintenance..." />
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary" style={styles.submitBtn}>Save System Status Settings</button>
+          </form>
+        </div>
+      </div>
+
+      {/* Sub Tab: Audit Log */}
+      <div id="section-audit">
+        <div style={styles.panelSection}>
+          <h3 style={styles.panelTitle}>System Audit Log</h3>
+          <div style={styles.tableWrapper}>
+            <table style={styles.table}>
+              <thead>
+                <tr style={styles.trHead}>
+                  <th style={styles.th}>Date/Time</th>
+                  <th style={styles.th}>Admin</th>
+                  <th style={styles.th}>Action</th>
+                  <th style={styles.th}>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLogs.map(log => (
+                  <tr key={log.id} style={styles.trBody}>
+                    <td style={styles.td}>{new Date(log.timestamp).toLocaleString()}</td>
+                    <td style={styles.td}>{log.adminName}</td>
+                    <td style={styles.td}>{log.description}</td>
+                    <td style={styles.td}>
+                      <button type="button" onClick={() => setSelectedAuditLog(log)} className="btn-secondary" style={{padding: '4px 8px', fontSize: '0.8rem'}}>View</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {auditLogs.length === 0 && <p style={{padding: '20px', color: '#9ca3af', textAlign: 'center'}}>No audit logs found.</p>}
+          </div>
+        </div>
+      </div>
+
+      </div>
+      {/* Audit Log Modal */}
+      {selectedAuditLog && (
+        <div style={styles.overlay}>
+          <div className="glass-panel" style={{...styles.modal, width: '500px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
+              <h3 style={{color: '#fff', fontSize: '1.2rem'}}>Audit Log Details</h3>
+              <button type="button" onClick={() => setSelectedAuditLog(null)} style={{background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer'}}><X size={20}/></button>
+            </div>
+            <div style={{background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px', overflowX: 'auto'}}>
+              <pre style={{color: '#a7f3d0', fontSize: '0.85rem', margin: 0}}>
+                {JSON.stringify(selectedAuditLog, null, 2)}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const getTabStyle = (isActive) => ({
+  display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px',
+  borderRadius: '8px', border: 'none', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer',
+  background: isActive ? '#2563eb' : 'transparent',
+  color: isActive ? '#ffffff' : '#9ca3af',
+  transition: 'all 0.2s ease',
+  whiteSpace: 'nowrap'
+});
+
+const styles = {
+  layoutContainer: { display: 'flex', gap: '32px', alignItems: 'flex-start', paddingBottom: '40px' },
+  sidebar: { width: '220px', position: 'sticky', top: '24px', display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, height: 'max-content', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto' },
+  mainContent: { flex: 1, display: 'flex', flexDirection: 'column', gap: '64px', minWidth: 0, paddingBottom: '30vh' },
+  subTabContainer: { display: 'flex', gap: '8px', flexWrap: 'wrap', background: 'rgba(0,0,0,0.15)', padding: '6px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)', overflowX: 'auto' },
+  successAlert: { background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '12px 16px', fontSize: '0.9rem', color: '#a7f3d0' },
+  securityAlert: { background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', padding: '12px 16px', fontSize: '0.85rem', color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' },
+  panelSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  panelTitle: { fontSize: '1.25rem', fontWeight: '700', color: 'var(--color-text-main)' },
+  panelSubtitle: { fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '-8px' },
+  emptyGrid: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0' },
+  emptyText: { color: 'var(--color-text-muted)', fontSize: '0.95rem' },
+  tableWrapper: { width: '100%', overflowX: 'auto', background: 'rgba(0,0,0,0.15)', borderRadius: '12px', border: '1px solid var(--color-border)' },
+  table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' },
+  trHead: { borderBottom: '1px solid var(--color-border)' },
+  th: { padding: '12px 16px', fontWeight: '600', color: 'var(--color-primary)', fontSize: '0.8rem', textTransform: 'uppercase' },
+  trBody: { borderBottom: '1px solid rgba(255,255,255,0.03)' },
+  td: { padding: '12px 16px', color: 'var(--color-text-main)', verticalAlign: 'middle' },
+  actionRow: { display: 'flex', gap: '8px' },
+  actionMiniBtn: { display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer' },
+  roleBtn: { padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' },
+  form: { display: 'flex', flexDirection: 'column', gap: '18px', background: 'rgba(0,0,0,0.15)', border: '1px solid var(--color-border)', padding: '24px', borderRadius: '16px' },
+  formRow: { display: 'flex', gap: '20px', flexWrap: 'wrap' },
+  inputWrapper: { flex: 1, minWidth: '240px', display: 'flex', flexDirection: 'column', gap: '6px' },
+  label: { fontSize: '0.85rem', fontWeight: '500', color: 'var(--color-text-muted)' },
+  textarea: { resize: 'vertical', minHeight: '110px' },
+  confidentialTextarea: { resize: 'vertical', borderStyle: 'dashed', borderColor: 'rgba(6, 182, 212, 0.3)', background: 'rgba(6, 182, 212, 0.02)' },
+  submitBtn: { padding: '10px 20px', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '10px' },
+  infractionBadge: { background: 'rgba(239, 68, 68, 0.12)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '6px', padding: '3px 10px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', whiteSpace: 'nowrap' },
+  confidentialNote: { marginTop: '8px', color: '#67e8f9', fontSize: '0.8rem', fontStyle: 'italic' },
+  loaList: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  loaCard: { padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '16px' },
+  loaCardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--color-border)', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' },
+  loaDateText: { background: 'rgba(255,255,255,0.03)', border: '1px solid var(--color-border)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--color-text-main)', fontWeight: '600' },
+  loaReasonBox: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  loaReasonLabel: { fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-primary)', textTransform: 'uppercase' },
+  loaReasonText: { fontSize: '0.875rem', color: 'var(--color-text-main)', lineHeight: '1.4' },
+  loaActionPanel: { borderTop: '1px dashed var(--color-border)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' },
+  loaActionButtons: { display: 'flex', gap: '10px' },
+  loaActionBtn: { padding: '8px 16px', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' },
+  overlay: { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  modal: { padding: '24px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }
+};
