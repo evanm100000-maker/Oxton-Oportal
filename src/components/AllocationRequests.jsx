@@ -17,7 +17,7 @@ export default function AllocationRequests() {
   const [directAssignEmail, setDirectAssignEmail] = useState({});
 
   const isStaffAllocated = (flight, email) => {
-    return flight.allocatedStaff.includes(email);
+    return (flight.allocatedStaff || []).includes(email);
   };
 
   const getStaffNameByEmail = (email) => {
@@ -89,14 +89,14 @@ export default function AllocationRequests() {
                 <div style={styles.crewSection}>
                   <div style={styles.crewHeader}>
                     <Users size={16} color="#06b6d4" />
-                    <span style={styles.crewTitle}>Crew Allocation ({flight.allocatedStaff.length})</span>
+                    <span style={styles.crewTitle}>Crew Allocation ({(flight.allocatedStaff || []).length})</span>
                   </div>
                   
-                  {flight.allocatedStaff.length === 0 ? (
+                  {(flight.allocatedStaff || []).length === 0 ? (
                     <p style={styles.emptyCrewText}>No crew allocated yet.</p>
                   ) : (
                     <div style={styles.crewList}>
-                      {flight.allocatedStaff.filter(email => activeUsers.some(user => user.email === email)).map((email) => (
+                      {(flight.allocatedStaff || []).filter(email => activeUsers.some(user => user.email === email)).map((email) => (
                         <div key={email} style={styles.crewBadge}>
                           <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}</span>
                           {currentUser.isAdmin && (
