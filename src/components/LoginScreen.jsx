@@ -223,6 +223,7 @@ export default function LoginScreen() {
           )}
         </form>
       </div>
+      <div style={styles.versionText}>V1.0.1</div>
     </div>
   );
 }
@@ -373,5 +374,13 @@ const styles = {
     gap: '10px',
     marginBottom: '20px',
     lineHeight: '1.4',
+  },
+  versionText: {
+    position: 'absolute',
+    bottom: '20px',
+    color: '#6b7280',
+    fontSize: '0.85rem',
+    fontWeight: '500',
+    letterSpacing: '1px',
   },
 };
