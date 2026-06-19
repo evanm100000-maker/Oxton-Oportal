@@ -64,6 +64,7 @@ export default function AllocationRequests() {
                   </div>
                   {currentUser.isAdmin && (
                     <button
+                      type="button"
                       onClick={() => removeFlight(flight.id)}
                       className="btn-danger"
                       style={styles.deleteBtn}
@@ -100,6 +101,7 @@ export default function AllocationRequests() {
                           <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}</span>
                           {currentUser.isAdmin && (
                             <button
+                              type="button"
                               onClick={() => deallocateStaffDirectly(flight.id, email)}
                               style={styles.removeCrewBtn}
                               title="Deallocate Staff"
