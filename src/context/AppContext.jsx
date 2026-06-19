@@ -583,7 +583,7 @@ export const AppProvider = ({ children }) => {
     setUsers(prev => prev.filter(u => u.email !== email));
     setFlights(prev => prev.map(f => ({
       ...f,
-      allocatedStaff: f.allocatedStaff.filter(staffEmail => staffEmail !== email)
+      allocatedStaff: (f.allocatedStaff || []).filter(staffEmail => staffEmail !== email)
     })));
     logAction('user_removed', `Removed staff member ${email}`, { email });
   };
@@ -630,7 +630,7 @@ export const AppProvider = ({ children }) => {
     setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil } : u));
     setFlights(prev => prev.map(f => ({
       ...f,
-      allocatedStaff: f.allocatedStaff.filter(staffEmail => staffEmail !== email)
+      allocatedStaff: (f.allocatedStaff || []).filter(staffEmail => staffEmail !== email)
     })));
     setInfractions(prev => [{
       id: makeId('inf'),
@@ -692,10 +692,11 @@ export const AppProvider = ({ children }) => {
   const toggleAllocation = (flightId, email) => {
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
-      const isAllocated = f.allocatedStaff.includes(email);
+      const currentStaff = f.allocatedStaff || [];
+      const isAllocated = currentStaff.includes(email);
       const newStaff = isAllocated
-        ? f.allocatedStaff.filter(e => e !== email)
-        : [...f.allocatedStaff, email];
+        ? currentStaff.filter(e => e !== email)
+        : [...currentStaff, email];
       return { ...f, allocatedStaff: newStaff };
     }));
   };
@@ -703,15 +704,17 @@ export const AppProvider = ({ children }) => {
   const allocateStaffDirectly = (flightId, email) => {
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
-      if (f.allocatedStaff.includes(email)) return f;
-      return { ...f, allocatedStaff: [...f.allocatedStaff, email] };
+      const currentStaff = f.allocatedStaff || [];
+      if (currentStaff.includes(email)) return f;
+      return { ...f, allocatedStaff: [...currentStaff, email] };
     }));
   };
 
   const deallocateStaffDirectly = (flightId, email) => {
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
-      return { ...f, allocatedStaff: f.allocatedStaff.filter(e => e !== email) };
+      const currentStaff = f.allocatedStaff || [];
+      return { ...f, allocatedStaff: currentStaff.filter(e => e !== email) };
     }));
   };
 
