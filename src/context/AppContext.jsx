@@ -334,9 +334,20 @@ export const AppProvider = ({ children }) => {
       const setupListener = (path, setFn) => {
         return onValue(ref(db, path), snapshot => {
           const data = snapshot.val();
+          skipSyncRef.current[path] = true;
           if (data) {
-            skipSyncRef.current[path] = true;
-            setFn(data);
+            let normalizedData = data;
+            // Firebase converts arrays with holes into objects, so we normalize back to an array
+            if (typeof data === 'object' && !Array.isArray(data)) {
+              normalizedData = Object.values(data);
+            }
+            // Filter out any null/undefined elements
+            if (Array.isArray(normalizedData)) {
+              normalizedData = normalizedData.filter(item => item !== null && item !== undefined);
+            }
+            setFn(normalizedData);
+          } else {
+            setFn([]); // Ensure state remains an array even if collection is empty in Firebase
           }
         });
       };
