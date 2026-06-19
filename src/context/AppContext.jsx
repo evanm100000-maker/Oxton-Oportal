@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { firebaseApp, getDatabase, ref, onValue, set } from '../firebase';
 
 const AppContext = createContext();
@@ -315,32 +315,43 @@ export const AppProvider = ({ children }) => {
       };
     }, []);
 
+    const skipSyncRef = useRef({
+      users: false, flights: false, flightLogs: false, loaRequests: false, 
+      documents: false, reports: false, infractions: false, auditLogs: false, 
+      passwordResets: false, chatMessages: false, theme: false
+    });
+    
+    const isFirstRenderRef = useRef({
+      users: true, flights: true, flightLogs: true, loaRequests: true, 
+      documents: true, reports: true, infractions: true, auditLogs: true, 
+      passwordResets: true, chatMessages: true, theme: true
+    });
+
     // Add Firebase listeners for other data collections
     useEffect(() => {
       const db = getDatabase(firebaseApp);
-      const usersRef = ref(db, 'users');
-      const flightsRef = ref(db, 'flights');
-      const flightLogsRef = ref(db, 'flightLogs');
-      const loaRequestsRef = ref(db, 'loaRequests');
-      const documentsRef = ref(db, 'documents');
-      const reportsRef = ref(db, 'reports');
-      const infractionsRef = ref(db, 'infractions');
-      const auditLogsRef = ref(db, 'auditLogs');
-      const passwordResetsRef = ref(db, 'passwordResets');
-      const chatMessagesRef = ref(db, 'chatMessages');
-      const themeRef = ref(db, 'theme');
+      
+      const setupListener = (path, setFn) => {
+        return onValue(ref(db, path), snapshot => {
+          const data = snapshot.val();
+          if (data) {
+            skipSyncRef.current[path] = true;
+            setFn(data);
+          }
+        });
+      };
 
-      const unsubUsers = onValue(usersRef, snapshot => { const data = snapshot.val(); if (data) setUsers(data); });
-      const unsubFlights = onValue(flightsRef, snapshot => { const data = snapshot.val(); if (data) setFlights(data); });
-      const unsubFlightLogs = onValue(flightLogsRef, snapshot => { const data = snapshot.val(); if (data) setFlightLogs(data); });
-      const unsubLoas = onValue(loaRequestsRef, snapshot => { const data = snapshot.val(); if (data) setLoaRequests(data); });
-      const unsubDocs = onValue(documentsRef, snapshot => { const data = snapshot.val(); if (data) setDocuments(data); });
-      const unsubReports = onValue(reportsRef, snapshot => { const data = snapshot.val(); if (data) setReports(data); });
-      const unsubInfractions = onValue(infractionsRef, snapshot => { const data = snapshot.val(); if (data) setInfractions(data); });
-      const unsubAudit = onValue(auditLogsRef, snapshot => { const data = snapshot.val(); if (data) setAuditLogs(data); });
-      const unsubPwdResets = onValue(passwordResetsRef, snapshot => { const data = snapshot.val(); if (data) setPasswordResets(data); });
-      const unsubChat = onValue(chatMessagesRef, snapshot => { const data = snapshot.val(); if (data) setChatMessages(data); });
-      const unsubTheme = onValue(themeRef, snapshot => { const data = snapshot.val(); if (data) setTheme(data); });
+      const unsubUsers = setupListener('users', setUsers);
+      const unsubFlights = setupListener('flights', setFlights);
+      const unsubFlightLogs = setupListener('flightLogs', setFlightLogs);
+      const unsubLoas = setupListener('loaRequests', setLoaRequests);
+      const unsubDocs = setupListener('documents', setDocuments);
+      const unsubReports = setupListener('reports', setReports);
+      const unsubInfractions = setupListener('infractions', setInfractions);
+      const unsubAudit = setupListener('auditLogs', setAuditLogs);
+      const unsubPwdResets = setupListener('passwordResets', setPasswordResets);
+      const unsubChat = setupListener('chatMessages', setChatMessages);
+      const unsubTheme = setupListener('theme', setTheme);
 
       return () => {
         if (typeof unsubLoas === 'function') unsubLoas();
@@ -358,50 +369,30 @@ export const AppProvider = ({ children }) => {
     }, []);
 
     // Sync state changes back to Firebase
-    useEffect(() => {
+    const syncToFirebase = (path, stateValue) => {
+      if (isFirstRenderRef.current[path]) {
+        isFirstRenderRef.current[path] = false;
+        return;
+      }
+      if (skipSyncRef.current[path]) {
+        skipSyncRef.current[path] = false;
+        return;
+      }
       const db = getDatabase(firebaseApp);
-      set(ref(db, 'users'), users);
-    }, [users]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'flights'), flights);
-    }, [flights]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'flightLogs'), flightLogs);
-    }, [flightLogs]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'loaRequests'), loaRequests);
-    }, [loaRequests]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'documents'), documents);
-    }, [documents]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'reports'), reports);
-    }, [reports]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'infractions'), infractions);
-    }, [infractions]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'auditLogs'), auditLogs);
-    }, [auditLogs]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'passwordResets'), passwordResets);
-    }, [passwordResets]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'chatMessages'), chatMessages);
-    }, [chatMessages]);
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      set(ref(db, 'theme'), theme);
-    }, [theme]);
+      set(ref(db, path), stateValue);
+    };
+
+    useEffect(() => { syncToFirebase('users', users); }, [users]);
+    useEffect(() => { syncToFirebase('flights', flights); }, [flights]);
+    useEffect(() => { syncToFirebase('flightLogs', flightLogs); }, [flightLogs]);
+    useEffect(() => { syncToFirebase('loaRequests', loaRequests); }, [loaRequests]);
+    useEffect(() => { syncToFirebase('documents', documents); }, [documents]);
+    useEffect(() => { syncToFirebase('reports', reports); }, [reports]);
+    useEffect(() => { syncToFirebase('infractions', infractions); }, [infractions]);
+    useEffect(() => { syncToFirebase('auditLogs', auditLogs); }, [auditLogs]);
+    useEffect(() => { syncToFirebase('passwordResets', passwordResets); }, [passwordResets]);
+    useEffect(() => { syncToFirebase('chatMessages', chatMessages); }, [chatMessages]);
+    useEffect(() => { syncToFirebase('theme', theme); }, [theme]);
 
   // Sync state across tabs automatically
   useEffect(() => {
