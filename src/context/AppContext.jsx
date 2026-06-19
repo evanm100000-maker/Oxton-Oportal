@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { firebaseApp, getDatabase, ref, onValue, set } from '../firebase';
 
 const AppContext = createContext();
@@ -347,6 +347,7 @@ export const AppProvider = ({ children }) => {
         if (typeof unsubDocs === 'function') unsubDocs();
         if (typeof unsubUsers === 'function') unsubUsers();
         if (typeof unsubFlights === 'function') unsubFlights();
+        if (typeof unsubFlightLogs === 'function') unsubFlightLogs();
         if (typeof unsubReports === 'function') unsubReports();
         if (typeof unsubInfractions === 'function') unsubInfractions();
         if (typeof unsubAudit === 'function') unsubAudit();
