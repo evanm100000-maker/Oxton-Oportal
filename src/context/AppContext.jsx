@@ -886,7 +886,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // Chat Operations
-  const addChatMessage = (channel, text) => {
+  const addChatMessage = (channel, text, replyTo = null) => {
     const newMessage = {
       id: 'msg-' + Date.now() + Math.random().toString(36).substring(2, 6),
       channel,
@@ -895,9 +895,47 @@ export const AppProvider = ({ children }) => {
       senderName: `${currentUser.firstName} ${currentUser.lastName}`,
       senderRole: currentUser.customRole || (currentUser.isAdmin ? 'Admin' : 'Staff'),
       senderPfp: currentUser.profilePicture || '',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      replyTo,
+      reactions: []
     };
     setChatMessages(prev => [...prev, newMessage]);
+  };
+
+  const deleteChatMessage = (msgId) => {
+    setChatMessages(prev => prev.filter(m => m.id !== msgId));
+  };
+
+  const addMessageReaction = (msgId, emoji) => {
+    setChatMessages(prev => prev.map(m => {
+      if (m.id !== msgId) return m;
+      const currentReactions = m.reactions || [];
+      const userEmail = currentUser.email;
+      
+      const existingReactionIndex = currentReactions.findIndex(r => r.emoji === emoji);
+      let newReactions = [...currentReactions];
+      
+      if (existingReactionIndex >= 0) {
+        const reaction = newReactions[existingReactionIndex];
+        if (reaction.users.includes(userEmail)) {
+          // Remove user's reaction
+          const updatedUsers = reaction.users.filter(u => u !== userEmail);
+          if (updatedUsers.length === 0) {
+            newReactions.splice(existingReactionIndex, 1);
+          } else {
+            newReactions[existingReactionIndex] = { ...reaction, users: updatedUsers, count: updatedUsers.length };
+          }
+        } else {
+          // Add user's reaction
+          const updatedUsers = [...reaction.users, userEmail];
+          newReactions[existingReactionIndex] = { ...reaction, users: updatedUsers, count: updatedUsers.length };
+        }
+      } else {
+        // Add new reaction
+        newReactions.push({ emoji, count: 1, users: [userEmail] });
+      }
+      return { ...m, reactions: newReactions };
+    }));
   };
 
   return (
@@ -952,6 +990,8 @@ export const AppProvider = ({ children }) => {
         deleteInfraction,
         chatMessages,
         addChatMessage,
+        deleteChatMessage,
+        addMessageReaction,
         requestPasswordReset,
         approvePasswordReset,
         rejectPasswordReset,

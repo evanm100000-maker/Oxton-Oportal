@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Send, ShieldAlert, Users, MessageSquare } from 'lucide-react';
+import { Send, ShieldAlert, Users, MessageSquare, Globe, Reply, Trash2, Flag, Smile, X } from 'lucide-react';
 
 export default function StaffChat() {
-  const { currentUser, chatMessages, addChatMessage, setCustomRole } = useApp();
+  const { currentUser, chatMessages, addChatMessage, deleteChatMessage, addMessageReaction, submitReport, setCustomRole } = useApp();
   const [activeChannel, setActiveChannel] = useState('Staff Chat');
   const [inputText, setInputText] = useState('');
   const [rolePromptTarget, setRolePromptTarget] = useState(null);
   const [newRoleInput, setNewRoleInput] = useState('');
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [activeReactionMsgId, setActiveReactionMsgId] = useState(null);
+  const [hoveredMsgId, setHoveredMsgId] = useState(null);
   const messagesEndRef = useRef(null);
 
   const filteredMessages = chatMessages.filter(m => m.channel === activeChannel);
@@ -20,8 +23,31 @@ export default function StaffChat() {
   const handleSend = (e) => {
     e.preventDefault();
     if (!inputText.trim()) return;
-    addChatMessage(activeChannel, inputText.trim());
+    
+    let replyData = null;
+    if (replyingTo) {
+      replyData = {
+        id: replyingTo.id,
+        senderName: replyingTo.senderName,
+        text: replyingTo.text.length > 50 ? replyingTo.text.substring(0, 50) + '...' : replyingTo.text
+      };
+    }
+    
+    addChatMessage(activeChannel, inputText.trim(), replyData);
     setInputText('');
+    setReplyingTo(null);
+  };
+
+  const handleReport = (msg) => {
+    if (window.confirm(`Are you sure you want to report this message by ${msg.senderName}?`)) {
+      submitReport({
+        type: 'Chat Message Report',
+        reportedPlayer: msg.senderName,
+        description: `Reported Message ID: ${msg.id}\nMessage Content: "${msg.text}"\nChannel: ${msg.channel}`,
+        evidenceLink: ''
+      });
+      alert('Message reported successfully. It has been sent to the admin panel.');
+    }
   };
 
   const handleSetRole = (e) => {
@@ -33,9 +59,9 @@ export default function StaffChat() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="admin-layout" style={styles.container}>
       {/* Channels Sidebar */}
-      <div style={styles.sidebar} className="glass-panel">
+      <div style={styles.sidebar} className="glass-panel admin-sidebar">
         <h3 style={styles.sidebarTitle}><MessageSquare size={16} /> Channels</h3>
         <button 
           onClick={() => setActiveChannel('Staff Chat')}
@@ -59,6 +85,17 @@ export default function StaffChat() {
         >
           <ShieldAlert size={16} /> # security
         </button>
+        <button 
+          onClick={() => setActiveChannel('Global')}
+          style={{
+            ...styles.channelBtn,
+            background: activeChannel === 'Global' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
+            borderColor: activeChannel === 'Global' ? '#10b981' : 'transparent',
+            color: activeChannel === 'Global' ? '#ffffff' : '#9ca3af'
+          }}
+        >
+          <Globe size={16} /> Global
+        </button>
       </div>
 
       {/* Main Chat Area */}
@@ -75,7 +112,15 @@ export default function StaffChat() {
             <div style={styles.emptyState}>No messages yet. Start the conversation!</div>
           ) : (
             filteredMessages.map((msg) => (
-              <div key={msg.id} style={styles.messageRow}>
+              <div 
+                key={msg.id} 
+                style={{...styles.messageRow, position: 'relative'}}
+                onMouseEnter={() => setHoveredMsgId(msg.id)}
+                onMouseLeave={() => {
+                  setHoveredMsgId(null);
+                  if (activeReactionMsgId === msg.id) setActiveReactionMsgId(null);
+                }}
+              >
                 <div 
                   style={{...styles.avatar, background: msg.senderPfp ? 'transparent' : '#3b82f6'}}
                   title={currentUser.isAdmin ? "Click to set role" : ""}
@@ -87,12 +132,12 @@ export default function StaffChat() {
                   }}
                 >
                   {msg.senderPfp ? (
-                    <img src={msg.senderPfp} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%'}} />
+                    <img src={msg.senderPfp} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
                   ) : (
                     msg.senderName.charAt(0)
                   )}
                 </div>
-                <div style={styles.messageContent}>
+                <div style={{...styles.messageContent, flex: 1, minWidth: 0}}>
                   <div style={styles.messageHeader}>
                     <span 
                       style={styles.senderName}
@@ -109,7 +154,78 @@ export default function StaffChat() {
                     {msg.senderRole && <span style={styles.senderRole}>({msg.senderRole})</span>}
                     <span style={styles.timestamp}>{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                   </div>
+                  
+                  {msg.replyTo && (
+                    <div style={styles.replyQuoteBlock}>
+                      <span style={{color: '#9ca3af', fontSize: '0.8rem'}}>
+                        <Reply size={12} style={{marginRight: '4px', display: 'inline', verticalAlign: 'middle'}}/>
+                        Replying to <strong>{msg.replyTo.senderName}</strong>
+                      </span>
+                      <div style={{color: '#d1d5db', fontSize: '0.85rem', marginTop: '2px', fontStyle: 'italic', borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '8px'}}>{msg.replyTo.text}</div>
+                    </div>
+                  )}
+                  
                   <div style={styles.messageText}>{msg.text}</div>
+
+                  {msg.reactions && msg.reactions.length > 0 && (
+                    <div style={styles.reactionsContainer}>
+                      {msg.reactions.map(r => (
+                        <button 
+                          key={r.emoji} 
+                          style={{
+                            ...styles.reactionBadge, 
+                            background: r.users.includes(currentUser.email) ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                            borderColor: r.users.includes(currentUser.email) ? 'rgba(59, 130, 246, 0.5)' : 'rgba(255, 255, 255, 0.1)'
+                          }}
+                          onClick={() => addMessageReaction(msg.id, r.emoji)}
+                          title={r.users.join(', ')}
+                        >
+                          {r.emoji} <span style={styles.reactionCount}>{r.count}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Hover Actions */}
+                <div style={{
+                  ...styles.messageActions,
+                  opacity: (hoveredMsgId === msg.id || activeReactionMsgId === msg.id) ? 1 : 0,
+                  visibility: (hoveredMsgId === msg.id || activeReactionMsgId === msg.id) ? 'visible' : 'hidden'
+                }}>
+                  <button style={styles.actionBtn} onClick={() => setReplyingTo(msg)} title="Reply">
+                    <Reply size={14} />
+                  </button>
+                  <div style={{ position: 'relative' }}>
+                    <button style={styles.actionBtn} onClick={() => setActiveReactionMsgId(activeReactionMsgId === msg.id ? null : msg.id)} title="React">
+                      <Smile size={14} />
+                    </button>
+                    {activeReactionMsgId === msg.id && (
+                      <div style={styles.reactionPicker}>
+                        {['👍', '❤️', '😂', '😮', '👀', '🔥'].map(emoji => (
+                          <button 
+                            key={emoji} 
+                            style={styles.reactionOptionBtn} 
+                            onClick={() => { addMessageReaction(msg.id, emoji); setActiveReactionMsgId(null); }}
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {msg.senderEmail !== currentUser.email && (
+                    <button style={styles.actionBtn} onClick={() => handleReport(msg)} title="Report">
+                      <Flag size={14} />
+                    </button>
+                  )}
+                  {(msg.senderEmail === currentUser.email || currentUser.isAdmin) && (
+                    <button style={{...styles.actionBtn, color: '#ef4444'}} onClick={() => {
+                      if(window.confirm('Delete this message?')) deleteChatMessage(msg.id);
+                    }} title="Delete">
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
             ))
@@ -117,18 +233,31 @@ export default function StaffChat() {
           <div ref={messagesEndRef} />
         </div>
 
-        <form onSubmit={handleSend} style={styles.inputArea}>
-          <input 
-            type="text" 
-            value={inputText} 
-            onChange={e => setInputText(e.target.value)} 
-            placeholder={`Message #${activeChannel.toLowerCase().replace(' ', '-')}`}
-            style={styles.input}
-          />
-          <button type="submit" className="btn-primary" style={styles.sendBtn} disabled={!inputText.trim()}>
-            <Send size={18} />
-          </button>
-        </form>
+        <div style={styles.inputContainerWrapper}>
+          {replyingTo && (
+            <div style={styles.replyingBanner}>
+              <div style={styles.replyingBannerText}>
+                <Reply size={12} style={{marginRight: '6px', display: 'inline', verticalAlign: 'middle'}}/>
+                Replying to <strong>{replyingTo.senderName}</strong>: {replyingTo.text.length > 50 ? replyingTo.text.substring(0, 50) + '...' : replyingTo.text}
+              </div>
+              <button type="button" onClick={() => setReplyingTo(null)} style={styles.replyingBannerClose}>
+                <X size={14} />
+              </button>
+            </div>
+          )}
+          <form onSubmit={handleSend} style={{...styles.inputArea, borderTopLeftRadius: replyingTo ? 0 : '16px', borderTopRightRadius: replyingTo ? 0 : '16px'}}>
+            <input 
+              type="text" 
+              value={inputText} 
+              onChange={e => setInputText(e.target.value)} 
+              placeholder={`Message #${activeChannel.toLowerCase().replace(' ', '-')}`}
+              style={styles.input}
+            />
+            <button type="submit" className="btn-primary" style={styles.sendBtn} disabled={!inputText.trim()}>
+              <Send size={18} />
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Role Prompt Modal (Admin Only) */}
@@ -315,5 +444,113 @@ const styles = {
     width: '400px',
     padding: '24px',
     borderRadius: '16px',
+  },
+  inputContainerWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'relative',
+    marginTop: 'auto',
+  },
+  replyingBanner: {
+    background: 'rgba(255, 255, 255, 0.05)',
+    borderLeft: '4px solid #3b82f6',
+    borderTopLeftRadius: '16px',
+    borderTopRightRadius: '16px',
+    padding: '8px 16px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
+  },
+  replyingBannerText: {
+    fontSize: '0.85rem',
+    color: '#d1d5db',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    marginRight: '16px',
+  },
+  replyingBannerClose: {
+    background: 'none',
+    border: 'none',
+    color: '#9ca3af',
+    cursor: 'pointer',
+    padding: '4px',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  replyQuoteBlock: {
+    marginTop: '4px',
+    marginBottom: '8px',
+    padding: '6px 10px',
+    background: 'rgba(0,0,0,0.2)',
+    borderRadius: '6px',
+    borderLeft: '3px solid #3b82f6',
+  },
+  reactionsContainer: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '6px',
+    marginTop: '8px',
+  },
+  reactionBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '2px 6px',
+    borderRadius: '12px',
+    border: '1px solid',
+    fontSize: '0.85rem',
+    cursor: 'pointer',
+  },
+  reactionCount: {
+    fontSize: '0.75rem',
+    fontWeight: 'bold',
+  },
+  messageActions: {
+    position: 'absolute',
+    top: '-12px',
+    right: '16px',
+    display: 'flex',
+    gap: '4px',
+    background: '#1f2937',
+    padding: '4px',
+    borderRadius: '8px',
+    border: '1px solid rgba(255,255,255,0.1)',
+    transition: 'opacity 0.15s, visibility 0.15s',
+    zIndex: 10,
+  },
+  actionBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#9ca3af',
+    padding: '6px',
+    cursor: 'pointer',
+    borderRadius: '4px',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  reactionPicker: {
+    position: 'absolute',
+    top: '100%',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: '#1f2937',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '24px',
+    padding: '4px 8px',
+    display: 'flex',
+    gap: '4px',
+    marginTop: '4px',
+    zIndex: 20,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+  },
+  reactionOptionBtn: {
+    background: 'transparent',
+    border: 'none',
+    fontSize: '1.2rem',
+    cursor: 'pointer',
+    padding: '4px',
+    borderRadius: '50%',
   }
 };

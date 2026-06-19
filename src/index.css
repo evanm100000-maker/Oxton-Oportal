@@ -408,9 +408,11 @@ button {
     padding: 12px !important;
   }
 
-  .admin-layout {
+  .admin-layout,
+  div[style*="display: flex"][style*="gap: 20px"],
+  div[style*="display: flex"][style*="gap: 24px"] {
     flex-direction: column !important;
-    gap: 20px !important;
+    gap: 16px !important;
   }
 
   .admin-sidebar {
@@ -428,6 +430,41 @@ button {
     flex-shrink: 0 !important;
   }
 
+  /* Force grids to single column on mobile */
+  div[style*="display: grid"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Prevent rigid minimum widths from blowing out the screen */
+  div[style*="minWidth"] {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Make sure all tables fit without breaking layout */
+  table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    border: none !important;
+  }
+  
+  thead, tbody, tr {
+    width: 100% !important;
+  }
+
+  /* Modals and overlay panels */
+  .glass-panel[style*="width: 500px"],
+  .glass-panel[style*="width: 600px"],
+  .glass-panel[style*="maxWidth: 800px"] {
+    width: 90vw !important;
+    max-width: 90vw !important;
+    padding: 16px !important;
+    margin: 0 auto !important;
+  }
+
   .page-container {
     padding: 12px !important;
   }
@@ -438,11 +475,17 @@ button {
     gap: 12px !important;
   }
 
-  input.input-field {
+  input.input-field, select.input-field, textarea.input-field {
     width: 100% !important;
+    max-width: 100% !important;
   }
 
   button {
     white-space: nowrap !important;
+  }
+  
+  /* Inputs inside action rows stack */
+  .actionRow, div[style*="gap: 8px"] {
+    flex-wrap: wrap !important;
   }
 }
