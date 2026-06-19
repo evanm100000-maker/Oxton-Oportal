@@ -194,9 +194,9 @@ export default function AdminPanel() {
   }, []);
 
   return (
-    <div style={styles.layoutContainer}>
+    <div className="admin-layout" style={styles.layoutContainer}>
       {/* Sub tabs navigation */}
-      <div style={styles.sidebar}>
+      <div className="admin-sidebar" style={styles.sidebar}>
         <button type="button" onClick={() => document.getElementById('section-approvals')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'approvals')}>
           <UserCheck size={16} /> Approvals ({pendingUsers.length})
         </button>

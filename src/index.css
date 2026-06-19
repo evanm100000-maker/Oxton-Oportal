@@ -392,3 +392,57 @@ button {
 .warning-body {
   color: #f8fafc; font-size: 1rem; line-height: 1.5; font-weight: 500;
 }
+
+/* Mobile Responsiveness Overrides */
+@media screen and (max-width: 800px) {
+  .dashboard-navbar {
+    flex-direction: column !important;
+    gap: 16px !important;
+    padding: 16px !important;
+    border-radius: 0 0 16px 16px !important;
+    margin: 0 auto 16px auto !important;
+    width: 100% !important;
+  }
+  
+  .dashboard-main-content {
+    padding: 12px !important;
+  }
+
+  .admin-layout {
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+
+  .admin-sidebar {
+    width: 100% !important;
+    position: static !important;
+    height: auto !important;
+    max-height: none !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    padding-bottom: 8px !important;
+    white-space: nowrap !important;
+  }
+  
+  .admin-sidebar button {
+    flex-shrink: 0 !important;
+  }
+
+  .page-container {
+    padding: 12px !important;
+  }
+
+  .header-container {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  input.input-field {
+    width: 100% !important;
+  }
+
+  button {
+    white-space: nowrap !important;
+  }
+}

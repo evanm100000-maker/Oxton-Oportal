@@ -178,8 +178,8 @@ export default function Dashboard() {
   return (
     <div style={styles.appWrapper}>
       {/* Navbar */}
-      <nav className="glass-panel" style={styles.navbar}>
-        <div style={styles.navBrand} onClick={() => setActiveTab('home')}>
+      <nav className="glass-panel dashboard-navbar" style={styles.navbar}>
+        <div className="dashboard-nav-brand" style={styles.navBrand} onClick={() => setActiveTab('home')}>
           <div style={styles.navLogo}>OX</div>
           <span style={styles.navBrandText}>Oxton Staff Portal</span>
         </div>
@@ -250,7 +250,7 @@ export default function Dashboard() {
       )}
 
       {/* Main Area */}
-      <main style={styles.mainContent}>
+      <main className="dashboard-main-content" style={styles.mainContent}>
         {activeTab === 'home' ? (
           <div style={styles.homeContainer}>
             {/* Header Greeting */}
