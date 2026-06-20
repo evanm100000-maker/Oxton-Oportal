@@ -974,10 +974,18 @@ export const AppProvider = ({ children }) => {
       reporterEmail: currentUser.email,
       reporterName: `${currentUser.firstName} ${currentUser.lastName}`,
       timestamp: new Date().toISOString(),
-      comments: []
+      comments: [
+        {
+          id: 'comm-' + Date.now(),
+          authorName: `${currentUser.firstName} ${currentUser.lastName}`,
+          authorEmail: currentUser.email,
+          text: 'Logged a Report',
+          timestamp: new Date().toISOString(),
+          isAdmin: currentUser.isAdmin
+        }
+      ]
     };
     setReports(prev => [newReport, ...prev]);
-    addChatMessage('Reports', 'Logged a Report');
   };
 
   const updateReportStatus = (reportId, status) => {

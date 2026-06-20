@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Send, ShieldAlert, Users, MessageSquare, Globe, Reply, Trash2, Flag, Smile, X, FileText } from 'lucide-react';
+import { Send, ShieldAlert, Users, MessageSquare, Globe, Reply, Trash2, Flag, Smile, X } from 'lucide-react';
 
 export default function StaffChat() {
   const { currentUser, chatMessages, addChatMessage, deleteChatMessage, addMessageReaction, submitReport, setCustomRole } = useApp();
@@ -75,17 +75,6 @@ export default function StaffChat() {
           <Users size={16} /> # staff-chat
         </button>
         <button 
-          onClick={() => setActiveChannel('Reports')}
-          style={{
-            ...styles.channelBtn,
-            background: activeChannel === 'Reports' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
-            borderColor: activeChannel === 'Reports' ? '#f59e0b' : 'transparent',
-            color: activeChannel === 'Reports' ? 'var(--color-text-main)' : '#9ca3af'
-          }}
-        >
-          <FileText size={16} /> # reports
-        </button>
-        <button 
           onClick={() => setActiveChannel('Security')}
           style={{
             ...styles.channelBtn,
@@ -114,7 +103,7 @@ export default function StaffChat() {
         <div style={styles.chatHeader}>
           <h2 style={styles.channelName}># {activeChannel.toLowerCase().replace(' ', '-')}</h2>
           <span style={styles.channelDesc}>
-            {activeChannel === 'Security' ? 'Restricted security operations channel.' : activeChannel === 'Reports' ? 'Channel for automated report logging.' : 'General staff communication channel.'}
+            {activeChannel === 'Security' ? 'Restricted security operations channel.' : 'General staff communication channel.'}
           </span>
         </div>
 
