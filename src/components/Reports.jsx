@@ -30,10 +30,16 @@ export default function Reports() {
       let finalEvidenceUrl = '';
       
       if (evidenceFile) {
-        const fileName = `reports/${Date.now()}_${Math.random().toString(36).substring(7)}_${evidenceFile.name}`;
-        const fileRef = storageRef(storage, fileName);
-        await uploadBytes(fileRef, evidenceFile);
-        finalEvidenceUrl = await getDownloadURL(fileRef);
+        if (evidenceFile.size > 5 * 1024 * 1024) {
+          alert('File is too large. Please upload a file smaller than 5MB.');
+          setIsUploading(false);
+          return;
+        }
+        finalEvidenceUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(evidenceFile);
+        });
       }
 
       submitReport({

@@ -53,13 +53,13 @@ export default function SettingsModal({ isOpen, onClose }) {
       let finalProfileUrl = profilePicture;
       
       if (imageSrc && croppedAreaPixels) {
-        // We have a new image to crop and upload
+        // Convert to base64 to avoid Firebase Storage hanging issues
         const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-        const fileName = `profiles/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-        const fileRef = storageRef(storage, fileName);
-        
-        await uploadBytes(fileRef, croppedImageBlob);
-        finalProfileUrl = await getDownloadURL(fileRef);
+        finalProfileUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(croppedImageBlob);
+        });
       }
 
       updateUserProfile(firstName, lastName, finalProfileUrl, robloxUsername);
