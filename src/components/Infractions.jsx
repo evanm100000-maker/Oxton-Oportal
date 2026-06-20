@@ -3,8 +3,10 @@ import { useApp } from '../context/AppContext';
 import { ShieldAlert, History, Lock, Trash2, ShieldCheck } from 'lucide-react';
 
 export default function Infractions() {
-  const { infractions, deleteInfraction, currentUser } = useApp();
+  const { infractions, deleteInfraction, appealInfraction, currentUser } = useApp();
   const [activeTab, setActiveTab] = useState(currentUser.isAdmin ? 'all' : 'my');
+  const [appealingId, setAppealingId] = useState(null);
+  const [appealText, setAppealText] = useState('');
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to remove this infraction?')) {
@@ -82,6 +84,34 @@ export default function Infractions() {
                     <h5 style={styles.boxLabel}>Reason / Details:</h5>
                     <p style={styles.messageText}>{inf.mainMessage}</p>
                   </div>
+
+                  {inf.appeal ? (
+                    <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid #3b82f6', borderRadius: '0 8px 8px 0' }}>
+                      <h5 style={{ ...styles.boxLabel, color: '#60a5fa', marginBottom: '4px' }}>Your Appeal:</h5>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: '#bfdbfe' }}>{inf.appeal.text}</p>
+                    </div>
+                  ) : (
+                    appealingId === inf.id ? (
+                      <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <textarea 
+                          value={appealText}
+                          onChange={e => setAppealText(e.target.value)}
+                          placeholder="Explain why you are appealing this consequence..."
+                          className="input-field"
+                          rows="2"
+                        />
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button onClick={() => { appealInfraction(inf.id, appealText); setAppealingId(null); setAppealText(''); }} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Submit Appeal</button>
+                          <button onClick={() => { setAppealingId(null); setAppealText(''); }} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Cancel</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '12px' }}>
+                        <button onClick={() => { setAppealingId(inf.id); setAppealText(''); }} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>Appeal Consequence</button>
+                      </div>
+                    )
+                  )}
+
                   <div style={styles.cardFooter}>
                     <span>Logged by Administrator: <strong>{inf.adminName}</strong></span>
                   </div>

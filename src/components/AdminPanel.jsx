@@ -69,6 +69,7 @@ export default function AdminPanel() {
   const [infType, setInfType] = useState('Warning');
   const [infMainMessage, setInfMainMessage] = useState('');
   const [infConfidentialMessage, setInfConfidentialMessage] = useState('');
+  const [expandedInfractions, setExpandedInfractions] = useState({});
 
   // Password reset state
   const [newPasswords, setNewPasswords] = useState({});
@@ -180,6 +181,14 @@ export default function AdminPanel() {
   const pendingFlightLogs = flightLogs.filter(log => log.status === 'Pending');
   const pendingPasswords = passwordResets.filter(r => r.status === 'Pending');
 
+  const groupedInfractions = Object.values(infractions.reduce((acc, inf) => {
+    if (!acc[inf.staffEmail]) acc[inf.staffEmail] = { name: inf.staffName, email: inf.staffEmail, items: [], suspensions: 0, regular: 0 };
+    acc[inf.staffEmail].items.push(inf);
+    if (inf.type === 'Suspension') acc[inf.staffEmail].suspensions++;
+    else acc[inf.staffEmail].regular++;
+    return acc;
+  }, {}));
+
   const isSuperAdmin = currentUser.email === superAdminEmail;
 
 
@@ -288,37 +297,68 @@ export default function AdminPanel() {
             </button>
           </div>
 
-          <div style={styles.tableWrapper}>
-            <table style={styles.table}>
-              <thead>
-                <tr style={styles.trHead}>
-                  <th style={styles.th}>Staff Member</th>
-                  <th style={styles.th}>Type</th>
-                  <th style={styles.th}>Message</th>
-                  <th style={styles.th}>Logged By</th>
-                  <th style={styles.th}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {infractions.map(inf => (
-                  <tr key={inf.id} style={styles.trBody}>
-                    <td style={styles.td}><strong>{inf.staffName}</strong><br />{inf.staffEmail}</td>
-                    <td style={styles.td}><span style={styles.infractionBadge}>{inf.type}</span></td>
-                    <td style={styles.td}>
-                      <div>{inf.mainMessage}</div>
-                      {inf.confidentialMessage && <div style={styles.confidentialNote}>Admin note: {inf.confidentialMessage}</div>}
-                    </td>
-                    <td style={styles.td}>{inf.adminName}<br />{inf.date}</td>
-                    <td style={styles.td}>
-                      <button type="button" onClick={() => deleteInfraction(inf.id)} className="btn-danger" style={styles.actionMiniBtn}>
-                        <Trash2 size={14} /> Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {infractions.length === 0 && <p style={{padding: '20px', color: '#9ca3af', textAlign: 'center'}}>No consequences logged.</p>}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {groupedInfractions.length === 0 ? (
+              <p style={{padding: '20px', color: '#9ca3af', textAlign: 'center'}}>No consequences logged.</p>
+            ) : (
+              groupedInfractions.map(group => (
+                <div key={group.email} className="glass-panel" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+                  <div 
+                    style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: 'rgba(255,255,255,0.05)' }}
+                    onClick={() => setExpandedInfractions(prev => ({ ...prev, [group.email]: !prev[group.email] }))}
+                  >
+                    <div>
+                      <h4 style={{ color: 'var(--color-text-main)', margin: 0 }}>{group.name}</h4>
+                      <span style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{group.email}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                      <span style={{ color: '#f87171', fontSize: '0.9rem' }}>{group.regular} Infractions</span>
+                      <span style={{ color: '#fb923c', fontSize: '0.9rem' }}>{group.suspensions} Suspensions</span>
+                    </div>
+                  </div>
+                  
+                  {expandedInfractions[group.email] && (
+                    <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                      <div style={styles.tableWrapper}>
+                        <table style={styles.table}>
+                          <thead>
+                            <tr style={styles.trHead}>
+                              <th style={styles.th}>Type</th>
+                              <th style={styles.th}>Message & Appeal</th>
+                              <th style={styles.th}>Logged By</th>
+                              <th style={styles.th}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {group.items.map(inf => (
+                              <tr key={inf.id} style={styles.trBody}>
+                                <td style={styles.td}><span style={styles.infractionBadge}>{inf.type}</span></td>
+                                <td style={styles.td}>
+                                  <div style={{ marginBottom: '8px' }}>{inf.mainMessage}</div>
+                                  {inf.appeal && (
+                                    <div style={{ padding: '8px', background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid #3b82f6', borderRadius: '4px', marginBottom: '8px' }}>
+                                      <span style={{ color: '#60a5fa', fontSize: '0.8rem', fontWeight: 'bold' }}>STAFF APPEAL:</span>
+                                      <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#bfdbfe' }}>{inf.appeal.text}</p>
+                                    </div>
+                                  )}
+                                  {inf.confidentialMessage && <div style={styles.confidentialNote}>Admin note: {inf.confidentialMessage}</div>}
+                                </td>
+                                <td style={styles.td}>{inf.adminName}<br />{inf.date}</td>
+                                <td style={styles.td}>
+                                  <button type="button" onClick={() => deleteInfraction(inf.id)} className="btn-danger" style={styles.actionMiniBtn}>
+                                    <Trash2 size={14} /> Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

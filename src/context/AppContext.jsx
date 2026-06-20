@@ -1160,6 +1160,20 @@ export const AppProvider = ({ children }) => {
     logAction('infraction_deleted', `Removed infraction ${infId}`, { infId });
   };
 
+  const appealInfraction = (infId, appealText) => {
+    setInfractions(prev => prev.map(inf => {
+      if (inf.id !== infId) return inf;
+      return {
+        ...inf,
+        appeal: {
+          text: appealText,
+          date: new Date().toISOString()
+        }
+      };
+    }));
+    logAction('infraction_appealed', `Appealed infraction ${infId}`, { infId });
+  };
+
   // Chat Operations
   const addChatMessage = (channel, text, replyTo = null) => {
     const newMessage = {
@@ -1384,6 +1398,7 @@ export const AppProvider = ({ children }) => {
         addReportComment,
         addInfraction,
         deleteInfraction,
+        appealInfraction,
         addTask,
         updateTaskStatus,
         deleteTask,
