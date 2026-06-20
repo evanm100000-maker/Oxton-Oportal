@@ -247,6 +247,8 @@ export const AppProvider = ({ children }) => {
   const [auditLogs, setAuditLogs] = useState(() => getStoredData(STORAGE_KEYS.auditLogs, []));
   const [passwordResets, setPasswordResets] = useState(() => getStoredData(STORAGE_KEYS.passwordResets, []));
   const [chatMessages, setChatMessages] = useState(() => getStoredData(STORAGE_KEYS.chatMessages, []));
+  const [onlineUsers, setOnlineUsers] = useState({});
+  const [siteVersion, setSiteVersion] = useState(null);
 
   // Sync state to LocalStorage
   const persistData = (key, value) => {
@@ -308,12 +310,53 @@ export const AppProvider = ({ children }) => {
         const data = snapshot.val();
         if (data) setMaintenanceConfig(data);
       });
+      const siteVersionRef = ref(db, 'siteVersion');
+      const unsubscribeSiteVersion = onValue(siteVersionRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) setSiteVersion(data);
+      });
+      const onlinePresenceRef = ref(db, 'onlinePresence');
+      const unsubscribeOnline = onValue(onlinePresenceRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          setOnlineUsers(data);
+        } else {
+          setOnlineUsers({});
+        }
+      });
       return () => {
-        // Firebase onValue returns an unsubscribe function in recent SDKs
         if (typeof unsubscribeWarning === 'function') unsubscribeWarning();
         if (typeof unsubscribeMaintenance === 'function') unsubscribeMaintenance();
+        if (typeof unsubscribeSiteVersion === 'function') unsubscribeSiteVersion();
+        if (typeof unsubscribeOnline === 'function') unsubscribeOnline();
       };
     }, []);
+
+    useEffect(() => {
+      if (!currentUser) return;
+      const db = getDatabase(firebaseApp);
+      const safeEmail = currentUser.email.replace(/\./g, ',');
+      const myPresenceRef = ref(db, `onlinePresence/${safeEmail}`);
+      const connectedRef = ref(db, '.info/connected');
+
+      let onDisconnectRef = null;
+
+      const unsubConnected = onValue(connectedRef, (snap) => {
+        if (snap.val() === true) {
+          import('firebase/database').then(({ onDisconnect, set }) => {
+             onDisconnectRef = onDisconnect(myPresenceRef);
+             onDisconnectRef.set(false).then(() => {
+               set(myPresenceRef, true);
+             });
+          });
+        }
+      });
+      return () => {
+        if (typeof unsubConnected === 'function') unsubConnected();
+        if (onDisconnectRef) onDisconnectRef.cancel();
+        set(myPresenceRef, false);
+      };
+    }, [currentUser]);
 
     const skipSyncRef = useRef({
       users: false, flights: false, flightLogs: false, loaRequests: false, 
@@ -681,6 +724,13 @@ export const AppProvider = ({ children }) => {
     logAction('maintenance_toggled', `Maintenance Mode set to ${isActive}`, { message });
   };
 
+  const publishUpdate = () => {
+    const db = getDatabase(firebaseApp);
+    const newVersion = `1.0.${Date.now()}`;
+    set(ref(db, 'siteVersion'), newVersion);
+    logAction('site_updated', `Triggered global site update to ${newVersion}`);
+  };
+
   // Flights Operations
   const addFlight = (flightData) => {
     const newFlight = {
@@ -712,12 +762,30 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
+  const setAllocationStatus = (flightId, email, status) => {
+    setFlights(prev => prev.map(f => {
+      if (f.id !== flightId) return f;
+      let currentStatus = f.staffStatus || {};
+      
+      // Auto-migrate legacy allocatedStaff to staffStatus format if empty
+      if (f.allocatedStaff && f.allocatedStaff.length > 0 && Object.keys(currentStatus).length === 0) {
+        f.allocatedStaff.forEach(e => {
+          currentStatus[e] = 'Attending';
+        });
+      }
+      
+      const newStatus = { ...currentStatus, [email]: status };
+      return { ...f, staffStatus: newStatus };
+    }));
+  };
+
   const allocateStaffDirectly = (flightId, email) => {
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
       const currentStaff = f.allocatedStaff || [];
-      if (currentStaff.includes(email)) return f;
-      return { ...f, allocatedStaff: [...currentStaff, email] };
+      const currentStatus = f.staffStatus || {};
+      if (currentStaff.includes(email) || currentStatus[email] === 'Attending') return f;
+      return { ...f, allocatedStaff: [...currentStaff, email], staffStatus: { ...currentStatus, [email]: 'Attending' } };
     }));
   };
 
@@ -725,7 +793,10 @@ export const AppProvider = ({ children }) => {
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
       const currentStaff = f.allocatedStaff || [];
-      return { ...f, allocatedStaff: currentStaff.filter(e => e !== email) };
+      const currentStatus = f.staffStatus || {};
+      const newStatus = { ...currentStatus };
+      delete newStatus[email];
+      return { ...f, allocatedStaff: currentStaff.filter(e => e !== email), staffStatus: newStatus };
     }));
   };
 
@@ -739,6 +810,7 @@ export const AppProvider = ({ children }) => {
       passengers: parseInt(logData.passengers) || 0,
       status: 'Pending', // changed to Pending so admin can approve
       notes: logData.notes,
+      photoProof: logData.photoProof,
       submitterEmail: currentUser.email,
       submitterName: `${currentUser.firstName} ${currentUser.lastName}`,
       timestamp: new Date().toISOString()
@@ -950,6 +1022,8 @@ export const AppProvider = ({ children }) => {
         documents,
         reports,
         infractions,
+        onlineUsers,
+        siteVersion,
         theme,
         warningConfig,
         maintenanceConfig,
@@ -971,9 +1045,11 @@ export const AppProvider = ({ children }) => {
         unsuspendUser,
         setWarning,
         setMaintenance,
+        publishUpdate,
         addFlight,
         removeFlight,
         toggleAllocation,
+        setAllocationStatus,
         allocateStaffDirectly,
         deallocateStaffDirectly,
         submitFlightLog,

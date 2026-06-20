@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './context/AppContext';
 import LoginScreen from './components/LoginScreen';
 import Dashboard from './components/Dashboard';
 import WarningBanner from './components/WarningBanner';
+import UpdateBanner from './components/UpdateBanner';
 import MaintenanceScreen from './components/MaintenanceScreen';
 import SuspendedScreen from './components/SuspendedScreen';
 import { useState } from 'react';
@@ -33,6 +34,7 @@ function MainApp() {
   return (
     <>
       <WarningBanner />
+      <UpdateBanner />
       {currentUser ? <Dashboard /> : <LoginScreen />}
     </>
   );

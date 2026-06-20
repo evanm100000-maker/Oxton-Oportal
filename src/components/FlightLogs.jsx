@@ -15,11 +15,12 @@ export default function FlightLogs() {
   const [passengers, setPassengers] = useState('');
   const [status, setStatus] = useState('Completed');
   const [notes, setNotes] = useState('');
+  const [photoProof, setPhotoProof] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const finalFlightCode = flightCode === 'Custom' ? customFlightCode.trim() : flightCode;
-    if (!finalFlightCode || !pilot.trim()) return;
+    if (!finalFlightCode || !pilot.trim() || !photoProof.trim()) return;
 
     submitFlightLog({
       flightCode: finalFlightCode,
@@ -27,7 +28,8 @@ export default function FlightLogs() {
       coPilot,
       passengers,
       status,
-      notes
+      notes,
+      photoProof: photoProof.trim()
     });
 
     // Reset Form
@@ -37,6 +39,7 @@ export default function FlightLogs() {
     setPassengers('');
     setStatus('Completed');
     setNotes('');
+    setPhotoProof('');
     setSuccessMsg('Flight log submitted successfully!');
     setActiveTab('history');
     setTimeout(() => setSuccessMsg(''), 4000);
@@ -190,7 +193,19 @@ export default function FlightLogs() {
           </div>
 
           <div style={styles.inputWrapper}>
-            <label style={styles.label}>Log Notes & Incidents</label>
+            <label style={styles.label}>Photo Proof (Image URL) *</label>
+            <input
+              type="url"
+              required
+              value={photoProof}
+              onChange={(e) => setPhotoProof(e.target.value)}
+              placeholder="e.g. https://imgur.com/your-image.png"
+              className="input-field"
+            />
+          </div>
+
+          <div style={styles.inputWrapper}>
+            <label style={styles.label}>Comment (Optional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -254,6 +269,17 @@ export default function FlightLogs() {
                       <span style={styles.roleValue}>{log.passengers}</span>
                     </div>
                   </div>
+
+                  {log.photoProof && (
+                    <div style={styles.logRolesGrid}>
+                      <div style={styles.roleBox}>
+                        <span style={styles.roleLabel}>PHOTO PROOF</span>
+                        <a href={log.photoProof} target="_blank" rel="noreferrer" style={{...styles.roleValue, color: '#3b82f6', textDecoration: 'underline', wordBreak: 'break-all'}}>
+                          View Image
+                        </a>
+                      </div>
+                    </div>
+                  )}
 
                   {log.notes && (
                     <div style={styles.logNotes}>

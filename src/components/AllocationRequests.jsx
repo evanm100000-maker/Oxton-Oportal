@@ -6,7 +6,7 @@ export default function AllocationRequests() {
   const { 
     flights, 
     currentUser, 
-    toggleAllocation, 
+    setAllocationStatus, 
     allocateStaffDirectly, 
     deallocateStaffDirectly,
     removeFlight,
@@ -16,8 +16,29 @@ export default function AllocationRequests() {
 
   const [directAssignEmail, setDirectAssignEmail] = useState({});
 
-  const isStaffAllocated = (flight, email) => {
-    return (flight.allocatedStaff || []).includes(email);
+  const getMyStatus = (flight, email) => {
+    if (flight.staffStatus && flight.staffStatus[email]) return flight.staffStatus[email];
+    if ((flight.allocatedStaff || []).includes(email)) return 'Attending';
+    return 'Undecided';
+  };
+
+  const getStaffList = (flight, targetStatus) => {
+    let list = [];
+    if (targetStatus === 'Attending') {
+      (flight.allocatedStaff || []).forEach(e => {
+        if (!list.includes(e) && (!flight.staffStatus || flight.staffStatus[e] === 'Attending' || !flight.staffStatus[e])) {
+          list.push(e);
+        }
+      });
+    }
+    if (flight.staffStatus) {
+      Object.keys(flight.staffStatus).forEach(e => {
+        if (flight.staffStatus[e] === targetStatus && !list.includes(e)) {
+          list.push(e);
+        }
+      });
+    }
+    return list;
   };
 
   const getStaffNameByEmail = (email) => {
@@ -52,7 +73,7 @@ export default function AllocationRequests() {
       ) : (
         <div style={styles.flightGrid}>
           {flights.map((flight) => {
-            const isAllocated = isStaffAllocated(flight, currentUser.email);
+            const myStatus = getMyStatus(flight, currentUser.email);
             return (
               <div key={flight.id} style={styles.flightCard} className="glass-panel">
                 <div style={styles.flightHeader}>
@@ -89,55 +110,80 @@ export default function AllocationRequests() {
                 <div style={styles.crewSection}>
                   <div style={styles.crewHeader}>
                     <Users size={16} color="#06b6d4" />
-                    <span style={styles.crewTitle}>Crew Allocation ({(flight.allocatedStaff || []).length})</span>
+                    <span style={styles.crewTitle}>Crew Allocation</span>
                   </div>
                   
-                  {(flight.allocatedStaff || []).length === 0 ? (
-                    <p style={styles.emptyCrewText}>No crew allocated yet.</p>
-                  ) : (
-                    <div style={styles.crewList}>
-                      {(flight.allocatedStaff || []).filter(email => activeUsers.some(user => user.email === email)).map((email) => (
-                        <div key={email} style={styles.crewBadge}>
-                          <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}</span>
-                          {currentUser.isAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => deallocateStaffDirectly(flight.id, email)}
-                              style={styles.removeCrewBtn}
-                              title="Deallocate Staff"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {(() => {
+                    const attending = getStaffList(flight, 'Attending').filter(email => activeUsers.some(user => user.email === email));
+                    const absent = getStaffList(flight, 'Absent').filter(email => activeUsers.some(user => user.email === email));
+
+                    if (attending.length === 0 && absent.length === 0) {
+                      return <p style={styles.emptyCrewText}>No crew responses yet.</p>;
+                    }
+
+                    return (
+                      <div style={styles.crewList}>
+                        {attending.map((email) => (
+                          <div key={`att-${email}`} style={styles.crewBadge}>
+                            <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}</span>
+                            {currentUser.isAdmin && (
+                              <button
+                                type="button"
+                                onClick={() => deallocateStaffDirectly(flight.id, email)}
+                                style={styles.removeCrewBtn}
+                                title="Deallocate Staff"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        {absent.map((email) => (
+                          <div key={`abs-${email}`} style={{...styles.crewBadge, background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)'}}>
+                            <span style={{...styles.crewBadgeText, color: '#fca5a5'}}>{getStaffNameByEmail(email)} (Absent)</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div style={styles.actionContainer}>
-                  <button
-                    onClick={() => toggleAllocation(flight.id, currentUser.email)}
-                    className={isAllocated ? "btn-secondary" : "btn-primary"}
-                    style={{
-                      ...styles.actionBtn,
-                      background: isAllocated ? 'rgba(239, 68, 68, 0.1)' : undefined,
-                      borderColor: isAllocated ? '#ef4444' : undefined,
-                      color: isAllocated ? '#ef4444' : undefined,
-                    }}
-                  >
-                    {isAllocated ? (
-                      <>
-                        <UserMinus size={16} />
-                        Leave Crew Shift
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus size={16} />
-                        Request Crew Slot
-                      </>
-                    )}
-                  </button>
+                  <div style={styles.statusButtonsContainer}>
+                    <button
+                      onClick={() => setAllocationStatus(flight.id, currentUser.email, 'Attending')}
+                      style={{
+                        ...styles.statusBtn,
+                        background: getMyStatus(flight, currentUser.email) === 'Attending' ? '#10b981' : 'rgba(255,255,255,0.05)',
+                        color: getMyStatus(flight, currentUser.email) === 'Attending' ? '#fff' : '#e5e7eb',
+                        border: getMyStatus(flight, currentUser.email) === 'Attending' ? '1px solid #059669' : '1px solid rgba(255,255,255,0.1)'
+                      }}
+                    >
+                      Attending
+                    </button>
+                    <button
+                      onClick={() => setAllocationStatus(flight.id, currentUser.email, 'Undecided')}
+                      style={{
+                        ...styles.statusBtn,
+                        background: getMyStatus(flight, currentUser.email) === 'Undecided' ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                        color: getMyStatus(flight, currentUser.email) === 'Undecided' ? '#fff' : '#e5e7eb',
+                        border: getMyStatus(flight, currentUser.email) === 'Undecided' ? '1px solid #2563eb' : '1px solid rgba(255,255,255,0.1)'
+                      }}
+                    >
+                      Not yet decided
+                    </button>
+                    <button
+                      onClick={() => setAllocationStatus(flight.id, currentUser.email, 'Absent')}
+                      style={{
+                        ...styles.statusBtn,
+                        background: getMyStatus(flight, currentUser.email) === 'Absent' ? '#ef4444' : 'rgba(255,255,255,0.05)',
+                        color: getMyStatus(flight, currentUser.email) === 'Absent' ? '#fff' : '#e5e7eb',
+                        border: getMyStatus(flight, currentUser.email) === 'Absent' ? '1px solid #dc2626' : '1px solid rgba(255,255,255,0.1)'
+                      }}
+                    >
+                      Absent
+                    </button>
+                  </div>
 
                   <a
                     href={flight.serverLink}
@@ -322,16 +368,20 @@ const styles = {
     gap: '12px',
     marginTop: 'auto',
   },
-  actionBtn: {
-    flex: 1.3,
-    padding: '10px 14px',
-    borderRadius: '8px',
-    fontSize: '0.85rem',
+  statusButtonsContainer: {
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: '8px',
+    flex: 1.3,
+    flexWrap: 'wrap',
+  },
+  statusBtn: {
+    flex: '1 1 calc(33.333% - 6px)',
+    padding: '10px 8px',
+    borderRadius: '8px',
+    fontSize: '0.8rem',
     cursor: 'pointer',
+    textAlign: 'center',
+    transition: 'all 0.2s',
   },
   linkBtn: {
     flex: 1,

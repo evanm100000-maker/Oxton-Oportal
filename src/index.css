@@ -395,6 +395,12 @@ button {
 
 /* Mobile Responsiveness Overrides */
 @media screen and (max-width: 800px) {
+  .warning-banner-container {
+    bottom: auto !important;
+    top: 0 !important;
+    padding-top: 16px !important;
+  }
+
   .dashboard-navbar {
     flex-direction: column !important;
     gap: 16px !important;

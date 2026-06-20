@@ -17,6 +17,7 @@ import AdminPanel from './AdminPanel';
 import Leaderboard from './Leaderboard';
 import SettingsModal from './SettingsModal';
 import StaffChat from './StaffChat';
+import AllStaff from './AllStaff';
 
 export default function Dashboard() {
   const { currentUser, logout, chatMessages, infractions } = useApp();
@@ -24,6 +25,10 @@ export default function Dashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [lastReadChatCount, setLastReadChatCount] = useState(() => {
     return parseInt(localStorage.getItem(`oxton_chat_read_${currentUser.email}`) || '0', 10);
+  });
+  const { flights } = useApp();
+  const [lastReadFlightCount, setLastReadFlightCount] = useState(() => {
+    return parseInt(localStorage.getItem(`oxton_flight_read_${currentUser.email}`) || '0', 10);
   });
   const getReviewedInfractionIds = React.useCallback(() => {
     try {
@@ -40,9 +45,14 @@ export default function Dashboard() {
       setLastReadChatCount(chatMessages.length);
       localStorage.setItem(`oxton_chat_read_${currentUser.email}`, chatMessages.length);
     }
-  }, [activeTab, chatMessages.length, currentUser.email]);
+    if (activeTab === 'allocation') {
+      setLastReadFlightCount(flights.length);
+      localStorage.setItem(`oxton_flight_read_${currentUser.email}`, flights.length);
+    }
+  }, [activeTab, chatMessages.length, flights.length, currentUser.email]);
 
   const unreadChatCount = Math.max(0, chatMessages.length - lastReadChatCount);
+  const unreadFlightCount = Math.max(0, flights.length - lastReadFlightCount);
   const myInfractions = React.useMemo(
     () => infractions.filter(inf => inf.staffEmail === currentUser.email),
     [infractions, currentUser.email]
@@ -87,7 +97,16 @@ export default function Dashboard() {
       description: 'View airport flight allocations and server connections.',
       icon: Plane,
       color: '#2563eb', // Blue
-      component: AllocationRequests
+      component: AllocationRequests,
+      badgeCount: unreadFlightCount
+    },
+    {
+      id: 'allStaff',
+      title: 'All Staff',
+      description: 'View the complete staff roster and online presence.',
+      icon: User,
+      color: '#8b5cf6', // Purple
+      component: AllStaff
     },
     {
       id: 'logs',
