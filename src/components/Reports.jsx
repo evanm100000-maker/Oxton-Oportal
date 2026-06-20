@@ -255,7 +255,7 @@ export default function Reports() {
                         <h5 style={styles.threadTitle}>Case Discussion & Admin Inquiry</h5>
                         
                         <div style={styles.commentsList}>
-                          {report.comments?.length === 0 ? (
+                          {!report.comments || report.comments.length === 0 ? (
                             <p style={styles.emptyThreadText}>No messages logged. Admin replies or inquiries will appear here.</p>
                           ) : (
                             report.comments.map(c => (
