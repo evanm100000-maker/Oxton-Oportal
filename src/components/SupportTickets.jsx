@@ -52,6 +52,13 @@ export default function SupportTickets() {
         )}
       </div>
 
+      {!currentUser.isAdmin && (
+        <div style={{...styles.sectionNotice, background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: '#93c5fd', fontSize: '0.9rem', marginBottom: '16px'}}>
+          <ShieldAlert size={18} />
+          <span><strong>Privacy Notice:</strong> Tickets you create here are strictly confidential. Only you and Administrators can view your tickets. No other staff member can see this.</span>
+        </div>
+      )}
+
       {showForm && !currentUser.isAdmin && (
         <form onSubmit={handleSubmit} className="glass-panel" style={styles.form}>
           <h4 style={styles.formTitle}>Create Support Ticket</h4>

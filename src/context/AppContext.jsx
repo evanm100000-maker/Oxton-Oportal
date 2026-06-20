@@ -188,6 +188,16 @@ const initialInfractions = [];
 const initialTasks = [];
 const initialTickets = [];
 const initialStaffNotes = [];
+const initialAnnouncements = [
+  {
+    id: 'ann-1',
+    type: 'Normal',
+    message: 'Welcome to the new Oxton Staff Portal. Please check the documents for updated operating procedures.',
+    authorName: 'System',
+    authorEmail: 'System',
+    timestamp: '2026-06-10T12:00:00Z'
+  }
+];
 
 const STORAGE_KEYS = {
   users: 'oxton_users',
@@ -207,6 +217,7 @@ const STORAGE_KEYS = {
   auditLogs: 'oxton_audit_logs',
   passwordResets: 'oxton_password_resets',
   chatMessages: 'oxton_chat_messages',
+  announcements: 'oxton_announcements',
 };
 
 const isActiveStaff = (user) => (
@@ -259,6 +270,7 @@ export const AppProvider = ({ children }) => {
   const [auditLogs, setAuditLogs] = useState(() => getStoredData(STORAGE_KEYS.auditLogs, []));
   const [passwordResets, setPasswordResets] = useState(() => getStoredData(STORAGE_KEYS.passwordResets, []));
   const [chatMessages, setChatMessages] = useState(() => getStoredData(STORAGE_KEYS.chatMessages, []));
+  const [announcements, setAnnouncements] = useState(() => getStoredData(STORAGE_KEYS.announcements, initialAnnouncements));
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
 
@@ -300,6 +312,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { persistData(STORAGE_KEYS.auditLogs, auditLogs); }, [auditLogs]);
   useEffect(() => { persistData(STORAGE_KEYS.passwordResets, passwordResets); }, [passwordResets]);
   useEffect(() => { persistData(STORAGE_KEYS.chatMessages, chatMessages); }, [chatMessages]);
+  useEffect(() => { persistData(STORAGE_KEYS.announcements, announcements); }, [announcements]);
 
   useEffect(() => {
       if (!currentUser) return;
@@ -357,6 +370,7 @@ export const AppProvider = ({ children }) => {
           set(ref(db, 'staffNotes'), initialStaffNotes);
           set(ref(db, 'warningConfig'), initialWarningConfig);
           set(ref(db, 'maintenanceConfig'), initialMaintenanceConfig);
+          set(ref(db, 'announcements'), initialAnnouncements);
           set(ref(db, 'siteVersion'), initialVersion);
           setSiteVersion(initialVersion);
         }
@@ -407,14 +421,14 @@ export const AppProvider = ({ children }) => {
     const skipSyncRef = useRef({
       users: false, flights: false, flightLogs: false, loaRequests: false, 
       documents: false, reports: false, infractions: false, tasks: false, tickets: false, staffNotes: false, auditLogs: false, 
-      passwordResets: false, chatMessages: false, theme: false,
+      passwordResets: false, chatMessages: false, theme: false, announcements: false,
       warningConfig: false, maintenanceConfig: false
     });
     
     const hasLoadedRef = useRef({
       users: false, flights: false, flightLogs: false, loaRequests: false, 
       documents: false, reports: false, infractions: false, tasks: false, tickets: false, staffNotes: false, auditLogs: false, 
-      passwordResets: false, chatMessages: false, theme: false,
+      passwordResets: false, chatMessages: false, theme: false, announcements: false,
       warningConfig: false, maintenanceConfig: false
     });
 
@@ -459,6 +473,7 @@ export const AppProvider = ({ children }) => {
       const unsubAudit = setupListener('auditLogs', setAuditLogs);
       const unsubPwdResets = setupListener('passwordResets', setPasswordResets);
       const unsubChat = setupListener('chatMessages', setChatMessages);
+      const unsubAnnouncements = setupListener('announcements', setAnnouncements, []);
       const unsubTheme = setupListener('theme', setTheme, 'dark');
 
       return () => {
@@ -475,6 +490,7 @@ export const AppProvider = ({ children }) => {
         if (typeof unsubAudit === 'function') unsubAudit();
         if (typeof unsubPwdResets === 'function') unsubPwdResets();
         if (typeof unsubChat === 'function') unsubChat();
+        if (typeof unsubAnnouncements === 'function') unsubAnnouncements();
         if (typeof unsubTheme === 'function') unsubTheme();
       };
     }, []);
@@ -506,6 +522,7 @@ export const AppProvider = ({ children }) => {
     useEffect(() => { syncToFirebase('auditLogs', auditLogs); }, [auditLogs]);
     useEffect(() => { syncToFirebase('passwordResets', passwordResets); }, [passwordResets]);
     useEffect(() => { syncToFirebase('chatMessages', chatMessages); }, [chatMessages]);
+    useEffect(() => { syncToFirebase('announcements', announcements); }, [announcements]);
     useEffect(() => { syncToFirebase('theme', theme); }, [theme]);
 
   // Sync state across tabs automatically
@@ -526,6 +543,7 @@ export const AppProvider = ({ children }) => {
       if (key === STORAGE_KEYS.documents) setDocuments(value);
       if (key === STORAGE_KEYS.auditLogs) setAuditLogs(value);
       if (key === STORAGE_KEYS.passwordResets) setPasswordResets(value);
+      if (key === STORAGE_KEYS.announcements) setAnnouncements(value);
       if (key === STORAGE_KEYS.theme) setTheme(value);
     };
 
@@ -595,8 +613,17 @@ export const AppProvider = ({ children }) => {
           return;
         }
         
-        setCurrentUser(user);
-        resolve(user);
+        // Track login activity
+        const now = new Date().toISOString();
+        const loginHistory = user.loginHistory || [];
+        loginHistory.push(now);
+        // keep only the last 30 logins for sanity
+        if (loginHistory.length > 30) loginHistory.shift();
+
+        const updatedUser = { ...user, loginHistory };
+        setUsers(prev => prev.map(u => u.email === updatedUser.email ? updatedUser : u));
+        setCurrentUser(updatedUser);
+        resolve(updatedUser);
       }, 1200); 
     });
   };
@@ -675,8 +702,9 @@ export const AppProvider = ({ children }) => {
   };
 
   // User Settings
-  const updateUserProfile = (firstName, lastName, profilePicture, robloxUsername) => {
-    const updatedUser = { ...currentUser, firstName, lastName, profilePicture, robloxUsername };
+  const updateUserProfile = (email, firstName, lastName, profilePicture, robloxUsername) => {
+    const safeEmail = email ? email.toLowerCase().trim() : currentUser.email;
+    const updatedUser = { ...currentUser, email: safeEmail, firstName, lastName, profilePicture, robloxUsername };
     setCurrentUser(updatedUser);
     setUsers(prev => prev.map(u => u.email === currentUser.email ? updatedUser : u));
   };
@@ -723,6 +751,25 @@ export const AppProvider = ({ children }) => {
     logAction('points_added', `Added ${amount} points to ${email}`, { email, amount, reason });
   };
 
+  const suspendUser = (email, hours, reason) => {
+    if (!currentUser.isAdmin) return;
+    const suspendedUntil = new Date(Date.now() + hours * 3600000).toISOString();
+    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil } : u));
+    logAction('user_suspended', `Suspended ${email} for ${hours} hours. Reason: ${reason}`, { email, hours, reason, suspendedUntil });
+    
+    addInfraction({
+      staffEmail: email,
+      type: 'Suspension',
+      mainMessage: `Suspended for ${hours} hours. Reason: ${reason}`,
+      confidentialMessage: `Expires ${new Date(suspendedUntil).toLocaleString()}`
+    });
+  };
+
+  const unsuspendUser = (email) => {
+    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil: null } : u));
+    logAction('user_unsuspended', `Unsuspended ${email}`, { email });
+  };
+
   const promoteToAdmin = (email) => {
     if (currentUser?.email !== SUPER_ADMIN_EMAIL) return;
     setUsers(prev => prev.map(u => u.email === email ? { ...u, isAdmin: true } : u));
@@ -749,32 +796,6 @@ export const AppProvider = ({ children }) => {
     logAction('custom_role_assigned', `Assigned custom role "${customRole}" to ${email}`, { email, customRole });
   };
 
-  const suspendUser = (email, durationHours) => {
-    const suspendedUntil = new Date(Date.now() + durationHours * 60 * 60 * 1000).toISOString();
-    const staffUser = users.find(u => u.email === email);
-    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil } : u));
-    setFlights(prev => prev.map(f => ({
-      ...f,
-      allocatedStaff: (f.allocatedStaff || []).filter(staffEmail => staffEmail !== email)
-    })));
-    setInfractions(prev => [{
-      id: makeId('inf'),
-      staffEmail: email,
-      staffName: staffUser ? `${staffUser.firstName} ${staffUser.lastName}` : email,
-      type: 'Suspension',
-      mainMessage: `Account suspended for ${durationHours} hour${durationHours === 1 ? '' : 's'}.`,
-      confidentialMessage: `Suspension expires ${new Date(suspendedUntil).toLocaleString()}.`,
-      adminEmail: currentUser?.email || 'System',
-      adminName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'System',
-      date: new Date().toISOString().split('T')[0]
-    }, ...prev]);
-    logAction('user_suspended', `Suspended ${email} for ${durationHours} hours`, { email, durationHours, suspendedUntil });
-  };
-
-  const unsuspendUser = (email) => {
-    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil: null } : u));
-    logAction('user_unsuspended', `Unsuspended ${email}`, { email });
-  };
 
   // System Status Operations
   const setWarning = (isActive, title, message, type = 'warning') => {
@@ -1117,6 +1138,23 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
+  // Announcements Operations
+  const addAnnouncement = (annData) => {
+    const newAnn = {
+      id: makeId('ann'),
+      type: annData.type,
+      message: annData.message,
+      authorEmail: currentUser.email,
+      authorName: `${currentUser.firstName} ${currentUser.lastName}`,
+      timestamp: new Date().toISOString()
+    };
+    setAnnouncements(prev => [newAnn, ...prev]);
+  };
+
+  const deleteAnnouncement = (annId) => {
+    setAnnouncements(prev => prev.filter(a => a.id !== annId));
+  };
+
   // --- Tasks Operations ---
   const addTask = (taskData) => {
     const newTask = {
@@ -1280,6 +1318,9 @@ export const AppProvider = ({ children }) => {
         addChatMessage,
         deleteChatMessage,
         addMessageReaction,
+        announcements,
+        addAnnouncement,
+        deleteAnnouncement,
         requestPasswordReset,
         approvePasswordReset,
         rejectPasswordReset,

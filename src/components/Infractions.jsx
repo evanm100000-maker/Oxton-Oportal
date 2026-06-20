@@ -13,7 +13,9 @@ export default function Infractions() {
   };
 
   // Filter infractions based on role
-  const myInfractions = infractions.filter(inf => inf.staffEmail === currentUser.email);
+  const myLogs = infractions.filter(inf => inf.staffEmail === currentUser.email);
+  const mySuspensions = myLogs.filter(inf => inf.type === 'Suspension');
+  const myRegularInfractions = myLogs.filter(inf => inf.type !== 'Suspension');
 
   return (
     <div style={styles.container}>
@@ -30,7 +32,7 @@ export default function Infractions() {
             }}
           >
             <History size={16} />
-            All Staff Infractions ({infractions.length})
+            All Staff Consequences ({infractions.length})
           </button>
         </div>
       )}
@@ -41,27 +43,43 @@ export default function Infractions() {
           <div style={styles.sectionNotice} className="glass-panel">
             <ShieldCheck size={18} color="#10b981" />
             <p style={styles.noticeText}>
-              Below is your official file record. Infractions are logged by administrators and reviewable during evaluation.
+              Below is your official file record. Consequences are logged by administrators and reviewable during evaluation.
             </p>
           </div>
 
-          {myInfractions.length === 0 ? (
+          <div style={{ display: 'flex', gap: '20px', marginBottom: '10px', flexWrap: 'wrap' }}>
+             <div className="glass-panel" style={{ flex: 1, minWidth: '150px', padding: '20px', textAlign: 'center', borderRadius: '12px', border: '1px solid rgba(248, 113, 113, 0.2)' }}>
+                <h4 style={{ color: '#9ca3af', margin: 0, fontSize: '0.9rem', textTransform: 'uppercase' }}>Total Infractions</h4>
+                <p style={{ fontSize: '2.5rem', color: '#f87171', fontWeight: 'bold', margin: '10px 0' }}>{myRegularInfractions.length}</p>
+             </div>
+             <div className="glass-panel" style={{ flex: 1, minWidth: '150px', padding: '20px', textAlign: 'center', borderRadius: '12px', border: '1px solid rgba(251, 146, 60, 0.2)' }}>
+                <h4 style={{ color: '#9ca3af', margin: 0, fontSize: '0.9rem', textTransform: 'uppercase' }}>Total Suspensions</h4>
+                <p style={{ fontSize: '2.5rem', color: '#fb923c', fontWeight: 'bold', margin: '10px 0' }}>{mySuspensions.length}</p>
+             </div>
+          </div>
+
+          {myLogs.length === 0 ? (
             <div style={styles.emptyState}>
               <ShieldCheck size={48} color="rgba(16, 185, 129, 0.15)" />
-              <p style={{ ...styles.emptyText, color: '#10b981' }}>Your record is clean! No infractions logged.</p>
+              <p style={{ ...styles.emptyText, color: '#10b981' }}>Your record is clean! No consequences logged.</p>
             </div>
           ) : (
             <div style={styles.list}>
-              {myInfractions.map(inf => (
+              {myLogs.map(inf => (
                 <div key={inf.id} style={styles.infractionCard} className="glass-panel">
                   <div style={styles.cardHeader}>
                     <div style={styles.typeBadgeContainer}>
-                      <span style={styles.infractionType}>{inf.type}</span>
+                      <span style={{
+                        ...styles.infractionType, 
+                        background: inf.type === 'Suspension' ? 'rgba(251, 146, 60, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        color: inf.type === 'Suspension' ? '#fb923c' : '#f87171',
+                        border: inf.type === 'Suspension' ? '1px solid rgba(251, 146, 60, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
+                      }}>{inf.type}</span>
                     </div>
                     <span style={styles.infDate}>{inf.date}</span>
                   </div>
                   <div style={styles.messageBox}>
-                    <h5 style={styles.boxLabel}>Log Details:</h5>
+                    <h5 style={styles.boxLabel}>Reason / Details:</h5>
                     <p style={styles.messageText}>{inf.mainMessage}</p>
                   </div>
                   <div style={styles.cardFooter}>
@@ -80,7 +98,7 @@ export default function Infractions() {
           {infractions.length === 0 ? (
             <div style={styles.emptyState}>
               <ShieldAlert size={48} color="rgba(255,255,255,0.15)" />
-              <p style={styles.emptyText}>No infractions logged in the system.</p>
+              <p style={styles.emptyText}>No consequences logged in the system.</p>
             </div>
           ) : (
             <div style={styles.list}>
@@ -106,7 +124,7 @@ export default function Infractions() {
                         onClick={() => handleDelete(inf.id)}
                         className="btn-danger"
                         style={styles.deleteBtn}
-                        title="Remove Infraction"
+                        title="Remove Consequence"
                       >
                         <Trash2 size={14} />
                       </button>

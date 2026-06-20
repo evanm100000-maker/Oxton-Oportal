@@ -10,6 +10,7 @@ export default function SettingsModal({ isOpen, onClose }) {
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
   const [robloxUsername, setRobloxUsername] = useState('');
   
@@ -24,6 +25,7 @@ export default function SettingsModal({ isOpen, onClose }) {
     if (currentUser) {
       setFirstName(currentUser.firstName || '');
       setLastName(currentUser.lastName || '');
+      setEmail(currentUser.email || '');
       setProfilePicture(currentUser.profilePicture || '');
       setRobloxUsername(currentUser.robloxUsername || '');
       setImageSrc(null);
@@ -62,7 +64,7 @@ export default function SettingsModal({ isOpen, onClose }) {
         });
       }
 
-      updateUserProfile(firstName, lastName, finalProfileUrl, robloxUsername);
+      updateUserProfile(email, firstName, lastName, finalProfileUrl, robloxUsername);
       onClose();
     } catch (err) {
       console.error('Error uploading profile picture:', err);
@@ -100,12 +102,11 @@ export default function SettingsModal({ isOpen, onClose }) {
               </div>
             </div>
             <div style={styles.inputGroup}>
-              <label style={styles.label}>Last Name</label>
+              <label style={styles.label}>Last Name (Optional)</label>
               <div style={styles.inputInner}>
                 <User size={16} style={styles.inputIcon} />
                 <input
                   type="text"
-                  required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   className="input-field"
@@ -148,18 +149,34 @@ export default function SettingsModal({ isOpen, onClose }) {
             )}
           </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Roblox Username</label>
-            <div style={styles.inputInner}>
-              <User size={16} style={styles.inputIcon} />
-              <input
-                type="text"
-                required
-                value={robloxUsername}
-                onChange={(e) => setRobloxUsername(e.target.value)}
-                className="input-field"
-                style={{ paddingLeft: '36px' }}
-              />
+          <div style={styles.row}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Email Address</label>
+              <div style={styles.inputInner}>
+                <User size={16} style={styles.inputIcon} />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-field"
+                  style={{ paddingLeft: '36px' }}
+                />
+              </div>
+            </div>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Roblox Username</label>
+              <div style={styles.inputInner}>
+                <User size={16} style={styles.inputIcon} />
+                <input
+                  type="text"
+                  required
+                  value={robloxUsername}
+                  onChange={(e) => setRobloxUsername(e.target.value)}
+                  className="input-field"
+                  style={{ paddingLeft: '36px' }}
+                />
+              </div>
             </div>
           </div>
 

@@ -7,39 +7,38 @@ export default function FlightLogs() {
   const [activeTab, setActiveTab] = useState('submit');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Form state
-  const [flightCode, setFlightCode] = useState('');
-  const [customFlightCode, setCustomFlightCode] = useState('');
   const [pilot, setPilot] = useState(currentUser.robloxUsername || '');
-  const [coPilot, setCoPilot] = useState('');
-  const [passengers, setPassengers] = useState('');
-  const [status, setStatus] = useState('Completed');
   const [notes, setNotes] = useState('');
-  const [photoProof, setPhotoProof] = useState('');
+  const [photoProof, setPhotoProof] = useState(null);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPhotoProof(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const finalFlightCode = flightCode === 'Custom' ? customFlightCode.trim() : flightCode;
-    if (!finalFlightCode || !pilot.trim() || !photoProof.trim()) return;
+    if (!pilot.trim() || !photoProof) return;
 
     submitFlightLog({
-      flightCode: finalFlightCode,
+      flightCode: 'Flight Log',
       pilot: pilot.trim(),
-      coPilot,
-      passengers,
-      status,
+      status: 'Completed',
       notes,
-      photoProof: photoProof.trim()
+      photoProof
     });
 
     // Reset Form
-    setFlightCode('');
-    setCustomFlightCode('');
-    setCoPilot('');
-    setPassengers('');
-    setStatus('Completed');
+    setPilot(currentUser.robloxUsername || '');
     setNotes('');
-    setPhotoProof('');
+    setPhotoProof(null);
+    if (document.getElementById('photo-upload-input')) {
+      document.getElementById('photo-upload-input').value = '';
+    }
     setSuccessMsg('Flight log submitted successfully!');
     setActiveTab('history');
     setTimeout(() => setSuccessMsg(''), 4000);
@@ -96,112 +95,36 @@ export default function FlightLogs() {
         <form onSubmit={handleSubmit} style={styles.form} className="glass-panel">
           <h3 style={styles.sectionTitle}>New Flight Operations Log</h3>
           
-          <div style={styles.row}>
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Flight Code *</label>
-              <select
+          <div style={styles.inputWrapper}>
+            <label style={styles.label}>Roblox Username *</label>
+            <div style={styles.iconInput}>
+              <User size={16} style={styles.inputIcon} />
+              <input
+                type="text"
                 required
-                value={flightCode}
-                onChange={(e) => setFlightCode(e.target.value)}
+                value={pilot}
+                onChange={(e) => setPilot(e.target.value)}
+                placeholder="e.g. PilotOxton"
                 className="input-field"
-              >
-                <option value="">Select Flight Code...</option>
-                {flights.map(f => (
-                  <option key={f.id} value={f.flightCode}>{f.flightCode} ({f.location})</option>
-                ))}
-                <option value="Custom">Other / Unscheduled Flight</option>
-              </select>
-            </div>
-
-            {flightCode === 'Custom' && (
-              <div style={styles.inputWrapper}>
-                <label style={styles.label}>Specify Flight Code *</label>
-                <input
-                  type="text"
-                  required
-                  value={customFlightCode}
-                  placeholder="e.g. OX-990"
-                  className="input-field"
-                  onChange={(e) => setCustomFlightCode(e.target.value)}
-                />
-              </div>
-            )}
-
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Flight Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="input-field"
-              >
-                <option value="Completed">Completed</option>
-                <option value="Delayed">Delayed</option>
-                <option value="Diverted">Diverted</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={styles.row}>
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Pilot Roblox Username *</label>
-              <div style={styles.iconInput}>
-                <User size={16} style={styles.inputIcon} />
-                <input
-                  type="text"
-                  required
-                  value={pilot}
-                  onChange={(e) => setPilot(e.target.value)}
-                  placeholder="e.g. PilotOxton"
-                  className="input-field"
-                  style={{ paddingLeft: '38px' }}
-                />
-              </div>
-            </div>
-
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Co-Pilot Username (Optional)</label>
-              <div style={styles.iconInput}>
-                <User size={16} style={styles.inputIcon} />
-                <input
-                  type="text"
-                  value={coPilot}
-                  onChange={(e) => setCoPilot(e.target.value)}
-                  placeholder="e.g. CoPilotOxton"
-                  className="input-field"
-                  style={{ paddingLeft: '38px' }}
-                />
-              </div>
-            </div>
-
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Total Passengers *</label>
-              <div style={styles.iconInput}>
-                <Users size={16} style={styles.inputIcon} />
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  value={passengers}
-                  onChange={(e) => setPassengers(e.target.value)}
-                  placeholder="e.g. 15"
-                  className="input-field"
-                  style={{ paddingLeft: '38px' }}
-                />
-              </div>
+                style={{ paddingLeft: '38px' }}
+              />
             </div>
           </div>
 
           <div style={styles.inputWrapper}>
-            <label style={styles.label}>Photo Proof (Image URL) *</label>
+            <label style={styles.label}>Photo Proof *</label>
             <input
-              type="url"
+              id="photo-upload-input"
+              type="file"
+              accept="image/*"
               required
-              value={photoProof}
-              onChange={(e) => setPhotoProof(e.target.value)}
-              placeholder="e.g. https://imgur.com/your-image.png"
+              onChange={handleFileUpload}
               className="input-field"
+              style={{ padding: '8px' }}
             />
+            {photoProof && (
+              <img src={photoProof} alt="Preview" style={{ marginTop: '10px', maxHeight: '120px', borderRadius: '8px', objectFit: 'contain', alignSelf: 'flex-start' }} />
+            )}
           </div>
 
           <div style={styles.inputWrapper}>
@@ -255,18 +178,8 @@ export default function FlightLogs() {
 
                   <div style={styles.logRolesGrid}>
                     <div style={styles.roleBox}>
-                      <span style={styles.roleLabel}>PILOT</span>
+                      <span style={styles.roleLabel}>ROBLOX USERNAME</span>
                       <span style={styles.roleValue}>{log.pilot}</span>
-                    </div>
-                    {log.coPilot && (
-                      <div style={styles.roleBox}>
-                        <span style={styles.roleLabel}>CO-PILOT</span>
-                        <span style={styles.roleValue}>{log.coPilot}</span>
-                      </div>
-                    )}
-                    <div style={styles.roleBox}>
-                      <span style={styles.roleLabel}>PASSENGERS</span>
-                      <span style={styles.roleValue}>{log.passengers}</span>
                     </div>
                   </div>
 
@@ -274,9 +187,9 @@ export default function FlightLogs() {
                     <div style={styles.logRolesGrid}>
                       <div style={styles.roleBox}>
                         <span style={styles.roleLabel}>PHOTO PROOF</span>
-                        <a href={log.photoProof} rel="noreferrer" style={{...styles.roleValue, color: '#3b82f6', textDecoration: 'underline', wordBreak: 'break-all'}}>
-                          View Evidence Link
-                        </a>
+                        <div style={{ marginTop: '8px' }}>
+                          <img src={log.photoProof} alt="Proof" style={{ maxHeight: '200px', borderRadius: '8px', objectFit: 'contain' }} />
+                        </div>
                       </div>
                     </div>
                   )}

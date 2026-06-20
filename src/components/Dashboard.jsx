@@ -4,10 +4,11 @@ import { motion } from 'framer-motion';
 import { 
   Plane, ClipboardList, Calendar, FileText, 
   AlertTriangle, Slash, Settings, LogOut, ArrowLeft, User, Trophy, MessageSquare, Eye,
-  Activity, CheckSquare, LifeBuoy, BarChart2
+  Activity, CheckSquare, LifeBuoy, BarChart2, Megaphone
 } from 'lucide-react';
 
 // Subcomponents (we will create these next)
+import Announcements from './Announcements';
 import AllocationRequests from './AllocationRequests';
 import Performance from './Performance';
 import Tasks from './Tasks';
@@ -79,6 +80,15 @@ export default function Dashboard() {
   };
 
   const navItems = [
+    // Row 1: Personal & Daily Use
+    {
+      id: 'announcements',
+      title: 'Announcements',
+      description: 'View the latest news and updates from the administration.',
+      icon: Megaphone,
+      color: '#8b5cf6',
+      component: Announcements
+    },
     {
       id: 'performance',
       title: 'My Performance',
@@ -103,6 +113,17 @@ export default function Dashboard() {
       color: '#f43f5e',
       component: SupportTickets
     },
+    
+    // Row 2
+    {
+      id: 'staffChat',
+      title: 'Staff Chat',
+      description: 'Communicate with staff and security in real-time.',
+      icon: MessageSquare,
+      color: '#10b981',
+      component: StaffChat,
+      badgeCount: unreadChatCount
+    },
     {
       id: 'leaderboard',
       title: 'Staff of the Week',
@@ -112,31 +133,23 @@ export default function Dashboard() {
       component: Leaderboard
     },
     {
-      id: 'staffChat',
-      title: 'Staff Chat',
-      description: 'Communicate with staff and security in real-time.',
-      icon: MessageSquare,
-      color: '#10b981', // Emerald green
-      component: StaffChat,
-      badgeCount: unreadChatCount
-    },
-    {
-      id: 'allocation',
-      title: 'Allocation Requests',
-      description: 'View airport flight allocations and server connections.',
-      icon: Plane,
-      color: '#2563eb', // Blue
-      component: AllocationRequests,
-      badgeCount: unreadFlightCount
-    },
-    {
       id: 'allStaff',
       title: 'All Staff',
       description: 'View the complete staff roster and online presence.',
       icon: User,
-      color: '#8b5cf6', // Purple
+      color: '#8b5cf6',
       component: AllStaff
     },
+    {
+      id: 'reports',
+      title: 'Reports',
+      description: 'Report rule-breaking players. Review admin actions.',
+      icon: AlertTriangle,
+      color: '#2563eb',
+      component: Reports
+    },
+
+    // Row 3
     {
       id: 'logs',
       title: 'Flight Logs',
@@ -144,6 +157,15 @@ export default function Dashboard() {
       icon: ClipboardList,
       color: '#3b82f6',
       component: FlightLogs
+    },
+    {
+      id: 'allocation',
+      title: 'Allocation Requests',
+      description: 'View airport flight allocations and server connections.',
+      icon: Plane,
+      color: '#2563eb',
+      component: AllocationRequests,
+      badgeCount: unreadFlightCount
     },
     {
       id: 'loa',
@@ -161,23 +183,8 @@ export default function Dashboard() {
       color: '#1e40af',
       component: Documents
     },
-    {
-      id: 'reports',
-      title: 'Reports',
-      description: 'Report rule-breaking players. Review admin actions.',
-      icon: AlertTriangle,
-      color: '#2563eb',
-      component: Reports
-    },
-    {
-      id: 'infractions',
-      title: 'My Infractions',
-      description: 'Track disciplinary alerts and official performance marks.',
-      icon: Slash,
-      color: '#1e3a8a',
-      component: Infractions,
-      badgeCount: unreadInfractions.length
-    },
+
+    // Row 4
     ...(currentUser.isAdmin ? [{
       id: 'analytics',
       title: 'Analytics',
@@ -185,7 +192,16 @@ export default function Dashboard() {
       icon: BarChart2,
       color: '#8b5cf6',
       component: Analytics
-    }] : [])
+    }] : []),
+    {
+      id: 'infractions',
+      title: 'My Consequences',
+      description: 'Track disciplinary alerts and official performance marks.',
+      icon: Slash,
+      color: '#1e3a8a',
+      component: Infractions,
+      badgeCount: unreadInfractions.length
+    }
   ];
 
   // Framer Motion Animation Settings
@@ -328,6 +344,7 @@ export default function Dashboard() {
               initial="hidden"
               animate="show"
               style={styles.cardGrid}
+              className="dashboard-card-grid"
             >
               {navItems.map((item) => {
                 const Icon = item.icon;

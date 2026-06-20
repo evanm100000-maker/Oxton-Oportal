@@ -11,10 +11,14 @@ export default function AllStaff() {
     staffNotes, 
     addStaffNote, 
     deleteStaffNote, 
-    awardSOTW 
+    awardSOTW,
+    infractions,
+    loaRequests,
+    reports
   } = useApp();
   
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [manageTab, setManageTab] = useState('notes');
   const [noteType, setNoteType] = useState('Performance');
   const [noteText, setNoteText] = useState('');
 
@@ -97,7 +101,7 @@ export default function AllStaff() {
                   )}
                 </div>
                 {currentUser.isAdmin && (
-                  <button onClick={() => setSelectedStaff(user)} style={styles.manageBtn}>
+                  <button onClick={() => { setSelectedStaff(user); setManageTab('notes'); }} style={styles.manageBtn}>
                     Manage
                   </button>
                 )}
@@ -116,58 +120,138 @@ export default function AllStaff() {
             </div>
 
             <div style={styles.modalBody}>
-              <div style={styles.sotwAction}>
-                <div style={styles.sotwInfo}>
-                  <Trophy size={20} color="#fbbf24" />
-                  <strong>Staff of the Week</strong>
-                  <span style={{color: '#9ca3af', fontSize: '0.9rem'}}>Current wins: {selectedStaff.sotwWins || 0}</span>
-                </div>
-                <button onClick={() => awardSOTW(selectedStaff.email)} style={styles.awardSotwBtn}>
-                  Award SOTW
-                </button>
+              <div style={{display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px'}}>
+                <button onClick={() => setManageTab('notes')} style={{...styles.tabBtn, background: manageTab === 'notes' ? '#2563eb' : 'transparent', color: manageTab === 'notes' ? '#fff' : '#9ca3af'}}>Notes & SOTW</button>
+                <button onClick={() => setManageTab('history')} style={{...styles.tabBtn, background: manageTab === 'history' ? '#2563eb' : 'transparent', color: manageTab === 'history' ? '#fff' : '#9ca3af'}}>Staff History</button>
+                <button onClick={() => setManageTab('promotion')} style={{...styles.tabBtn, background: manageTab === 'promotion' ? '#2563eb' : 'transparent', color: manageTab === 'promotion' ? '#fff' : '#9ca3af'}}>Promotion Checker</button>
               </div>
 
-              <div style={styles.notesSection}>
-                <h4 style={styles.notesTitle}><FileText size={18} /> Private Staff Notes</h4>
-                <p style={styles.notesDesc}>These notes are only visible to Administrators.</p>
-
-                <form onSubmit={handleAddNote} style={styles.noteForm}>
-                  <div style={styles.noteFormRow}>
-                    <select value={noteType} onChange={(e) => setNoteType(e.target.value)} style={styles.noteSelect}>
-                      <option value="Performance">Performance</option>
-                      <option value="Behaviour">Behaviour</option>
-                      <option value="Promotion Recommendation">Promotion Recommendation</option>
-                      <option value="General">General</option>
-                    </select>
-                    <input 
-                      type="text" 
-                      required 
-                      value={noteText} 
-                      onChange={(e) => setNoteText(e.target.value)} 
-                      placeholder="Add a private note..." 
-                      style={styles.noteInput} 
-                    />
-                    <button type="submit" style={styles.addNoteBtn}><Send size={16}/></button>
+              {manageTab === 'notes' && (
+                <>
+                  <div style={styles.sotwAction}>
+                    <div style={styles.sotwInfo}>
+                      <Trophy size={20} color="#fbbf24" />
+                      <strong>Staff of the Week</strong>
+                      <span style={{color: '#9ca3af', fontSize: '0.9rem'}}>Current wins: {selectedStaff.sotwWins || 0}</span>
+                    </div>
+                    <button onClick={() => awardSOTW(selectedStaff.email)} style={styles.awardSotwBtn}>
+                      Award SOTW
+                    </button>
                   </div>
-                </form>
 
-                <div style={styles.notesList}>
-                  {staffNotes.filter(n => n.staffEmail === selectedStaff.email).length === 0 ? (
-                    <p style={styles.emptyNotes}>No notes found for this staff member.</p>
-                  ) : (
-                    staffNotes.filter(n => n.staffEmail === selectedStaff.email).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(note => (
-                      <div key={note.id} style={styles.noteItem}>
-                        <div style={styles.noteHeader}>
-                          <span style={styles.noteTypeBadge}>{note.type}</span>
-                          <span style={styles.noteMeta}>By {note.adminName} • {new Date(note.timestamp).toLocaleDateString()}</span>
-                        </div>
-                        <p style={styles.noteTextDisplay}>{note.text}</p>
-                        <button onClick={() => deleteStaffNote(note.id)} style={styles.deleteNoteBtn}><Trash2 size={14}/></button>
+                  <div style={styles.notesSection}>
+                    <h4 style={styles.notesTitle}><FileText size={18} /> Private Staff Notes</h4>
+                    <p style={styles.notesDesc}>These notes are only visible to Administrators.</p>
+
+                    <form onSubmit={handleAddNote} style={styles.noteForm}>
+                      <div style={styles.noteFormRow}>
+                        <select value={noteType} onChange={(e) => setNoteType(e.target.value)} style={styles.noteSelect}>
+                          <option value="Performance">Performance</option>
+                          <option value="Behaviour">Behaviour</option>
+                          <option value="Promotion Recommendation">Promotion Recommendation</option>
+                          <option value="General">General</option>
+                        </select>
+                        <input 
+                          type="text" 
+                          required 
+                          value={noteText} 
+                          onChange={(e) => setNoteText(e.target.value)} 
+                          placeholder="Add a private note..." 
+                          style={styles.noteInput} 
+                        />
+                        <button type="submit" style={styles.addNoteBtn}><Send size={16}/></button>
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
+                    </form>
+
+                    <div style={styles.notesList}>
+                      {staffNotes.filter(n => n.staffEmail === selectedStaff.email).length === 0 ? (
+                        <p style={styles.emptyNotes}>No notes found for this staff member.</p>
+                      ) : (
+                        staffNotes.filter(n => n.staffEmail === selectedStaff.email).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(note => (
+                          <div key={note.id} style={styles.noteItem}>
+                            <div style={styles.noteHeader}>
+                              <span style={styles.noteTypeBadge}>{note.type}</span>
+                              <span style={styles.noteMeta}>By {note.adminName} • {new Date(note.timestamp).toLocaleDateString()}</span>
+                            </div>
+                            <p style={styles.noteTextDisplay}>{note.text}</p>
+                            <button onClick={() => deleteStaffNote(note.id)} style={styles.deleteNoteBtn}><Trash2 size={14}/></button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {manageTab === 'history' && (() => {
+                const staffReports = reports.filter(r => r.reporterEmail === selectedStaff.email);
+                const staffLogs = flightLogs.filter(l => l.submitterEmail === selectedStaff.email);
+                const staffInfs = infractions.filter(i => i.staffEmail === selectedStaff.email);
+                const staffLoas = loaRequests.filter(l => l.userEmail === selectedStaff.email);
+
+                return (
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                    <h4 style={{color: '#fff', margin: 0}}>Summary Record for {selectedStaff.firstName}</h4>
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
+                      <div className="glass-panel" style={{padding: '16px', borderRadius: '8px'}}>
+                        <h5 style={{margin: '0 0 8px 0', color: '#9ca3af'}}>Approved Flights</h5>
+                        <p style={{margin: 0, fontSize: '1.5rem', color: '#fff'}}>{staffLogs.filter(l => l.status === 'Approved').length} <span style={{fontSize: '0.9rem', color: '#6b7280'}}>out of {staffLogs.length} total</span></p>
+                      </div>
+                      <div className="glass-panel" style={{padding: '16px', borderRadius: '8px'}}>
+                        <h5 style={{margin: '0 0 8px 0', color: '#9ca3af'}}>Consequences on Record</h5>
+                        <p style={{margin: 0, fontSize: '1.5rem', color: staffInfs.length > 0 ? '#ef4444' : '#10b981'}}>{staffInfs.length}</p>
+                      </div>
+                      <div className="glass-panel" style={{padding: '16px', borderRadius: '8px'}}>
+                        <h5 style={{margin: '0 0 8px 0', color: '#9ca3af'}}>LOA Requests</h5>
+                        <p style={{margin: 0, fontSize: '1.5rem', color: '#fff'}}>{staffLoas.length}</p>
+                      </div>
+                      <div className="glass-panel" style={{padding: '16px', borderRadius: '8px'}}>
+                        <h5 style={{margin: '0 0 8px 0', color: '#9ca3af'}}>Reports Filed</h5>
+                        <p style={{margin: 0, fontSize: '1.5rem', color: '#fff'}}>{staffReports.length}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {manageTab === 'promotion' && (() => {
+                const logins = selectedStaff.loginHistory || [];
+                const recentLogins = logins.filter(d => (Date.now() - new Date(d).getTime()) < 7 * 24 * 3600000);
+                const approvedFlights = flightLogs.filter(l => l.submitterEmail === selectedStaff.email && l.status === 'Approved').length;
+                const infs = infractions.filter(i => i.staffEmail === selectedStaff.email).length;
+
+                const reasons = [];
+                if (recentLogins.length < 2) reasons.push(`Activity: Needs 2 logins in last 7 days (has ${recentLogins.length})`);
+                if (approvedFlights < 10) reasons.push(`Flights: Needs 10 approved flights (has ${approvedFlights})`);
+                if (infs > 2) reasons.push(`Consequences: Must have 2 or fewer (has ${infs})`);
+
+                const isEligible = reasons.length === 0;
+
+                return (
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                    <h4 style={{color: '#fff', margin: 0}}>Promotion Eligibility Checker</h4>
+                    <div style={{
+                      padding: '20px', 
+                      borderRadius: '12px', 
+                      background: isEligible ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      border: isEligible ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
+                    }}>
+                      <h3 style={{color: isEligible ? '#10b981' : '#ef4444', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                        {isEligible ? <Award size={24} /> : <ShieldAlert size={24} />}
+                        {isEligible ? 'Eligible for promotion' : 'Not eligible for promotion'}
+                      </h3>
+                      {!isEligible && (
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px'}}>
+                          <strong style={{color: '#fca5a5', fontSize: '0.9rem'}}>Reason(s):</strong>
+                          <ul style={{margin: 0, paddingLeft: '20px', color: '#f87171', fontSize: '0.9rem'}}>
+                            {reasons.map((r, i) => <li key={i}>{r}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -225,5 +309,6 @@ const styles = {
   noteTypeBadge: { padding: '2px 8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', color: '#e2e8f0' },
   noteMeta: { fontSize: '0.8rem', color: '#9ca3af' },
   noteTextDisplay: { margin: 0, fontSize: '0.95rem', color: '#d1d5db', lineHeight: '1.5' },
-  deleteNoteBtn: { position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', opacity: 0.7 }
+  deleteNoteBtn: { position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', opacity: 0.7 },
+  tabBtn: { padding: '8px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }
 };

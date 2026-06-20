@@ -59,9 +59,12 @@ export default function AdminPanel() {
   const [roleInputs, setRoleInputs] = useState({});
 
   // Suspensions state
-  const [suspendHours, setSuspendHours] = useState({});
-
+  const [suspendModalUser, setSuspendModalUser] = useState(null);
+  const [suspendModalHours, setSuspendModalHours] = useState('');
+  const [suspendModalReason, setSuspendModalReason] = useState('');
+  
   // Infractions state
+  const [showInfractionModal, setShowInfractionModal] = useState(false);
   const [infStaffEmail, setInfStaffEmail] = useState('');
   const [infType, setInfType] = useState('Warning');
   const [infMainMessage, setInfMainMessage] = useState('');
@@ -119,11 +122,14 @@ export default function AdminPanel() {
     displaySuccess(`Role updated to ${role}`);
   };
 
-  const handleSuspend = (email) => {
-    const hours = parseFloat(suspendHours[email]);
-    if (!hours || hours <= 0) return alert('Please enter a valid number of hours.');
-    suspendUser(email, hours);
-    setSuspendHours(prev => ({...prev, [email]: ''}));
+  const handleSuspend = (e) => {
+    e.preventDefault();
+    const hours = parseFloat(suspendModalHours);
+    if (!hours || hours <= 0 || !suspendModalReason.trim()) return alert('Please enter valid hours and a reason.');
+    suspendUser(suspendModalUser.email, hours, suspendModalReason);
+    setSuspendModalUser(null);
+    setSuspendModalHours('');
+    setSuspendModalReason('');
     displaySuccess(`User suspended for ${hours} hours.`);
   };
 
@@ -147,7 +153,8 @@ export default function AdminPanel() {
     setInfType('Warning');
     setInfMainMessage('');
     setInfConfidentialMessage('');
-    displaySuccess('Infraction successfully logged against staff member.');
+    setShowInfractionModal(false);
+    displaySuccess('Consequence successfully logged against staff member.');
   };
 
   const handleSaveSystemStatus = (e) => {
@@ -207,7 +214,7 @@ export default function AdminPanel() {
           <UserCheck size={16} /> Staff Actions
         </button>
         <button type="button" onClick={() => document.getElementById('section-infractions')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'infractions')}>
-          <ShieldAlert size={16} /> Infractions ({infractions.length})
+          <ShieldAlert size={16} /> Consequences ({infractions.length})
         </button>
         <button type="button" onClick={() => document.getElementById('section-flights')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'flights')}>
           <Plane size={16} /> Schedule
@@ -273,62 +280,12 @@ export default function AdminPanel() {
       {/* Sub Tab: Infractions */}
       <div id="section-infractions">
         <div style={styles.panelSection}>
-          <h3 style={styles.panelTitle}>Staff Infractions</h3>
-          <form onSubmit={handleAddInfraction} style={styles.form}>
-            <div style={styles.formRow}>
-              <div style={styles.inputWrapper}>
-                <label style={styles.label}>Staff Member *</label>
-                <select required value={infStaffEmail} onChange={e => setInfStaffEmail(e.target.value)} className="input-field">
-                  <option value="">Choose active staff...</option>
-                  {approvedUsers.filter(user => user.email !== currentUser.email).map(user => (
-                    <option key={user.email} value={user.email}>
-                      {user.firstName} {user.lastName} (@{user.robloxUsername})
-                      {user.suspendedUntil ? ' - Suspended' : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div style={styles.inputWrapper}>
-                <label style={styles.label}>Action Level</label>
-                <select value={infType} onChange={e => setInfType(e.target.value)} className="input-field">
-                  <option value="Warning">Official Warning</option>
-                  <option value="Strike 1">Strike 1</option>
-                  <option value="Strike 2">Strike 2</option>
-                  <option value="Suspension">Suspension</option>
-                  <option value="Final Warning">Final Warning</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Main Message * (Visible to the staff member)</label>
-              <textarea
-                required
-                value={infMainMessage}
-                onChange={e => setInfMainMessage(e.target.value)}
-                placeholder="e.g. Unexcused absence from flight shift on June 12."
-                className="input-field"
-                rows="4"
-                style={styles.textarea}
-              />
-            </div>
-
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Confidential Message (Admins Only)</label>
-              <textarea
-                value={infConfidentialMessage}
-                onChange={e => setInfConfidentialMessage(e.target.value)}
-                placeholder="Optional private admin note."
-                className="input-field"
-                rows="3"
-                style={styles.confidentialTextarea}
-              />
-            </div>
-
-            <button type="submit" className="btn-danger" style={styles.submitBtn}>
-              <ShieldAlert size={16} /> Publish Infraction Log
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <h3 style={styles.panelTitle}>Staff Consequences</h3>
+            <button type="button" className="btn-danger" onClick={() => setShowInfractionModal(true)} style={{padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <ShieldAlert size={16} /> Log New Consequence
             </button>
-          </form>
+          </div>
 
           <div style={styles.tableWrapper}>
             <table style={styles.table}>
@@ -360,7 +317,7 @@ export default function AdminPanel() {
                 ))}
               </tbody>
             </table>
-            {infractions.length === 0 && <p style={{padding: '20px', color: '#9ca3af', textAlign: 'center'}}>No infractions logged.</p>}
+            {infractions.length === 0 && <p style={{padding: '20px', color: '#9ca3af', textAlign: 'center'}}>No consequences logged.</p>}
           </div>
         </div>
       </div>
@@ -451,8 +408,7 @@ export default function AdminPanel() {
                         </button>
                       ) : (
                         <div style={{display: 'flex', gap: '8px'}}>
-                          <input type="number" placeholder="Hrs" value={suspendHours[user.email] || ''} onChange={e => setSuspendHours({...suspendHours, [user.email]: e.target.value})} className="input-field" style={{width: '60px', padding: '6px'}} />
-                          <button type="button" onClick={() => handleSuspend(user.email)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px'}}>Suspend</button>
+                          <button type="button" onClick={() => setSuspendModalUser(user)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px'}}>Suspend User</button>
                         </div>
                       )}
                     </td>
@@ -690,6 +646,94 @@ export default function AdminPanel() {
                 {JSON.stringify(selectedAuditLog, null, 2)}
               </pre>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Suspend User Modal */}
+      {suspendModalUser && (
+        <div style={styles.overlay}>
+          <div className="glass-panel" style={{...styles.modal, width: '400px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
+               <h3 style={{color: 'var(--color-text-main)', fontSize: '1.2rem'}}>Suspend {suspendModalUser.firstName}</h3>
+               <button type="button" onClick={() => setSuspendModalUser(null)} style={{background: 'transparent', border: 'none', color: 'var(--color-text-main)', cursor: 'pointer'}}><X size={20}/></button>
+            </div>
+            <form onSubmit={handleSuspend} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+               <div style={styles.inputWrapper}>
+                 <label style={styles.label}>Duration (Hours) *</label>
+                 <input type="number" required min="1" value={suspendModalHours} onChange={e => setSuspendModalHours(e.target.value)} className="input-field" />
+               </div>
+               <div style={styles.inputWrapper}>
+                 <label style={styles.label}>Reason for Suspension *</label>
+                 <textarea required value={suspendModalReason} onChange={e => setSuspendModalReason(e.target.value)} className="input-field" rows="3" placeholder="Explain the reason for this suspension..."></textarea>
+               </div>
+               <button type="submit" className="btn-danger" style={{padding: '10px', borderRadius: '8px', cursor: 'pointer'}}>Confirm Suspension</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Infraction Modal */}
+      {showInfractionModal && (
+        <div style={styles.overlay}>
+          <div className="glass-panel" style={{...styles.modal, width: '500px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
+               <h3 style={{color: 'var(--color-text-main)', fontSize: '1.2rem'}}>Log New Consequence</h3>
+               <button type="button" onClick={() => setShowInfractionModal(false)} style={{background: 'transparent', border: 'none', color: 'var(--color-text-main)', cursor: 'pointer'}}><X size={20}/></button>
+            </div>
+            <form onSubmit={handleAddInfraction} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Staff Member *</label>
+                <select required value={infStaffEmail} onChange={e => setInfStaffEmail(e.target.value)} className="input-field">
+                  <option value="">Choose active staff...</option>
+                  {approvedUsers.filter(user => user.email !== currentUser.email).map(user => (
+                    <option key={user.email} value={user.email}>
+                      {user.firstName} {user.lastName} (@{user.robloxUsername})
+                      {user.suspendedUntil ? ' - Suspended' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Action Level</label>
+                <select value={infType} onChange={e => setInfType(e.target.value)} className="input-field">
+                  <option value="Warning">Official Warning</option>
+                  <option value="Strike 1">Strike 1</option>
+                  <option value="Strike 2">Strike 2</option>
+                  <option value="Suspension">Suspension</option>
+                  <option value="Final Warning">Final Warning</option>
+                </select>
+              </div>
+
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Main Message * (Visible to the staff member)</label>
+                <textarea
+                  required
+                  value={infMainMessage}
+                  onChange={e => setInfMainMessage(e.target.value)}
+                  placeholder="e.g. Unexcused absence from flight shift on June 12."
+                  className="input-field"
+                  rows="3"
+                  style={styles.textarea}
+                />
+              </div>
+
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Confidential Message (Admins Only)</label>
+                <textarea
+                  value={infConfidentialMessage}
+                  onChange={e => setInfConfidentialMessage(e.target.value)}
+                  placeholder="Optional private admin note."
+                  className="input-field"
+                  rows="2"
+                  style={styles.confidentialTextarea}
+                />
+              </div>
+
+              <button type="submit" className="btn-danger" style={styles.submitBtn}>
+                <ShieldAlert size={16} /> Publish Consequence
+              </button>
+            </form>
           </div>
         </div>
       )}
