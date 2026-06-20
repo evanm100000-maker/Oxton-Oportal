@@ -221,7 +221,7 @@ export default function AllStaff() {
                 const infs = infractions.filter(i => i.staffEmail === selectedStaff.email).length;
 
                 const reasons = [];
-                if (recentLogins.length < 2) reasons.push(`Activity: Needs 2 logins in last 7 days (has ${recentLogins.length})`);
+                
                 if (approvedFlights < 10) reasons.push(`Flights: Needs 10 approved flights (has ${approvedFlights})`);
                 if (infs > 2) reasons.push(`Consequences: Must have 2 or fewer (has ${infs})`);
 
