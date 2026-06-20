@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Moon, Sun, Save, User, Image as ImageIcon } from 'lucide-react';
+import { X, Moon, Sun, Save, User, Image as ImageIcon, Upload } from 'lucide-react';
+import Cropper from 'react-easy-crop';
+import { getCroppedImg } from '../utils/cropImage';
+import { storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
 
 export default function SettingsModal({ isOpen, onClose }) {
   const { currentUser, updateUserProfile, theme, toggleTheme } = useApp();
@@ -10,21 +13,64 @@ export default function SettingsModal({ isOpen, onClose }) {
   const [profilePicture, setProfilePicture] = useState('');
   const [robloxUsername, setRobloxUsername] = useState('');
   
+  // Crop state
+  const [imageSrc, setImageSrc] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+
   useEffect(() => {
     if (currentUser) {
       setFirstName(currentUser.firstName || '');
       setLastName(currentUser.lastName || '');
       setProfilePicture(currentUser.profilePicture || '');
       setRobloxUsername(currentUser.robloxUsername || '');
+      setImageSrc(null);
+      setCroppedAreaPixels(null);
     }
   }, [currentUser, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSave = (e) => {
+  const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => setImageSrc(reader.result));
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    updateUserProfile(firstName, lastName, profilePicture, robloxUsername);
-    onClose();
+    setIsUploading(true);
+
+    try {
+      let finalProfileUrl = profilePicture;
+      
+      if (imageSrc && croppedAreaPixels) {
+        // We have a new image to crop and upload
+        const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+        const fileName = `profiles/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+        const fileRef = storageRef(storage, fileName);
+        
+        await uploadBytes(fileRef, croppedImageBlob);
+        finalProfileUrl = await getDownloadURL(fileRef);
+      }
+
+      updateUserProfile(firstName, lastName, finalProfileUrl, robloxUsername);
+      onClose();
+    } catch (err) {
+      console.error('Error uploading profile picture:', err);
+      alert('Failed to upload profile picture. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setImageSrc(null);
+    }
   };
 
   return (
@@ -70,18 +116,36 @@ export default function SettingsModal({ isOpen, onClose }) {
           </div>
 
           <div style={styles.inputGroup}>
-            <label style={styles.label}>Profile Picture URL</label>
-            <div style={styles.inputInner}>
-              <ImageIcon size={16} style={styles.inputIcon} />
-              <input
-                type="url"
-                value={profilePicture}
-                onChange={(e) => setProfilePicture(e.target.value)}
-                placeholder="https://example.com/image.png"
-                className="input-field"
-                style={{ paddingLeft: '36px' }}
-              />
-            </div>
+            <label style={styles.label}>Profile Picture</label>
+            {!imageSrc ? (
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {profilePicture && (
+                  <img src={profilePicture} alt="Current profile" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
+                )}
+                <label style={{ ...styles.inputInner, cursor: 'pointer', padding: '10px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', flex: 1, display: 'flex', justifyContent: 'center', gap: '8px', border: '1px solid var(--color-border)' }}>
+                  <Upload size={16} />
+                  <span>Choose Image</span>
+                  <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                </label>
+              </div>
+            ) : (
+              <div style={{ position: 'relative', width: '100%', height: '200px', background: '#222', borderRadius: '8px', overflow: 'hidden' }}>
+                <Cropper
+                  image={imageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onCropComplete={onCropComplete}
+                  onZoomChange={setZoom}
+                />
+              </div>
+            )}
+            {imageSrc && (
+              <button type="button" onClick={() => setImageSrc(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', marginTop: '8px', textAlign: 'left' }}>
+                Cancel new image
+              </button>
+            )}
           </div>
 
           <div style={styles.inputGroup}>
@@ -119,8 +183,8 @@ export default function SettingsModal({ isOpen, onClose }) {
             <button type="button" onClick={onClose} className="btn-secondary" style={styles.cancelBtn}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" style={styles.saveBtn}>
-              <Save size={16} /> Save Changes
+            <button type="submit" disabled={isUploading} className="btn-primary" style={{ ...styles.saveBtn, opacity: isUploading ? 0.7 : 1 }}>
+              <Save size={16} /> {isUploading ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

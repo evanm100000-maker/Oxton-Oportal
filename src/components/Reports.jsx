@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { AlertTriangle, Send, MessageSquare, Shield, Clock, ExternalLink, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Send, MessageSquare, Shield, Clock, ExternalLink, RefreshCw, Upload } from 'lucide-react';
+import { storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
 
 export default function Reports() {
   const { reports, submitReport, addReportComment, updateReportStatus, currentUser } = useApp();
@@ -11,31 +12,50 @@ export default function Reports() {
   const [reportedPlayer, setReportedPlayer] = useState('');
   const [type, setType] = useState('Exploiting');
   const [description, setDescription] = useState('');
-  const [evidenceLink, setEvidenceLink] = useState('');
+  const [evidenceFile, setEvidenceFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Comment input state (keyed by report ID)
   const [commentText, setCommentText] = useState({});
   // Expanded comments (keyed by report ID)
   const [expandedReports, setExpandedReports] = useState({});
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!reportedPlayer || !description) return;
 
-    submitReport({
-      reportedPlayer,
-      type,
-      description,
-      evidenceLink
-    });
+    setIsUploading(true);
 
-    setReportedPlayer('');
-    setType('Exploiting');
-    setDescription('');
-    setEvidenceLink('');
-    setSuccessMsg('Player report submitted successfully. Admin review is pending.');
-    setActiveTab('active');
-    setTimeout(() => setSuccessMsg(''), 4000);
+    try {
+      let finalEvidenceUrl = '';
+      
+      if (evidenceFile) {
+        const fileName = `reports/${Date.now()}_${Math.random().toString(36).substring(7)}_${evidenceFile.name}`;
+        const fileRef = storageRef(storage, fileName);
+        await uploadBytes(fileRef, evidenceFile);
+        finalEvidenceUrl = await getDownloadURL(fileRef);
+      }
+
+      submitReport({
+        reportedPlayer,
+        type,
+        description,
+        evidenceLink: finalEvidenceUrl
+      });
+
+      setReportedPlayer('');
+      setType('Exploiting');
+      setDescription('');
+      setEvidenceFile(null);
+      setSuccessMsg('Player report submitted successfully. Admin review is pending.');
+      setActiveTab('active');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (err) {
+      console.error('Error uploading evidence:', err);
+      alert('Failed to upload evidence. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleAddComment = (reportId, e) => {
@@ -147,15 +167,26 @@ export default function Reports() {
           </div>
 
           <div style={styles.inputWrapper}>
-            <label style={styles.label}>Evidence Link * (Video, Imgur, Roblox Asset URL)</label>
-            <input
-              type="url"
-              required
-              value={evidenceLink}
-              onChange={(e) => setEvidenceLink(e.target.value)}
-              placeholder="e.g. https://www.youtube.com/watch?v=... or https://imgur.com/..."
-              className="input-field"
-            />
+            <label style={styles.label}>Evidence File (Image/Video)</label>
+            <label style={{ ...styles.inputInner, cursor: 'pointer', padding: '10px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', display: 'flex', justifyContent: 'center', gap: '8px', border: '1px solid var(--color-border)' }}>
+              <Upload size={16} />
+              <span>{evidenceFile ? evidenceFile.name : 'Choose File'}</span>
+              <input 
+                type="file" 
+                accept="image/*,video/*"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    setEvidenceFile(e.target.files[0]);
+                  }
+                }} 
+                style={{ display: 'none' }} 
+              />
+            </label>
+            {evidenceFile && (
+              <button type="button" onClick={() => setEvidenceFile(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', marginTop: '4px', textAlign: 'left' }}>
+                Remove file
+              </button>
+            )}
           </div>
 
           <div style={styles.inputWrapper}>
@@ -171,9 +202,9 @@ export default function Reports() {
             />
           </div>
 
-          <button type="submit" className="btn-primary" style={styles.submitBtn}>
+          <button type="submit" disabled={isUploading} className="btn-primary" style={{ ...styles.submitBtn, opacity: isUploading ? 0.7 : 1 }}>
             <Send size={16} />
-            <span>File Incident Report</span>
+            <span>{isUploading ? 'Uploading & Filing...' : 'File Incident Report'}</span>
           </button>
         </form>
       ) : (
