@@ -223,7 +223,7 @@ export default function LoginScreen() {
           )}
         </form>
       </div>
-      <div style={styles.versionText}>V1.0.1</div>
+      <div style={styles.versionText}>V1.0.2</div>
     </div>
   );
 }

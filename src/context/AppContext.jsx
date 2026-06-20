@@ -977,7 +977,7 @@ export const AppProvider = ({ children }) => {
       comments: []
     };
     setReports(prev => [newReport, ...prev]);
-    addChatMessage('Staff Chat', 'Logged a Report');
+    addChatMessage('Reports', 'Logged a Report');
   };
 
   const updateReportStatus = (reportId, status) => {
