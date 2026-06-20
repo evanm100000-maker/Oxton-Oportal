@@ -199,7 +199,7 @@ export default function Dashboard() {
       {/* Navbar */}
       <nav className="glass-panel dashboard-navbar" style={styles.navbar}>
         <div className="dashboard-nav-brand" style={styles.navBrand} onClick={() => setActiveTab('home')}>
-          <div style={styles.navLogo}>OX</div>
+          <img src="/logo.png" alt="Oxton Logo" style={styles.navLogo} />
           <span style={styles.navBrandText}>Oxton Staff Portal</span>
         </div>
 
@@ -251,7 +251,7 @@ export default function Dashboard() {
           role="alert"
         >
           <div style={styles.infractionAlertIcon}>
-            <AlertTriangle size={22} color="#ffffff" />
+            <AlertTriangle size={22} color="var(--color-text-main)" />
           </div>
           <div style={styles.infractionAlertBody}>
             <span style={styles.infractionAlertKicker}>NEW INFRACTION</span>
@@ -412,20 +412,13 @@ const styles = {
     width: '36px',
     height: '36px',
     borderRadius: '8px',
-    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: '800',
-    color: '#ffffff',
-    fontSize: '0.9rem',
-    boxShadow: '0 0 10px rgba(37, 99, 235, 0.3)',
+    objectFit: 'contain',
   },
   navBrandText: {
     fontWeight: '700',
     fontSize: '1.25rem',
     letterSpacing: '-0.3px',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   navControls: {
     display: 'flex',
@@ -506,7 +499,7 @@ const styles = {
     letterSpacing: '0',
   },
   infractionAlertTitle: {
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     fontSize: '0.98rem',
     lineHeight: 1.35,
   },
@@ -530,7 +523,7 @@ const styles = {
   greetingText: {
     fontSize: '2.5rem',
     fontWeight: '800',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     letterSpacing: '-0.5px',
   },
   greetingSub: {
@@ -569,7 +562,7 @@ const styles = {
   cardTitle: {
     fontSize: '1.15rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   cardDescription: {
     fontSize: '0.85rem',
@@ -597,7 +590,7 @@ const styles = {
   pageTitle: {
     fontSize: '1.5rem',
     fontWeight: '800',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   pageCard: {
     padding: '32px',
@@ -609,7 +602,7 @@ const styles = {
     top: '-6px',
     right: '-6px',
     background: '#ef4444',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     fontSize: '0.7rem',
     fontWeight: '800',
     padding: '2px 6px',

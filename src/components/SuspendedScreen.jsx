@@ -101,7 +101,7 @@ const styles = {
   timerValue: {
     fontSize: '2rem',
     fontWeight: '800',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     fontVariantNumeric: 'tabular-nums',
   },
   logoutBtn: {

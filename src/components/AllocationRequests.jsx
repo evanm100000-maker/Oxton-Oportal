@@ -284,7 +284,7 @@ const styles = {
   flightCode: {
     fontSize: '1.4rem',
     fontWeight: '800',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     letterSpacing: '0.5px',
   },
   locationBadge: {

@@ -135,7 +135,7 @@ export default function Documents() {
                   ...styles.categoryBtn,
                   background: selectedCategory === cat ? 'rgba(37, 99, 235, 0.15)' : 'rgba(255,255,255,0.02)',
                   borderColor: selectedCategory === cat ? '#2563eb' : 'rgba(255,255,255,0.05)',
-                  color: selectedCategory === cat ? '#ffffff' : '#9ca3af'
+                  color: selectedCategory === cat ? 'var(--color-text-main)' : '#9ca3af'
                 }}
               >
                 {cat}
@@ -162,7 +162,7 @@ export default function Documents() {
                     <div style={styles.docItemMeta}>
                       <span style={{
                         ...styles.docItemTitle,
-                        color: (activeDoc?.id === doc.id && !isCreating) ? '#ffffff' : '#d1d5db'
+                        color: (activeDoc?.id === doc.id && !isCreating) ? 'var(--color-text-main)' : '#d1d5db'
                       }}>
                         {doc.title}
                       </span>
@@ -446,7 +446,7 @@ const styles = {
   readerTitle: {
     fontSize: '1.75rem',
     fontWeight: '800',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     lineHeight: '1.25',
   },
   readerAuthorship: {
@@ -481,7 +481,7 @@ const styles = {
   markdownH2: {
     fontSize: '1.35rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     marginTop: '20px',
     marginBottom: '10px',
     borderBottom: '1px solid rgba(255,255,255,0.04)',
@@ -490,7 +490,7 @@ const styles = {
   markdownH3: {
     fontSize: '1.15rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     marginTop: '16px',
     marginBottom: '8px',
   },
@@ -524,7 +524,7 @@ const styles = {
   formTitle: {
     fontSize: '1.2rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   cancelBtn: {
     padding: '6px 12px',

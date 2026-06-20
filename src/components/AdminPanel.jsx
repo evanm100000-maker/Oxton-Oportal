@@ -482,7 +482,7 @@ export default function AdminPanel() {
                {pendingFlightLogs.map(log => (
                  <div key={log.id} style={styles.loaCard} className="glass-panel">
                    <div style={styles.loaCardHeader}>
-                     <div><h4 style={{color:'#fff'}}>{log.flightCode}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>Pilot: {log.pilot} | CoPilot: {log.coPilot}</span></div>
+                     <div><h4 style={{color: 'var(--color-text-main)'}}>{log.flightCode}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>Pilot: {log.pilot} | CoPilot: {log.coPilot}</span></div>
                      <span style={styles.loaDateText}>{new Date(log.timestamp).toLocaleDateString()}</span>
                    </div>
                    <div style={styles.loaReasonBox}>
@@ -531,7 +531,7 @@ export default function AdminPanel() {
               {pendingLoas.map(req => (
                 <div key={req.id} style={styles.loaCard} className="glass-panel">
                   <div style={styles.loaCardHeader}>
-                    <div><h4 style={{color:'#fff'}}>{req.userName}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>{req.userEmail}</span></div>
+                    <div><h4 style={{color: 'var(--color-text-main)'}}>{req.userName}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>{req.userEmail}</span></div>
                     <div style={styles.loaDates}>
                       <span style={styles.loaDateText}>{req.startDate}</span> <span style={{color:'#9ca3af'}}>to</span> <span style={styles.loaDateText}>{req.endDate}</span>
                     </div>
@@ -607,7 +607,7 @@ export default function AdminPanel() {
               <h4 style={{ color: '#f59e0b', marginBottom: '12px' }}>Warning Banner</h4>
               <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'}}>
                 <input type="checkbox" id="warnActive" checked={warnActive} onChange={e => setWarnActive(e.target.checked)} style={{width: '20px', height: '20px'}} />
-                <label htmlFor="warnActive" style={{fontSize: '1rem', color: '#fff', fontWeight: '600'}}>Enable Global Warning Banner</label>
+                <label htmlFor="warnActive" style={{fontSize: '1rem', color: 'var(--color-text-main)', fontWeight: '600'}}>Enable Global Warning Banner</label>
               </div>
               <div style={styles.inputWrapper}>
                 <label style={styles.label}>Banner Title</label>
@@ -631,7 +631,7 @@ export default function AdminPanel() {
               <h4 style={{ color: '#ef4444', marginBottom: '12px' }}>Site Maintenance Mode</h4>
               <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px'}}>
                 <input type="checkbox" id="maintActive" checked={maintActive} onChange={e => setMaintActive(e.target.checked)} style={{width: '20px', height: '20px'}} />
-                <label htmlFor="maintActive" style={{fontSize: '1rem', color: '#fff', fontWeight: '600'}}>Enable Full Site Lockout</label>
+                <label htmlFor="maintActive" style={{fontSize: '1rem', color: 'var(--color-text-main)', fontWeight: '600'}}>Enable Full Site Lockout</label>
               </div>
               <div style={styles.inputWrapper}>
                 <label style={styles.label}>Maintenance Message</label>
@@ -682,8 +682,8 @@ export default function AdminPanel() {
         <div style={styles.overlay}>
           <div className="glass-panel" style={{...styles.modal, width: '500px'}}>
             <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
-              <h3 style={{color: '#fff', fontSize: '1.2rem'}}>Audit Log Details</h3>
-              <button type="button" onClick={() => setSelectedAuditLog(null)} style={{background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer'}}><X size={20}/></button>
+              <h3 style={{color: 'var(--color-text-main)', fontSize: '1.2rem'}}>Audit Log Details</h3>
+              <button type="button" onClick={() => setSelectedAuditLog(null)} style={{background: 'transparent', border: 'none', color: 'var(--color-text-main)', cursor: 'pointer'}}><X size={20}/></button>
             </div>
             <div style={{background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px', overflowX: 'auto'}}>
               <pre style={{color: '#a7f3d0', fontSize: '0.85rem', margin: 0}}>
@@ -701,7 +701,7 @@ const getTabStyle = (isActive) => ({
   display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px',
   borderRadius: '8px', border: 'none', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer',
   background: isActive ? '#2563eb' : 'transparent',
-  color: isActive ? '#ffffff' : '#9ca3af',
+  color: isActive ? 'var(--color-text-main)' : '#9ca3af',
   transition: 'all 0.2s ease',
   whiteSpace: 'nowrap'
 });

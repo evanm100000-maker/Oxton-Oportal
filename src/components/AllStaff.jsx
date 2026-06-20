@@ -83,7 +83,7 @@ const styles = {
   title: {
     fontSize: '1.25rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   subtitle: {
     fontSize: '0.9rem',
@@ -158,7 +158,7 @@ const styles = {
   name: {
     fontSize: '1.05rem',
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   username: {
     fontSize: '0.85rem',

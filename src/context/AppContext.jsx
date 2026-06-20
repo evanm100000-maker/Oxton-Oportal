@@ -3,13 +3,13 @@ import { firebaseApp, getDatabase, ref, onValue, set } from '../firebase';
 
 const AppContext = createContext();
 
-const SUPER_ADMIN_EMAIL = 'evanm.100000@gmail.com';
+const SUPER_ADMIN_EMAIL = 'Evanm.100000@gmail.com';
 const INITIAL_SUPER_ADMIN = {
   email: SUPER_ADMIN_EMAIL,
   password: 'Michelle11.',
   firstName: 'Evan',
   lastName: 'Oxton',
-  robloxUsername: 'EvanOxton',
+  robloxUsername: 'Happyevbev',
   isAdmin: true,
   approved: true,
   createdAt: '2026-06-10T12:00:00Z',
@@ -146,7 +146,7 @@ Welcome to the official Oxton Roblox staff training manual. Below are the basic 
 * For toxic behavior, issue one warning. If behavior persists, submit a report in the Staff Portal under the Reports tab.
 * In case of severe exploiters, take a video clip, log the player report, and notify a server admin immediately.
 `,
-    authorEmail: 'evanm.100000@gmail.com',
+    authorEmail: 'Evanm.100000@gmail.com',
     authorName: 'Evan Oxton',
     date: '2026-06-10'
   }
@@ -612,8 +612,8 @@ export const AppProvider = ({ children }) => {
   };
 
   // User Settings
-  const updateUserProfile = (firstName, lastName, profilePicture) => {
-    const updatedUser = { ...currentUser, firstName, lastName, profilePicture };
+  const updateUserProfile = (firstName, lastName, profilePicture, robloxUsername) => {
+    const updatedUser = { ...currentUser, firstName, lastName, profilePicture, robloxUsername };
     setCurrentUser(updatedUser);
     setUsers(prev => prev.map(u => u.email === currentUser.email ? updatedUser : u));
   };

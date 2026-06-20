@@ -72,7 +72,7 @@ export default function LeaveOfAbsence() {
             ...styles.tabBtn,
             background: activeTab === 'request' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
             borderColor: activeTab === 'request' ? '#2563eb' : 'transparent',
-            color: activeTab === 'request' ? '#ffffff' : '#9ca3af',
+            color: activeTab === 'request' ? 'var(--color-text-main)' : '#9ca3af',
           }}
         >
           <Calendar size={16} />
@@ -85,7 +85,7 @@ export default function LeaveOfAbsence() {
             ...styles.tabBtn,
             background: activeTab === 'my-requests' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
             borderColor: activeTab === 'my-requests' ? '#2563eb' : 'transparent',
-            color: activeTab === 'my-requests' ? '#ffffff' : '#9ca3af',
+            color: activeTab === 'my-requests' ? 'var(--color-text-main)' : '#9ca3af',
           }}
         >
           <Clock size={16} />
@@ -236,7 +236,7 @@ const styles = {
   sectionTitle: {
     fontSize: '1.25rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   subtitle: {
     fontSize: '0.875rem',
@@ -331,7 +331,7 @@ const styles = {
     padding: '6px 12px',
     borderRadius: '6px',
     fontSize: '0.85rem',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     fontWeight: '600',
   },
   connector: {

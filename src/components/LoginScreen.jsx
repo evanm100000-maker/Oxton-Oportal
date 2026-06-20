@@ -52,7 +52,7 @@ export default function LoginScreen() {
       <div className="glass-panel-glow" style={styles.card}>
         <div style={styles.logoSection}>
           <div style={styles.logoIconContainer}>
-            <Award size={48} color="#2563eb" style={styles.logoIcon} />
+            <img src="/logo.png" alt="Oxton Logo" style={styles.logoIcon} />
           </div>
           <h1 style={styles.brandTitle}>OXTON</h1>
           <p style={styles.brandSubtitle}>Staff Portal & Command Center</p>
@@ -253,22 +253,25 @@ const styles = {
     width: '80px',
     height: '80px',
     borderRadius: '20px',
-    background: 'rgba(37, 99, 235, 0.1)',
-    border: '1px solid rgba(37, 99, 235, 0.2)',
+    background: 'rgba(139, 92, 246, 0.1)',
+    border: '1px solid rgba(139, 92, 246, 0.2)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 0 20px rgba(37, 99, 235, 0.2)',
+    boxShadow: '0 0 20px rgba(139, 92, 246, 0.2)',
     marginBottom: '16px',
   },
   logoIcon: {
-    filter: 'drop-shadow(0 0 8px rgba(37, 99, 235, 0.5))',
+    width: '64px',
+    height: '64px',
+    objectFit: 'contain',
+    filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.5))',
   },
   brandTitle: {
     fontSize: '2rem',
     fontWeight: '900',
     letterSpacing: '3px',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     textShadow: '0 0 10px rgba(255, 255, 255, 0.1)',
   },
   brandSubtitle: {

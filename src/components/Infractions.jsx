@@ -26,7 +26,7 @@ export default function Infractions() {
               ...styles.tabBtn,
               background: activeTab === 'all' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
               borderColor: activeTab === 'all' ? '#2563eb' : 'transparent',
-              color: activeTab === 'all' ? '#ffffff' : '#9ca3af',
+              color: activeTab === 'all' ? 'var(--color-text-main)' : '#9ca3af',
             }}
           >
             <History size={16} />
@@ -232,7 +232,7 @@ const styles = {
   targetStaff: {
     fontSize: '1.05rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   staffMail: {
     fontSize: '0.85rem',
@@ -313,7 +313,7 @@ const styles = {
   sectionTitle: {
     fontSize: '1.25rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   subtitle: {
     fontSize: '0.875rem',

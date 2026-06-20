@@ -69,7 +69,7 @@ export default function StaffChat() {
             ...styles.channelBtn,
             background: activeChannel === 'Staff Chat' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
             borderColor: activeChannel === 'Staff Chat' ? '#3b82f6' : 'transparent',
-            color: activeChannel === 'Staff Chat' ? '#ffffff' : '#9ca3af'
+            color: activeChannel === 'Staff Chat' ? 'var(--color-text-main)' : '#9ca3af'
           }}
         >
           <Users size={16} /> # staff-chat
@@ -80,7 +80,7 @@ export default function StaffChat() {
             ...styles.channelBtn,
             background: activeChannel === 'Security' ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
             borderColor: activeChannel === 'Security' ? '#ef4444' : 'transparent',
-            color: activeChannel === 'Security' ? '#ffffff' : '#9ca3af'
+            color: activeChannel === 'Security' ? 'var(--color-text-main)' : '#9ca3af'
           }}
         >
           <ShieldAlert size={16} /> # security
@@ -91,7 +91,7 @@ export default function StaffChat() {
             ...styles.channelBtn,
             background: activeChannel === 'Global' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
             borderColor: activeChannel === 'Global' ? '#10b981' : 'transparent',
-            color: activeChannel === 'Global' ? '#ffffff' : '#9ca3af'
+            color: activeChannel === 'Global' ? 'var(--color-text-main)' : '#9ca3af'
           }}
         >
           <Globe size={16} /> Global
@@ -341,7 +341,7 @@ const styles = {
   channelName: {
     fontSize: '1.2rem',
     fontWeight: '800',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   channelDesc: {
     fontSize: '0.85rem',
@@ -371,7 +371,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     fontWeight: '700',
     fontSize: '1.2rem',
     cursor: 'pointer',
@@ -389,7 +389,7 @@ const styles = {
   },
   senderName: {
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     fontSize: '1rem',
     cursor: 'pointer',
   },
@@ -420,7 +420,7 @@ const styles = {
     border: '1px solid rgba(255,255,255,0.1)',
     borderRadius: '8px',
     padding: '12px 16px',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     outline: 'none',
   },
   sendBtn: {

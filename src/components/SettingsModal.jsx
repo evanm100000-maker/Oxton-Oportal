@@ -8,12 +8,14 @@ export default function SettingsModal({ isOpen, onClose }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [profilePicture, setProfilePicture] = useState('');
+  const [robloxUsername, setRobloxUsername] = useState('');
   
   useEffect(() => {
     if (currentUser) {
       setFirstName(currentUser.firstName || '');
       setLastName(currentUser.lastName || '');
       setProfilePicture(currentUser.profilePicture || '');
+      setRobloxUsername(currentUser.robloxUsername || '');
     }
   }, [currentUser, isOpen]);
 
@@ -21,7 +23,7 @@ export default function SettingsModal({ isOpen, onClose }) {
 
   const handleSave = (e) => {
     e.preventDefault();
-    updateUserProfile(firstName, lastName, profilePicture);
+    updateUserProfile(firstName, lastName, profilePicture, robloxUsername);
     onClose();
   };
 
@@ -76,6 +78,21 @@ export default function SettingsModal({ isOpen, onClose }) {
                 value={profilePicture}
                 onChange={(e) => setProfilePicture(e.target.value)}
                 placeholder="https://example.com/image.png"
+                className="input-field"
+                style={{ paddingLeft: '36px' }}
+              />
+            </div>
+          </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Roblox Username</label>
+            <div style={styles.inputInner}>
+              <User size={16} style={styles.inputIcon} />
+              <input
+                type="text"
+                required
+                value={robloxUsername}
+                onChange={(e) => setRobloxUsername(e.target.value)}
                 className="input-field"
                 style={{ paddingLeft: '36px' }}
               />

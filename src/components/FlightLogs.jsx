@@ -65,7 +65,7 @@ export default function FlightLogs() {
             ...styles.tabBtn,
             background: activeTab === 'submit' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
             borderColor: activeTab === 'submit' ? '#2563eb' : 'transparent',
-            color: activeTab === 'submit' ? '#ffffff' : '#9ca3af',
+            color: activeTab === 'submit' ? 'var(--color-text-main)' : '#9ca3af',
           }}
         >
           <PlusCircle size={16} />
@@ -78,7 +78,7 @@ export default function FlightLogs() {
             ...styles.tabBtn,
             background: activeTab === 'history' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
             borderColor: activeTab === 'history' ? '#2563eb' : 'transparent',
-            color: activeTab === 'history' ? '#ffffff' : '#9ca3af',
+            color: activeTab === 'history' ? 'var(--color-text-main)' : '#9ca3af',
           }}
         >
           <History size={16} />
@@ -335,7 +335,7 @@ const styles = {
   sectionTitle: {
     fontSize: '1.25rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     marginBottom: '8px',
   },
   row: {
@@ -425,7 +425,7 @@ const styles = {
   logCode: {
     fontSize: '1.25rem',
     fontWeight: '800',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   logTime: {
     fontSize: '0.8rem',

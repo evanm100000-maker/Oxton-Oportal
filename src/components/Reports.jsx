@@ -83,7 +83,7 @@ export default function Reports() {
             ...styles.tabBtn,
             background: activeTab === 'active' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
             borderColor: activeTab === 'active' ? '#2563eb' : 'transparent',
-            color: activeTab === 'active' ? '#ffffff' : '#9ca3af',
+            color: activeTab === 'active' ? 'var(--color-text-main)' : '#9ca3af',
           }}
         >
           <AlertTriangle size={16} />
@@ -96,7 +96,7 @@ export default function Reports() {
             ...styles.tabBtn,
             background: activeTab === 'submit' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
             borderColor: activeTab === 'submit' ? '#2563eb' : 'transparent',
-            color: activeTab === 'submit' ? '#ffffff' : '#9ca3af',
+            color: activeTab === 'submit' ? 'var(--color-text-main)' : '#9ca3af',
           }}
         >
           <Send size={16} />
@@ -339,7 +339,7 @@ const styles = {
   sectionTitle: {
     fontSize: '1.25rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   subtitle: {
     fontSize: '0.875rem',
@@ -429,7 +429,7 @@ const styles = {
   targetPlayer: {
     fontSize: '1.15rem',
     fontWeight: '700',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   violationType: {
     fontSize: '0.75rem',
@@ -523,7 +523,7 @@ const styles = {
   threadTitle: {
     fontSize: '0.85rem',
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
   },
   commentsList: {
     display: 'flex',
@@ -557,7 +557,7 @@ const styles = {
   commentAuthor: {
     fontSize: '0.75rem',
     fontWeight: '600',
-    color: '#ffffff',
+    color: 'var(--color-text-main)',
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
