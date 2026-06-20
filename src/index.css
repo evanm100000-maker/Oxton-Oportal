@@ -467,18 +467,17 @@ button {
     width: 100% !important;
   }
 
-  /* Make sure all tables fit without breaking layout */
+  /* Make sure all tables fit without breaking layout by allowing horizontal scroll */
   table {
-    display: block !important;
-    width: 100% !important;
-    overflow-x: auto !important;
     white-space: nowrap !important;
-    -webkit-overflow-scrolling: touch !important;
-    border: none !important;
+    min-width: 100%;
   }
   
-  thead, tbody, tr {
-    width: 100% !important;
+  /* Improve touch scrolling for table wrappers */
+  div[style*="overflow-x: auto"],
+  div[style*="overflowX: auto"] {
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100vw !important;
   }
 
   /* Modals and overlay panels */

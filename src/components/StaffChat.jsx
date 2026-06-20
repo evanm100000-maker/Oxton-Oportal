@@ -165,7 +165,11 @@ export default function StaffChat() {
                     </div>
                   )}
                   
-                  <div style={styles.messageText}>{msg.text}</div>
+                  <div style={styles.messageText}>
+                    {msg.text.split(/(@[a-zA-Z0-9_.-]+)/g).map((part, i) => 
+                      part.startsWith('@') ? <span key={i} style={{ color: '#06b6d4', fontWeight: 'bold' }}>{part}</span> : part
+                    )}
+                  </div>
 
                   {msg.reactions && msg.reactions.length > 0 && (
                     <div style={styles.reactionsContainer}>

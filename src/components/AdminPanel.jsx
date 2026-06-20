@@ -176,6 +176,7 @@ export default function AdminPanel() {
   const pendingUsers = users.filter(u => !u.approved);
   const approvedUsers = users.filter(u => u.approved);
   const pendingLoas = loaRequests.filter(req => req.status === 'Pending');
+  const activeLoas = loaRequests.filter(req => req.status === 'Approved' || req.status === 'End Requested');
   const pendingFlightLogs = flightLogs.filter(log => log.status === 'Pending');
   const pendingPasswords = passwordResets.filter(r => r.status === 'Pending');
 
@@ -403,12 +404,12 @@ export default function AdminPanel() {
                     </td>
                     <td style={styles.td}>
                       {isSuspended ? (
-                        <button type="button" onClick={() => {unsuspendUser(user.email); displaySuccess('User unsuspended.');}} className="btn-success" style={styles.actionMiniBtn}>
+                        <button type="button" disabled={user.isAdmin && currentUser.email !== superAdminEmail} onClick={() => {unsuspendUser(user.email); displaySuccess('User unsuspended.');}} className="btn-success" style={{...styles.actionMiniBtn, opacity: user.isAdmin && currentUser.email !== superAdminEmail ? 0.5 : 1}}>
                           Unsuspend
                         </button>
                       ) : (
                         <div style={{display: 'flex', gap: '8px'}}>
-                          <button type="button" onClick={() => setSuspendModalUser(user)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px'}}>Suspend User</button>
+                          <button type="button" disabled={user.isAdmin && currentUser.email !== superAdminEmail} onClick={() => setSuspendModalUser(user)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px', opacity: user.isAdmin && currentUser.email !== superAdminEmail ? 0.5 : 1}}>Suspend User</button>
                         </div>
                       )}
                     </td>
@@ -504,6 +505,39 @@ export default function AdminPanel() {
                     <div style={styles.loaActionButtons}>
                       <button type="button" onClick={() => handleLoaAction(req.id, 'Approved')} className="btn-success" style={styles.loaActionBtn}><Check size={14}/> Approve</button>
                       <button type="button" onClick={() => handleLoaAction(req.id, 'Denied')} className="btn-danger" style={styles.loaActionBtn}><X size={14}/> Deny</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{...styles.panelSection, marginTop: '24px'}}>
+          <h3 style={styles.panelTitle}>Active LOAs</h3>
+          {activeLoas.length === 0 ? (
+            <div style={styles.emptyGrid}><Calendar size={36} color="rgba(255,255,255,0.15)" /><p style={styles.emptyText}>No active LOAs.</p></div>
+          ) : (
+            <div style={styles.loaList}>
+              {activeLoas.map(req => (
+                <div key={req.id} style={styles.loaCard} className="glass-panel">
+                  <div style={styles.loaCardHeader}>
+                    <div><h4 style={{color: 'var(--color-text-main)'}}>{req.userName}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>{req.userEmail}</span></div>
+                    <div style={styles.loaDates}>
+                      <span style={styles.loaDateText}>{req.startDate}</span> <span style={{color:'#9ca3af'}}>to</span> <span style={styles.loaDateText}>{req.endDate}</span>
+                    </div>
+                  </div>
+                  <div style={styles.loaReasonBox}>
+                     <span style={styles.loaReasonLabel}>Status:</span>
+                     <p style={{color: req.status === 'End Requested' ? '#f59e0b' : '#10b981', fontWeight: 'bold'}}>{req.status === 'End Requested' ? 'End Requested' : 'Approved'}</p>
+                  </div>
+                  <div style={styles.loaActionPanel}>
+                    <div style={styles.commentWrapper}>
+                      <label style={styles.commentLabel}>End Early Note:</label>
+                      <input type="text" value={loaComments[req.id] || ''} onChange={e => setLoaComments({...loaComments, [req.id]: e.target.value})} className="input-field" style={{padding: '8px 12px'}} />
+                    </div>
+                    <div style={styles.loaActionButtons}>
+                      <button type="button" onClick={() => handleLoaAction(req.id, 'Ended Early')} className="btn-danger" style={styles.loaActionBtn}><X size={14}/> End LOA Early</button>
                     </div>
                   </div>
                 </div>
@@ -686,7 +720,7 @@ export default function AdminPanel() {
                 <label style={styles.label}>Staff Member *</label>
                 <select required value={infStaffEmail} onChange={e => setInfStaffEmail(e.target.value)} className="input-field">
                   <option value="">Choose active staff...</option>
-                  {approvedUsers.filter(user => user.email !== currentUser.email).map(user => (
+                  {approvedUsers.filter(user => user.email !== currentUser.email && (!user.isAdmin || currentUser.email === superAdminEmail)).map(user => (
                     <option key={user.email} value={user.email}>
                       {user.firstName} {user.lastName} (@{user.robloxUsername})
                       {user.suspendedUntil ? ' - Suspended' : ''}

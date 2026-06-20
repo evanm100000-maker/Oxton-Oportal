@@ -271,8 +271,22 @@ export const AppProvider = ({ children }) => {
   const [passwordResets, setPasswordResets] = useState(() => getStoredData(STORAGE_KEYS.passwordResets, []));
   const [chatMessages, setChatMessages] = useState(() => getStoredData(STORAGE_KEYS.chatMessages, []));
   const [announcements, setAnnouncements] = useState(() => getStoredData(STORAGE_KEYS.announcements, initialAnnouncements));
+  const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
+
+  const addNotification = (title, message, type = 'info') => {
+    const id = makeId('notif');
+    setNotifications(prev => [...prev, { id, title, message, type, timestamp: Date.now() }]);
+    setTimeout(() => {
+      removeNotification(id);
+    }, 5000);
+  };
+
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
 
   // Sync state to LocalStorage
   const persistData = (key, value) => {
@@ -578,6 +592,62 @@ export const AppProvider = ({ children }) => {
       document.body.classList.remove('light-mode');
     }
   }, [theme]);
+
+  // Notifications Watchers
+  const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null });
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (prevDataRef.current.chatMessages && chatMessages.length > prevDataRef.current.chatMessages.length) {
+      const newMsg = chatMessages.find(m => !prevDataRef.current.chatMessages.some(pm => pm.id === m.id));
+      if (newMsg && newMsg.senderEmail !== currentUser.email) {
+        addNotification(`New message from ${newMsg.senderName}`, newMsg.text.length > 40 ? newMsg.text.substring(0, 40) + '...' : newMsg.text, 'info');
+      }
+    }
+    prevDataRef.current.chatMessages = chatMessages;
+  }, [chatMessages, currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (prevDataRef.current.infractions && infractions.length > prevDataRef.current.infractions.length) {
+      const newInf = infractions.find(i => !prevDataRef.current.infractions.some(pi => pi.id === i.id));
+      if (newInf && newInf.staffEmail === currentUser.email) {
+        addNotification(`New Consequence: ${newInf.type}`, `You received a ${newInf.type}. Check your dashboard.`, 'danger');
+      }
+    }
+    prevDataRef.current.infractions = infractions;
+  }, [infractions, currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (prevDataRef.current.loaRequests) {
+      loaRequests.forEach(loa => {
+        const prevLoa = prevDataRef.current.loaRequests.find(p => p.id === loa.id);
+        if (prevLoa && prevLoa.status !== loa.status && loa.userEmail === currentUser.email) {
+          addNotification(`LOA Status Updated`, `Your LOA request is now ${loa.status}`, 'info');
+        }
+      });
+    }
+    prevDataRef.current.loaRequests = loaRequests;
+  }, [loaRequests, currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (prevDataRef.current.tickets) {
+      tickets.forEach(ticket => {
+        const prevTicket = prevDataRef.current.tickets.find(p => p.id === ticket.id);
+        if (prevTicket && ticket.comments && (!prevTicket.comments || ticket.comments.length > prevTicket.comments.length)) {
+          if (ticket.authorEmail === currentUser.email || currentUser.isAdmin) {
+             const newComment = ticket.comments[ticket.comments.length - 1];
+             if (newComment.authorEmail !== currentUser.email) {
+               addNotification(`New Response on Support Ticket`, newComment.text.length > 40 ? newComment.text.substring(0, 40) + '...' : newComment.text, 'info');
+             }
+          }
+        }
+      });
+    }
+    prevDataRef.current.tickets = tickets;
+  }, [tickets, currentUser]);
 
   // Audit Log function
   const logAction = (type, description, details = {}) => {
@@ -987,9 +1057,14 @@ export const AppProvider = ({ children }) => {
 
   const updateLoaStatus = (loaId, status, comment) => {
     setLoaRequests(prev => prev.map(req => 
-      req.id === loaId ? { ...req, status, adminComment: comment } : req
+      req.id === loaId ? { ...req, status, adminComment: comment !== undefined ? comment : req.adminComment } : req
     ));
     logAction('loa_updated', `LOA ${status} for ${loaId}`, { loaId, status });
+  };
+
+  const requestEndLoaEarly = (loaId) => {
+    setLoaRequests(prev => prev.map(req => req.id === loaId ? { ...req, status: 'End Requested' } : req));
+    logAction('loa_end_requested', `User requested to end LOA early`, { loaId });
   };
 
   // Documents Operations
@@ -1298,6 +1373,10 @@ export const AppProvider = ({ children }) => {
         rejectFlightLog,
         submitLoaRequest,
         updateLoaStatus,
+        requestEndLoaEarly,
+        notifications,
+        addNotification,
+        removeNotification,
         addDocument,
         deleteDocument,
         submitReport,

@@ -6,6 +6,8 @@ import WarningBanner from './components/WarningBanner';
 import UpdateBanner from './components/UpdateBanner';
 import MaintenanceScreen from './components/MaintenanceScreen';
 import SuspendedScreen from './components/SuspendedScreen';
+import NotificationOverlay from './components/NotificationOverlay';
+import LoaBanner from './components/LoaBanner';
 import { useState } from 'react';
 
 function MainApp() {
@@ -35,7 +37,9 @@ function MainApp() {
     <>
       <WarningBanner />
       <UpdateBanner />
+      <LoaBanner />
       {currentUser ? <Dashboard /> : <LoginScreen />}
+      <NotificationOverlay />
     </>
   );
 }
