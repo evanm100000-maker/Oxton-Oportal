@@ -142,27 +142,48 @@ export default function AllocationRequests() {
                     }
 
                     return (
-                      <div style={styles.crewList}>
-                        {attending.map((email) => (
-                          <div key={`att-${email}`} style={styles.crewBadge}>
-                            <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}</span>
-                            {currentUser.isAdmin && (
-                              <button
-                                type="button"
-                                onClick={() => deallocateStaffDirectly(flight.id, email)}
-                                style={styles.removeCrewBtn}
-                                title="Deallocate Staff"
-                              >
-                                ✕
-                              </button>
-                            )}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {attending.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: '600', color: '#10b981', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
+                              Attending ({attending.length})
+                            </div>
+                            <div style={styles.crewList}>
+                              {attending.map((email) => (
+                                <div key={`att-${email}`} style={styles.crewBadge}>
+                                  <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}</span>
+                                  {currentUser.isAdmin && (
+                                    <button
+                                      type="button"
+                                      onClick={() => deallocateStaffDirectly(flight.id, email)}
+                                      style={styles.removeCrewBtn}
+                                      title="Deallocate Staff"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        ))}
-                        {absent.map((email) => (
-                          <div key={`abs-${email}`} style={{...styles.crewBadge, background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)'}}>
-                            <span style={{...styles.crewBadgeText, color: '#fca5a5'}}>{getStaffNameByEmail(email)} (Absent)</span>
+                        )}
+
+                        {absent.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: '600', color: '#ef4444', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }}></span>
+                              Absent ({absent.length})
+                            </div>
+                            <div style={styles.crewList}>
+                              {absent.map((email) => (
+                                <div key={`abs-${email}`} style={{...styles.crewBadge, background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)'}}>
+                                  <span style={{...styles.crewBadgeText, color: '#fca5a5'}}>{getStaffNameByEmail(email)}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                        ))}
+                        )}
                       </div>
                     );
                   })()}
