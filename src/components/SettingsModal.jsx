@@ -31,11 +31,11 @@ export default function SettingsModal({ isOpen, onClose }) {
     }
   }, [currentUser, isOpen]);
 
-  if (!isOpen) return null;
-
   const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
     setCroppedAreaPixels(croppedAreaPixels);
   }, []);
+
+  if (!isOpen) return null;
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
