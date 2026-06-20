@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plane, Calendar, Clock, MapPin, ExternalLink, Users, UserPlus, UserMinus, Trash2 } from 'lucide-react';
 
+const escapeEmail = (email) => email ? email.replace(/\./g, ',') : '';
+const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
+
 export default function AllocationRequests() {
   const { 
     flights, 
@@ -15,9 +18,14 @@ export default function AllocationRequests() {
   } = useApp();
 
   const [directAssignEmail, setDirectAssignEmail] = useState({});
+  const [selectedStatuses, setSelectedStatuses] = useState({});
 
   const getMyStatus = (flight, email) => {
-    if (flight.staffStatus && flight.staffStatus[email]) return flight.staffStatus[email];
+    const safeEmail = escapeEmail(email);
+    if (flight.staffStatus) {
+      if (flight.staffStatus[safeEmail]) return flight.staffStatus[safeEmail];
+      if (flight.staffStatus[email]) return flight.staffStatus[email];
+    }
     if ((flight.allocatedStaff || []).includes(email)) return 'Attending';
     return 'Undecided';
   };
@@ -26,15 +34,23 @@ export default function AllocationRequests() {
     let list = [];
     if (targetStatus === 'Attending') {
       (flight.allocatedStaff || []).forEach(e => {
-        if (!list.includes(e) && (!flight.staffStatus || flight.staffStatus[e] === 'Attending' || !flight.staffStatus[e])) {
-          list.push(e);
+        if (!list.includes(e)) {
+          const safeEmail = escapeEmail(e);
+          const status = flight.staffStatus 
+            ? (flight.staffStatus[safeEmail] || flight.staffStatus[e]) 
+            : null;
+          if (status === 'Attending' || !status) {
+            list.push(e);
+          }
         }
       });
     }
     if (flight.staffStatus) {
-      Object.keys(flight.staffStatus).forEach(e => {
-        if (flight.staffStatus[e] === targetStatus && !list.includes(e)) {
-          list.push(e);
+      Object.keys(flight.staffStatus).forEach(k => {
+        const email = unescapeEmail(k);
+        const status = flight.staffStatus[k];
+        if (status === targetStatus && !list.includes(email)) {
+          list.push(email);
         }
       });
     }
@@ -74,6 +90,10 @@ export default function AllocationRequests() {
         <div style={styles.flightGrid}>
           {flights.map((flight) => {
             const myStatus = getMyStatus(flight, currentUser.email);
+            const currentSelected = selectedStatuses[flight.id] !== undefined
+              ? selectedStatuses[flight.id]
+              : myStatus;
+            const hasChanged = currentSelected !== myStatus;
             return (
               <div key={flight.id} style={styles.flightCard} className="glass-panel">
                 <div style={styles.flightHeader}>
@@ -149,39 +169,66 @@ export default function AllocationRequests() {
                 </div>
 
                 <div style={styles.actionContainer}>
-                  <div style={styles.statusButtonsContainer}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1.3 }}>
+                    <div style={styles.statusButtonsContainer}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatuses(prev => ({ ...prev, [flight.id]: 'Attending' }))}
+                        style={{
+                          ...styles.statusBtn,
+                          background: currentSelected === 'Attending' ? '#10b981' : 'rgba(255,255,255,0.05)',
+                          color: currentSelected === 'Attending' ? '#fff' : '#e5e7eb',
+                          border: currentSelected === 'Attending' ? '1px solid #059669' : '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        Attending
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatuses(prev => ({ ...prev, [flight.id]: 'Undecided' }))}
+                        style={{
+                          ...styles.statusBtn,
+                          background: currentSelected === 'Undecided' ? '#3b82f6' : 'rgba(255,255,255,0.05)',
+                          color: currentSelected === 'Undecided' ? '#fff' : '#e5e7eb',
+                          border: currentSelected === 'Undecided' ? '1px solid #2563eb' : '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        Not yet decided
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedStatuses(prev => ({ ...prev, [flight.id]: 'Absent' }))}
+                        style={{
+                          ...styles.statusBtn,
+                          background: currentSelected === 'Absent' ? '#ef4444' : 'rgba(255,255,255,0.05)',
+                          color: currentSelected === 'Absent' ? '#fff' : '#e5e7eb',
+                          border: currentSelected === 'Absent' ? '1px solid #dc2626' : '1px solid rgba(255,255,255,0.1)'
+                        }}
+                      >
+                        Absent
+                      </button>
+                    </div>
                     <button
-                      onClick={() => setAllocationStatus(flight.id, currentUser.email, 'Attending')}
+                      type="button"
+                      disabled={!hasChanged}
+                      onClick={() => {
+                        setAllocationStatus(flight.id, currentUser.email, currentSelected);
+                        setSelectedStatuses(prev => {
+                          const updated = { ...prev };
+                          delete updated[flight.id];
+                          return updated;
+                        });
+                      }}
                       style={{
-                        ...styles.statusBtn,
-                        background: getMyStatus(flight, currentUser.email) === 'Attending' ? '#10b981' : 'rgba(255,255,255,0.05)',
-                        color: getMyStatus(flight, currentUser.email) === 'Attending' ? '#fff' : '#e5e7eb',
-                        border: getMyStatus(flight, currentUser.email) === 'Attending' ? '1px solid #059669' : '1px solid rgba(255,255,255,0.1)'
+                        ...styles.acceptBtn,
+                        opacity: hasChanged ? 1 : 0.5,
+                        cursor: hasChanged ? 'pointer' : 'not-allowed',
+                        background: hasChanged ? '#10b981' : 'rgba(255,255,255,0.03)',
+                        color: hasChanged ? '#fff' : '#9ca3af',
+                        border: hasChanged ? '1px solid #059669' : '1px solid rgba(255,255,255,0.05)'
                       }}
                     >
-                      Attending
-                    </button>
-                    <button
-                      onClick={() => setAllocationStatus(flight.id, currentUser.email, 'Undecided')}
-                      style={{
-                        ...styles.statusBtn,
-                        background: getMyStatus(flight, currentUser.email) === 'Undecided' ? '#3b82f6' : 'rgba(255,255,255,0.05)',
-                        color: getMyStatus(flight, currentUser.email) === 'Undecided' ? '#fff' : '#e5e7eb',
-                        border: getMyStatus(flight, currentUser.email) === 'Undecided' ? '1px solid #2563eb' : '1px solid rgba(255,255,255,0.1)'
-                      }}
-                    >
-                      Not yet decided
-                    </button>
-                    <button
-                      onClick={() => setAllocationStatus(flight.id, currentUser.email, 'Absent')}
-                      style={{
-                        ...styles.statusBtn,
-                        background: getMyStatus(flight, currentUser.email) === 'Absent' ? '#ef4444' : 'rgba(255,255,255,0.05)',
-                        color: getMyStatus(flight, currentUser.email) === 'Absent' ? '#fff' : '#e5e7eb',
-                        border: getMyStatus(flight, currentUser.email) === 'Absent' ? '1px solid #dc2626' : '1px solid rgba(255,255,255,0.1)'
-                      }}
-                    >
-                      Absent
+                      Accept Selection
                     </button>
                   </div>
 
@@ -367,11 +414,11 @@ const styles = {
     display: 'flex',
     gap: '12px',
     marginTop: 'auto',
+    alignItems: 'flex-end',
   },
   statusButtonsContainer: {
     display: 'flex',
     gap: '8px',
-    flex: 1.3,
     flexWrap: 'wrap',
   },
   statusBtn: {
@@ -382,6 +429,15 @@ const styles = {
     cursor: 'pointer',
     textAlign: 'center',
     transition: 'all 0.2s',
+  },
+  acceptBtn: {
+    padding: '10px 14px',
+    borderRadius: '8px',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    textAlign: 'center',
+    transition: 'all 0.2s',
+    width: '100%',
   },
   linkBtn: {
     flex: 1,
@@ -394,6 +450,7 @@ const styles = {
     gap: '8px',
     textDecoration: 'none',
     cursor: 'pointer',
+    height: '42px',
   },
   adminAssignPanel: {
     borderTop: '1px solid rgba(255, 255, 255, 0.05)',

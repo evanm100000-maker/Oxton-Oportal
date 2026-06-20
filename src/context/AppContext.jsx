@@ -207,6 +207,9 @@ const isActiveStaff = (user) => (
   user?.approved && (!user.suspendedUntil || new Date(user.suspendedUntil).getTime() <= Date.now())
 );
 
+const escapeEmail = (email) => email ? email.replace(/\./g, ',') : '';
+const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
+
 const makeId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
 export const AppProvider = ({ children }) => {
@@ -304,16 +307,44 @@ export const AppProvider = ({ children }) => {
       const maintenanceRef = ref(db, 'maintenanceConfig');
       const unsubscribeWarning = onValue(warningRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) setWarningConfig(data);
+        skipSyncRef.current['warningConfig'] = true;
+        if (data) {
+          setWarningConfig(data);
+        } else {
+          setWarningConfig(initialWarningConfig);
+        }
+        hasLoadedRef.current['warningConfig'] = true;
       });
       const unsubscribeMaintenance = onValue(maintenanceRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) setMaintenanceConfig(data);
+        skipSyncRef.current['maintenanceConfig'] = true;
+        if (data) {
+          setMaintenanceConfig(data);
+        } else {
+          setMaintenanceConfig(initialMaintenanceConfig);
+        }
+        hasLoadedRef.current['maintenanceConfig'] = true;
       });
       const siteVersionRef = ref(db, 'siteVersion');
       const unsubscribeSiteVersion = onValue(siteVersionRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) setSiteVersion(data);
+        if (data) {
+          setSiteVersion(data);
+        } else {
+          // Bootstrap brand new empty database
+          const initialVersion = '1.0.0';
+          set(ref(db, 'users'), initialUsers);
+          set(ref(db, 'flights'), initialFlights);
+          set(ref(db, 'flightLogs'), initialFlightLogs);
+          set(ref(db, 'loaRequests'), initialLoaRequests);
+          set(ref(db, 'documents'), initialDocuments);
+          set(ref(db, 'reports'), initialReports);
+          set(ref(db, 'infractions'), initialInfractions);
+          set(ref(db, 'warningConfig'), initialWarningConfig);
+          set(ref(db, 'maintenanceConfig'), initialMaintenanceConfig);
+          set(ref(db, 'siteVersion'), initialVersion);
+          setSiteVersion(initialVersion);
+        }
       });
       const onlinePresenceRef = ref(db, 'onlinePresence');
       const unsubscribeOnline = onValue(onlinePresenceRef, (snapshot) => {
@@ -361,37 +392,42 @@ export const AppProvider = ({ children }) => {
     const skipSyncRef = useRef({
       users: false, flights: false, flightLogs: false, loaRequests: false, 
       documents: false, reports: false, infractions: false, auditLogs: false, 
-      passwordResets: false, chatMessages: false, theme: false
+      passwordResets: false, chatMessages: false, theme: false,
+      warningConfig: false, maintenanceConfig: false
     });
     
-    const isFirstRenderRef = useRef({
-      users: true, flights: true, flightLogs: true, loaRequests: true, 
-      documents: true, reports: true, infractions: true, auditLogs: true, 
-      passwordResets: true, chatMessages: true, theme: true
+    const hasLoadedRef = useRef({
+      users: false, flights: false, flightLogs: false, loaRequests: false, 
+      documents: false, reports: false, infractions: false, auditLogs: false, 
+      passwordResets: false, chatMessages: false, theme: false,
+      warningConfig: false, maintenanceConfig: false
     });
 
     // Add Firebase listeners for other data collections
     useEffect(() => {
       const db = getDatabase(firebaseApp);
       
-      const setupListener = (path, setFn) => {
+      const setupListener = (path, setFn, fallbackValue = []) => {
         return onValue(ref(db, path), snapshot => {
           const data = snapshot.val();
           skipSyncRef.current[path] = true;
           if (data) {
             let normalizedData = data;
-            // Firebase converts arrays with holes into objects, so we normalize back to an array
-            if (typeof data === 'object' && !Array.isArray(data)) {
-              normalizedData = Object.values(data);
-            }
-            // Filter out any null/undefined elements
-            if (Array.isArray(normalizedData)) {
-              normalizedData = normalizedData.filter(item => item !== null && item !== undefined);
+            if (Array.isArray(fallbackValue)) {
+              // Firebase converts arrays with holes into objects, so we normalize back to an array
+              if (typeof data === 'object' && !Array.isArray(data)) {
+                normalizedData = Object.values(data);
+              }
+              // Filter out any null/undefined elements
+              if (Array.isArray(normalizedData)) {
+                normalizedData = normalizedData.filter(item => item !== null && item !== undefined);
+              }
             }
             setFn(normalizedData);
           } else {
-            setFn([]); // Ensure state remains an array even if collection is empty in Firebase
+            setFn(fallbackValue);
           }
+          hasLoadedRef.current[path] = true;
         });
       };
 
@@ -405,7 +441,7 @@ export const AppProvider = ({ children }) => {
       const unsubAudit = setupListener('auditLogs', setAuditLogs);
       const unsubPwdResets = setupListener('passwordResets', setPasswordResets);
       const unsubChat = setupListener('chatMessages', setChatMessages);
-      const unsubTheme = setupListener('theme', setTheme);
+      const unsubTheme = setupListener('theme', setTheme, 'dark');
 
       return () => {
         if (typeof unsubLoas === 'function') unsubLoas();
@@ -424,8 +460,8 @@ export const AppProvider = ({ children }) => {
 
     // Sync state changes back to Firebase
     const syncToFirebase = (path, stateValue) => {
-      if (isFirstRenderRef.current[path]) {
-        isFirstRenderRef.current[path] = false;
+      if (!hasLoadedRef.current[path]) {
+        // Prevent syncing before the initial load completes
         return;
       }
       if (skipSyncRef.current[path]) {
@@ -634,11 +670,19 @@ export const AppProvider = ({ children }) => {
   };
 
   const removeUser = (email) => {
+    const safeEmail = escapeEmail(email);
     setUsers(prev => prev.filter(u => u.email !== email));
-    setFlights(prev => prev.map(f => ({
-      ...f,
-      allocatedStaff: (f.allocatedStaff || []).filter(staffEmail => staffEmail !== email)
-    })));
+    setFlights(prev => prev.map(f => {
+      const currentStatus = f.staffStatus || {};
+      const newStatus = { ...currentStatus };
+      delete newStatus[safeEmail];
+      delete newStatus[email];
+      return {
+        ...f,
+        allocatedStaff: (f.allocatedStaff || []).filter(staffEmail => staffEmail !== email),
+        staffStatus: newStatus
+      };
+    }));
     logAction('user_removed', `Removed staff member ${email}`, { email });
   };
 
@@ -763,40 +807,67 @@ export const AppProvider = ({ children }) => {
   };
 
   const setAllocationStatus = (flightId, email, status) => {
+    const safeEmail = escapeEmail(email);
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
-      let currentStatus = f.staffStatus || {};
+      const currentStatus = f.staffStatus || {};
+      
+      const migratedStatus = {};
+      Object.keys(currentStatus).forEach(k => {
+        migratedStatus[escapeEmail(unescapeEmail(k))] = currentStatus[k];
+      });
       
       // Auto-migrate legacy allocatedStaff to staffStatus format if empty
-      if (f.allocatedStaff && f.allocatedStaff.length > 0 && Object.keys(currentStatus).length === 0) {
+      if (f.allocatedStaff && f.allocatedStaff.length > 0 && Object.keys(migratedStatus).length === 0) {
         f.allocatedStaff.forEach(e => {
-          currentStatus[e] = 'Attending';
+          migratedStatus[escapeEmail(e)] = 'Attending';
         });
       }
       
-      const newStatus = { ...currentStatus, [email]: status };
+      const newStatus = { ...migratedStatus, [safeEmail]: status };
       return { ...f, staffStatus: newStatus };
     }));
   };
 
   const allocateStaffDirectly = (flightId, email) => {
+    const safeEmail = escapeEmail(email);
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
       const currentStaff = f.allocatedStaff || [];
       const currentStatus = f.staffStatus || {};
-      if (currentStaff.includes(email) || currentStatus[email] === 'Attending') return f;
-      return { ...f, allocatedStaff: [...currentStaff, email], staffStatus: { ...currentStatus, [email]: 'Attending' } };
+      
+      const migratedStatus = {};
+      Object.keys(currentStatus).forEach(k => {
+        migratedStatus[escapeEmail(unescapeEmail(k))] = currentStatus[k];
+      });
+      
+      if (currentStaff.includes(email) || migratedStatus[safeEmail] === 'Attending') return f;
+      return { 
+        ...f, 
+        allocatedStaff: [...currentStaff, email], 
+        staffStatus: { ...migratedStatus, [safeEmail]: 'Attending' } 
+      };
     }));
   };
 
   const deallocateStaffDirectly = (flightId, email) => {
+    const safeEmail = escapeEmail(email);
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
       const currentStaff = f.allocatedStaff || [];
       const currentStatus = f.staffStatus || {};
-      const newStatus = { ...currentStatus };
-      delete newStatus[email];
-      return { ...f, allocatedStaff: currentStaff.filter(e => e !== email), staffStatus: newStatus };
+      
+      const migratedStatus = {};
+      Object.keys(currentStatus).forEach(k => {
+        migratedStatus[escapeEmail(unescapeEmail(k))] = currentStatus[k];
+      });
+      
+      delete migratedStatus[safeEmail];
+      return { 
+        ...f, 
+        allocatedStaff: currentStaff.filter(e => e !== email), 
+        staffStatus: migratedStatus 
+      };
     }));
   };
 
