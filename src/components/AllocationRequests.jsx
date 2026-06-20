@@ -255,7 +255,6 @@ export default function AllocationRequests() {
 
                   <a
                     href={flight.serverLink}
-                    target="_blank"
                     rel="noreferrer"
                     style={styles.linkBtn}
                     className="btn-secondary"

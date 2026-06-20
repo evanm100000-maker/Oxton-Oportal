@@ -206,7 +206,6 @@ export default function Reports() {
                       {report.evidenceLink && (
                         <a
                           href={report.evidenceLink}
-                          target="_blank"
                           rel="noreferrer"
                           style={styles.evidenceBtn}
                           className="btn-secondary"

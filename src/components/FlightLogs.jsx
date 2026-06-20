@@ -274,8 +274,8 @@ export default function FlightLogs() {
                     <div style={styles.logRolesGrid}>
                       <div style={styles.roleBox}>
                         <span style={styles.roleLabel}>PHOTO PROOF</span>
-                        <a href={log.photoProof} target="_blank" rel="noreferrer" style={{...styles.roleValue, color: '#3b82f6', textDecoration: 'underline', wordBreak: 'break-all'}}>
-                          View Image
+                        <a href={log.photoProof} rel="noreferrer" style={{...styles.roleValue, color: '#3b82f6', textDecoration: 'underline', wordBreak: 'break-all'}}>
+                          View Evidence Link
                         </a>
                       </div>
                     </div>
