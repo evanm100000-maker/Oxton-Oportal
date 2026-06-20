@@ -4,7 +4,7 @@ import { ShieldAlert, History, Lock, Trash2, ShieldCheck } from 'lucide-react';
 
 export default function Infractions() {
   const { infractions, deleteInfraction, appealInfraction, currentUser } = useApp();
-  const [activeTab, setActiveTab] = useState(currentUser.isAdmin ? 'all' : 'my');
+  const [activeTab, setActiveTab] = useState('my');
   const [appealingId, setAppealingId] = useState(null);
   const [appealText, setAppealText] = useState('');
 
@@ -23,6 +23,19 @@ export default function Infractions() {
     <div style={styles.container}>
       {currentUser.isAdmin && (
         <div style={styles.tabHeader}>
+          <button
+            onClick={() => setActiveTab('my')}
+            className="btn-secondary"
+            style={{
+              ...styles.tabBtn,
+              background: activeTab === 'my' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
+              borderColor: activeTab === 'my' ? '#2563eb' : 'transparent',
+              color: activeTab === 'my' ? 'var(--color-text-main)' : '#9ca3af',
+            }}
+          >
+            <ShieldCheck size={16} />
+            My Consequences
+          </button>
           <button
             onClick={() => setActiveTab('all')}
             className="btn-secondary"
