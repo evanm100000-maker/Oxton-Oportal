@@ -3,11 +3,16 @@ import { useApp } from '../context/AppContext';
 import { motion } from 'framer-motion';
 import { 
   Plane, ClipboardList, Calendar, FileText, 
-  AlertTriangle, Slash, Settings, LogOut, ArrowLeft, User, Trophy, MessageSquare, Eye
+  AlertTriangle, Slash, Settings, LogOut, ArrowLeft, User, Trophy, MessageSquare, Eye,
+  Activity, CheckSquare, LifeBuoy, BarChart2
 } from 'lucide-react';
 
 // Subcomponents (we will create these next)
 import AllocationRequests from './AllocationRequests';
+import Performance from './Performance';
+import Tasks from './Tasks';
+import SupportTickets from './SupportTickets';
+import Analytics from './Analytics';
 import FlightLogs from './FlightLogs';
 import LeaveOfAbsence from './LeaveOfAbsence';
 import Documents from './Documents';
@@ -74,6 +79,30 @@ export default function Dashboard() {
   };
 
   const navItems = [
+    {
+      id: 'performance',
+      title: 'My Performance',
+      description: 'View your activity, logs, badges, and overall performance.',
+      icon: Activity,
+      color: '#ec4899',
+      component: Performance
+    },
+    {
+      id: 'tasks',
+      title: 'Tasks & Assignments',
+      description: 'Manage and complete tasks assigned by administrators.',
+      icon: CheckSquare,
+      color: '#14b8a6',
+      component: Tasks
+    },
+    {
+      id: 'tickets',
+      title: 'Support Tickets',
+      description: 'Open a ticket for private support and communication with admins.',
+      icon: LifeBuoy,
+      color: '#f43f5e',
+      component: SupportTickets
+    },
     {
       id: 'leaderboard',
       title: 'Staff of the Week',
@@ -148,7 +177,15 @@ export default function Dashboard() {
       color: '#1e3a8a',
       component: Infractions,
       badgeCount: unreadInfractions.length
-    }
+    },
+    ...(currentUser.isAdmin ? [{
+      id: 'analytics',
+      title: 'Analytics',
+      description: 'View server-wide statistics, staff activity, and analytics.',
+      icon: BarChart2,
+      color: '#8b5cf6',
+      component: Analytics
+    }] : [])
   ];
 
   // Framer Motion Animation Settings

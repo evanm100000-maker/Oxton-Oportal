@@ -1,9 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Users, User } from 'lucide-react';
+import { Users, User, Trophy, ShieldAlert, Award, FileText, Send, X, Trash2 } from 'lucide-react';
 
 export default function AllStaff() {
-  const { activeUsers, onlineUsers } = useApp();
+  const { 
+    activeUsers, 
+    onlineUsers, 
+    flightLogs, 
+    currentUser, 
+    staffNotes, 
+    addStaffNote, 
+    deleteStaffNote, 
+    awardSOTW 
+  } = useApp();
+  
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [noteType, setNoteType] = useState('Performance');
+  const [noteText, setNoteText] = useState('');
+
+  const calculateBadge = (email) => {
+    const flightsCount = flightLogs.filter(log => log.submitterEmail === email && log.status === 'Approved').length;
+    if (flightsCount >= 50) return { label: 'Platinum', color: '#e5e7eb' };
+    if (flightsCount >= 30) return { label: 'Gold', color: '#fbbf24' };
+    if (flightsCount >= 20) return { label: 'Silver', color: '#9ca3af' };
+    if (flightsCount >= 10) return { label: 'Bronze', color: '#b45309' };
+    return null;
+  };
+
+  const handleAddNote = (e) => {
+    e.preventDefault();
+    if (!noteText.trim()) return;
+    addStaffNote(selectedStaff.email, noteType, noteText);
+    setNoteText('');
+  };
 
   return (
     <div style={styles.container}>
@@ -20,7 +49,9 @@ export default function AllStaff() {
 
       <div style={styles.grid}>
         {activeUsers.map(user => {
-          const isOnline = onlineUsers[user.email.replace(/\./g, ',')];
+          const isOnline = user.email && onlineUsers[user.email.replace(/\./g, ',')];
+          const badge = calculateBadge(user.email);
+          const sotwWins = user.sotwWins || 0;
           
           return (
             <div key={user.email} style={styles.card} className="glass-panel interactive-card">
@@ -41,144 +72,158 @@ export default function AllStaff() {
                 </div>
                 
                 <div style={styles.userInfo}>
-                  <strong style={styles.name}>{user.firstName} {user.lastName}</strong>
+                  <div style={styles.nameRow}>
+                    <strong style={styles.name}>{user.firstName} {user.lastName}</strong>
+                    {badge && (
+                      <span style={{...styles.rankBadge, color: badge.color, borderColor: badge.color}}>
+                        {badge.label}
+                      </span>
+                    )}
+                  </div>
                   <span style={styles.username}>@{user.robloxUsername}</span>
+                  {sotwWins > 0 && (
+                    <span style={styles.sotwWins}><Award size={12} /> SOTW Winner ({sotwWins}x)</span>
+                  )}
                 </div>
               </div>
               
               <div style={styles.roleSection}>
-                {user.isAdmin && <span className="badge badge-admin" style={{ marginRight: '8px' }}>Admin</span>}
-                {user.customRole ? (
-                  <span style={styles.customRole}>{user.customRole}</span>
-                ) : (
-                  <span style={styles.defaultRole}>Staff</span>
+                <div style={styles.roleBadges}>
+                  {user.isAdmin && <span className="badge badge-admin">Admin</span>}
+                  {user.customRole ? (
+                    <span style={styles.customRole}>{user.customRole}</span>
+                  ) : (
+                    <span style={styles.defaultRole}>Staff</span>
+                  )}
+                </div>
+                {currentUser.isAdmin && (
+                  <button onClick={() => setSelectedStaff(user)} style={styles.manageBtn}>
+                    Manage
+                  </button>
                 )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {selectedStaff && currentUser.isAdmin && (
+        <div style={styles.modalOverlay}>
+          <div className="glass-panel" style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Manage Staff: {selectedStaff.firstName} {selectedStaff.lastName}</h3>
+              <button onClick={() => setSelectedStaff(null)} style={styles.closeModalBtn}><X size={20}/></button>
+            </div>
+
+            <div style={styles.modalBody}>
+              <div style={styles.sotwAction}>
+                <div style={styles.sotwInfo}>
+                  <Trophy size={20} color="#fbbf24" />
+                  <strong>Staff of the Week</strong>
+                  <span style={{color: '#9ca3af', fontSize: '0.9rem'}}>Current wins: {selectedStaff.sotwWins || 0}</span>
+                </div>
+                <button onClick={() => awardSOTW(selectedStaff.email)} style={styles.awardSotwBtn}>
+                  Award SOTW
+                </button>
+              </div>
+
+              <div style={styles.notesSection}>
+                <h4 style={styles.notesTitle}><FileText size={18} /> Private Staff Notes</h4>
+                <p style={styles.notesDesc}>These notes are only visible to Administrators.</p>
+
+                <form onSubmit={handleAddNote} style={styles.noteForm}>
+                  <div style={styles.noteFormRow}>
+                    <select value={noteType} onChange={(e) => setNoteType(e.target.value)} style={styles.noteSelect}>
+                      <option value="Performance">Performance</option>
+                      <option value="Behaviour">Behaviour</option>
+                      <option value="Promotion Recommendation">Promotion Recommendation</option>
+                      <option value="General">General</option>
+                    </select>
+                    <input 
+                      type="text" 
+                      required 
+                      value={noteText} 
+                      onChange={(e) => setNoteText(e.target.value)} 
+                      placeholder="Add a private note..." 
+                      style={styles.noteInput} 
+                    />
+                    <button type="submit" style={styles.addNoteBtn}><Send size={16}/></button>
+                  </div>
+                </form>
+
+                <div style={styles.notesList}>
+                  {staffNotes.filter(n => n.staffEmail === selectedStaff.email).length === 0 ? (
+                    <p style={styles.emptyNotes}>No notes found for this staff member.</p>
+                  ) : (
+                    staffNotes.filter(n => n.staffEmail === selectedStaff.email).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(note => (
+                      <div key={note.id} style={styles.noteItem}>
+                        <div style={styles.noteHeader}>
+                          <span style={styles.noteTypeBadge}>{note.type}</span>
+                          <span style={styles.noteMeta}>By {note.adminName} • {new Date(note.timestamp).toLocaleDateString()}</span>
+                        </div>
+                        <p style={styles.noteTextDisplay}>{note.text}</p>
+                        <button onClick={() => deleteStaffNote(note.id)} style={styles.deleteNoteBtn}><Trash2 size={14}/></button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottom: '1px solid rgba(255,255,255,0.05)',
-    paddingBottom: '16px',
-  },
-  headerText: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  title: {
-    fontSize: '1.25rem',
-    fontWeight: '700',
-    color: 'var(--color-text-main)',
-  },
-  subtitle: {
-    fontSize: '0.9rem',
-    color: '#9ca3af',
-  },
-  statsBadge: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    background: 'rgba(37, 99, 235, 0.1)',
-    border: '1px solid rgba(37, 99, 235, 0.2)',
-    padding: '8px 16px',
-    borderRadius: '8px',
-    color: '#93c5fd',
-    fontSize: '0.9rem',
-    fontWeight: '600',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '20px',
-  },
-  card: {
-    padding: '20px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-  profileSection: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-  },
-  avatarContainer: {
-    position: 'relative',
-    width: '48px',
-    height: '48px',
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-    borderRadius: '50%',
-    objectFit: 'cover',
-    border: '2px solid rgba(255,255,255,0.1)',
-  },
-  avatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    borderRadius: '50%',
-    background: 'rgba(255,255,255,0.05)',
-    border: '2px solid rgba(255,255,255,0.1)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  onlineDot: {
-    position: 'absolute',
-    bottom: '0',
-    right: '0',
-    width: '14px',
-    height: '14px',
-    background: '#10b981',
-    border: '2px solid var(--color-bg-deep)',
-    borderRadius: '50%',
-    boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)',
-  },
-  userInfo: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '2px',
-  },
-  name: {
-    fontSize: '1.05rem',
-    fontWeight: '600',
-    color: 'var(--color-text-main)',
-  },
-  username: {
-    fontSize: '0.85rem',
-    color: '#9ca3af',
-  },
-  roleSection: {
-    display: 'flex',
-    alignItems: 'center',
-    background: 'rgba(0,0,0,0.2)',
-    padding: '10px 14px',
-    borderRadius: '8px',
-    border: '1px solid rgba(255,255,255,0.03)',
-  },
-  customRole: {
-    fontSize: '0.85rem',
-    color: '#c4b5fd',
-    fontWeight: '500',
-  },
-  defaultRole: {
-    fontSize: '0.85rem',
-    color: '#9ca3af',
-  }
+  container: { display: 'flex', flexDirection: 'column', gap: '24px' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' },
+  headerText: { display: 'flex', flexDirection: 'column', gap: '4px' },
+  title: { fontSize: '1.25rem', fontWeight: '700', color: 'var(--color-text-main)' },
+  subtitle: { fontSize: '0.9rem', color: '#9ca3af' },
+  statsBadge: { display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(37, 99, 235, 0.1)', border: '1px solid rgba(37, 99, 235, 0.2)', padding: '8px 16px', borderRadius: '8px', color: '#93c5fd', fontSize: '0.9rem', fontWeight: '600' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' },
+  card: { padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' },
+  profileSection: { display: 'flex', alignItems: 'center', gap: '16px' },
+  avatarContainer: { position: 'relative', width: '48px', height: '48px' },
+  avatar: { width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.1)' },
+  avatarPlaceholder: { width: '100%', height: '100%', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  onlineDot: { position: 'absolute', bottom: '0', right: '0', width: '14px', height: '14px', background: '#10b981', border: '2px solid var(--color-bg-deep)', borderRadius: '50%', boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)' },
+  userInfo: { display: 'flex', flexDirection: 'column', gap: '2px', flex: 1 },
+  nameRow: { display: 'flex', alignItems: 'center', gap: '8px' },
+  name: { fontSize: '1.05rem', fontWeight: '600', color: 'var(--color-text-main)' },
+  rankBadge: { padding: '2px 6px', borderRadius: '4px', border: '1px solid', fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' },
+  username: { fontSize: '0.85rem', color: '#9ca3af' },
+  sotwWins: { display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#fbbf24', marginTop: '4px', fontWeight: '600' },
+  roleSection: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' },
+  roleBadges: { display: 'flex', gap: '8px', alignItems: 'center' },
+  customRole: { fontSize: '0.85rem', color: '#c4b5fd', fontWeight: '500' },
+  defaultRole: { fontSize: '0.85rem', color: '#9ca3af' },
+  manageBtn: { padding: '4px 10px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' },
+  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+  modalContent: { width: '90%', maxWidth: '600px', background: '#1e293b', borderRadius: '16px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  modalHeader: { padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  modalTitle: { margin: 0, fontSize: '1.25rem', fontWeight: '600', color: '#fff' },
+  closeModalBtn: { background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' },
+  modalBody: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', maxHeight: '70vh', overflowY: 'auto' },
+  sotwAction: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.2)', borderRadius: '8px' },
+  sotwInfo: { display: 'flex', alignItems: 'center', gap: '12px', color: '#fff' },
+  awardSotwBtn: { padding: '8px 16px', background: '#fbbf24', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' },
+  notesSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  notesTitle: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', margin: 0, color: '#fff' },
+  notesDesc: { margin: 0, fontSize: '0.9rem', color: '#9ca3af' },
+  noteForm: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  noteFormRow: { display: 'flex', gap: '8px' },
+  noteSelect: { padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: '#fff', outline: 'none' },
+  noteInput: { flex: 1, padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: '#fff', outline: 'none' },
+  addNoteBtn: { padding: '0 16px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  notesList: { display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' },
+  emptyNotes: { color: 'rgba(255,255,255,0.3)', fontStyle: 'italic', fontSize: '0.9rem', textAlign: 'center', padding: '20px 0' },
+  noteItem: { padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', position: 'relative' },
+  noteHeader: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' },
+  noteTypeBadge: { padding: '2px 8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', color: '#e2e8f0' },
+  noteMeta: { fontSize: '0.8rem', color: '#9ca3af' },
+  noteTextDisplay: { margin: 0, fontSize: '0.95rem', color: '#d1d5db', lineHeight: '1.5' },
+  deleteNoteBtn: { position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', opacity: 0.7 }
 };

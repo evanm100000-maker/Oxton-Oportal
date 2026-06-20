@@ -185,6 +185,9 @@ const initialReports = [
 ];
 
 const initialInfractions = [];
+const initialTasks = [];
+const initialTickets = [];
+const initialStaffNotes = [];
 
 const STORAGE_KEYS = {
   users: 'oxton_users',
@@ -194,6 +197,9 @@ const STORAGE_KEYS = {
   documents: 'oxton_documents',
   reports: 'oxton_reports',
   infractions: 'oxton_infractions',
+  tasks: 'oxton_tasks',
+  tickets: 'oxton_tickets',
+  staffNotes: 'oxton_staff_notes',
   currentUser: 'oxton_current_user',
   theme: 'oxton_theme',
   warningConfig: 'oxton_warning',
@@ -241,6 +247,9 @@ export const AppProvider = ({ children }) => {
   const [documents, setDocuments] = useState(() => getStoredData(STORAGE_KEYS.documents, initialDocuments));
   const [reports, setReports] = useState(() => getStoredData(STORAGE_KEYS.reports, initialReports));
   const [infractions, setInfractions] = useState(() => getStoredData(STORAGE_KEYS.infractions, initialInfractions));
+  const [tasks, setTasks] = useState(() => getStoredData(STORAGE_KEYS.tasks, initialTasks));
+  const [tickets, setTickets] = useState(() => getStoredData(STORAGE_KEYS.tickets, initialTickets));
+  const [staffNotes, setStaffNotes] = useState(() => getStoredData(STORAGE_KEYS.staffNotes, initialStaffNotes));
   const [currentUser, setCurrentUser] = useState(() => getSessionData(STORAGE_KEYS.currentUser, null));
 
   // New States
@@ -274,6 +283,9 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { persistData(STORAGE_KEYS.documents, documents); }, [documents]);
   useEffect(() => { persistData(STORAGE_KEYS.reports, reports); }, [reports]);
   useEffect(() => { persistData(STORAGE_KEYS.infractions, infractions); }, [infractions]);
+  useEffect(() => { persistData(STORAGE_KEYS.tasks, tasks); }, [tasks]);
+  useEffect(() => { persistData(STORAGE_KEYS.tickets, tickets); }, [tickets]);
+  useEffect(() => { persistData(STORAGE_KEYS.staffNotes, staffNotes); }, [staffNotes]);
   useEffect(() => {
     if (currentUser) {
       sessionStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
@@ -340,6 +352,9 @@ export const AppProvider = ({ children }) => {
           set(ref(db, 'documents'), initialDocuments);
           set(ref(db, 'reports'), initialReports);
           set(ref(db, 'infractions'), initialInfractions);
+          set(ref(db, 'tasks'), initialTasks);
+          set(ref(db, 'tickets'), initialTickets);
+          set(ref(db, 'staffNotes'), initialStaffNotes);
           set(ref(db, 'warningConfig'), initialWarningConfig);
           set(ref(db, 'maintenanceConfig'), initialMaintenanceConfig);
           set(ref(db, 'siteVersion'), initialVersion);
@@ -391,14 +406,14 @@ export const AppProvider = ({ children }) => {
 
     const skipSyncRef = useRef({
       users: false, flights: false, flightLogs: false, loaRequests: false, 
-      documents: false, reports: false, infractions: false, auditLogs: false, 
+      documents: false, reports: false, infractions: false, tasks: false, tickets: false, staffNotes: false, auditLogs: false, 
       passwordResets: false, chatMessages: false, theme: false,
       warningConfig: false, maintenanceConfig: false
     });
     
     const hasLoadedRef = useRef({
       users: false, flights: false, flightLogs: false, loaRequests: false, 
-      documents: false, reports: false, infractions: false, auditLogs: false, 
+      documents: false, reports: false, infractions: false, tasks: false, tickets: false, staffNotes: false, auditLogs: false, 
       passwordResets: false, chatMessages: false, theme: false,
       warningConfig: false, maintenanceConfig: false
     });
@@ -438,6 +453,9 @@ export const AppProvider = ({ children }) => {
       const unsubDocs = setupListener('documents', setDocuments);
       const unsubReports = setupListener('reports', setReports);
       const unsubInfractions = setupListener('infractions', setInfractions);
+      const unsubTasks = setupListener('tasks', setTasks);
+      const unsubTickets = setupListener('tickets', setTickets);
+      const unsubStaffNotes = setupListener('staffNotes', setStaffNotes);
       const unsubAudit = setupListener('auditLogs', setAuditLogs);
       const unsubPwdResets = setupListener('passwordResets', setPasswordResets);
       const unsubChat = setupListener('chatMessages', setChatMessages);
@@ -451,6 +469,9 @@ export const AppProvider = ({ children }) => {
         if (typeof unsubFlightLogs === 'function') unsubFlightLogs();
         if (typeof unsubReports === 'function') unsubReports();
         if (typeof unsubInfractions === 'function') unsubInfractions();
+        if (typeof unsubTasks === 'function') unsubTasks();
+        if (typeof unsubTickets === 'function') unsubTickets();
+        if (typeof unsubStaffNotes === 'function') unsubStaffNotes();
         if (typeof unsubAudit === 'function') unsubAudit();
         if (typeof unsubPwdResets === 'function') unsubPwdResets();
         if (typeof unsubChat === 'function') unsubChat();
@@ -479,6 +500,9 @@ export const AppProvider = ({ children }) => {
     useEffect(() => { syncToFirebase('documents', documents); }, [documents]);
     useEffect(() => { syncToFirebase('reports', reports); }, [reports]);
     useEffect(() => { syncToFirebase('infractions', infractions); }, [infractions]);
+    useEffect(() => { syncToFirebase('tasks', tasks); }, [tasks]);
+    useEffect(() => { syncToFirebase('tickets', tickets); }, [tickets]);
+    useEffect(() => { syncToFirebase('staffNotes', staffNotes); }, [staffNotes]);
     useEffect(() => { syncToFirebase('auditLogs', auditLogs); }, [auditLogs]);
     useEffect(() => { syncToFirebase('passwordResets', passwordResets); }, [passwordResets]);
     useEffect(() => { syncToFirebase('chatMessages', chatMessages); }, [chatMessages]);
@@ -494,6 +518,9 @@ export const AppProvider = ({ children }) => {
       if (key === STORAGE_KEYS.flights) setFlights(value);
       if (key === STORAGE_KEYS.flightLogs) setFlightLogs(value);
       if (key === STORAGE_KEYS.infractions) setInfractions(value);
+      if (key === STORAGE_KEYS.tasks) setTasks(value);
+      if (key === STORAGE_KEYS.tickets) setTickets(value);
+      if (key === STORAGE_KEYS.staffNotes) setStaffNotes(value);
       if (key === STORAGE_KEYS.reports) setReports(value);
       if (key === STORAGE_KEYS.loaRequests) setLoaRequests(value);
       if (key === STORAGE_KEYS.documents) setDocuments(value);
@@ -1090,6 +1117,99 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
+  // --- Tasks Operations ---
+  const addTask = (taskData) => {
+    const newTask = {
+      id: makeId('task'),
+      assignedByEmail: currentUser.email,
+      assignedByName: `${currentUser.firstName} ${currentUser.lastName}`,
+      assignedToEmail: taskData.assignedToEmail,
+      title: taskData.title,
+      description: taskData.description || '',
+      status: 'Pending',
+      timestamp: new Date().toISOString(),
+      completedAt: null
+    };
+    setTasks(prev => [newTask, ...prev]);
+  };
+
+  const updateTaskStatus = (taskId, status) => {
+    setTasks(prev => prev.map(t => 
+      t.id === taskId 
+        ? { ...t, status, completedAt: status === 'Completed' ? new Date().toISOString() : null } 
+        : t
+    ));
+  };
+
+  const deleteTask = (taskId) => {
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+  };
+
+  // --- Support Tickets Operations ---
+  const createTicket = (ticketData) => {
+    const newTicket = {
+      id: makeId('ticket'),
+      authorEmail: currentUser.email,
+      authorName: `${currentUser.firstName} ${currentUser.lastName}`,
+      title: ticketData.title,
+      description: ticketData.description,
+      status: 'Open',
+      timestamp: new Date().toISOString(),
+      comments: []
+    };
+    setTickets(prev => [newTicket, ...prev]);
+  };
+
+  const updateTicketStatus = (ticketId, status) => {
+    setTickets(prev => prev.map(t => 
+      t.id === ticketId ? { ...t, status } : t
+    ));
+  };
+
+  const addTicketComment = (ticketId, text) => {
+    const newComment = {
+      id: makeId('tcomm'),
+      authorEmail: currentUser.email,
+      authorName: `${currentUser.firstName} ${currentUser.lastName}`,
+      text,
+      timestamp: new Date().toISOString(),
+      isAdmin: currentUser.isAdmin
+    };
+    setTickets(prev => prev.map(t => 
+      t.id === ticketId ? { ...t, comments: [...(t.comments || []), newComment] } : t
+    ));
+  };
+
+  // --- Staff Notes Operations ---
+  const addStaffNote = (staffEmail, type, text) => {
+    const newNote = {
+      id: makeId('note'),
+      staffEmail,
+      adminEmail: currentUser.email,
+      adminName: `${currentUser.firstName} ${currentUser.lastName}`,
+      type,
+      text,
+      timestamp: new Date().toISOString()
+    };
+    setStaffNotes(prev => [newNote, ...prev]);
+  };
+
+  const deleteStaffNote = (noteId) => {
+    setStaffNotes(prev => prev.filter(n => n.id !== noteId));
+  };
+
+  // --- Staff of the Week (SOTW) ---
+  const awardSOTW = (staffEmail) => {
+    setUsers(prev => prev.map(u => 
+      u.email === staffEmail 
+        ? { ...u, sotwWins: (u.sotwWins || 0) + 1 } 
+        : u
+    ));
+    if (currentUser.email === staffEmail) {
+      setCurrentUser(prev => ({ ...prev, sotwWins: (prev.sotwWins || 0) + 1 }));
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1102,6 +1222,9 @@ export const AppProvider = ({ children }) => {
         documents,
         reports,
         infractions,
+        tasks,
+        tickets,
+        staffNotes,
         onlineUsers,
         siteVersion,
         theme,
@@ -1144,6 +1267,15 @@ export const AppProvider = ({ children }) => {
         addReportComment,
         addInfraction,
         deleteInfraction,
+        addTask,
+        updateTaskStatus,
+        deleteTask,
+        createTicket,
+        updateTicketStatus,
+        addTicketComment,
+        addStaffNote,
+        deleteStaffNote,
+        awardSOTW,
         chatMessages,
         addChatMessage,
         deleteChatMessage,
