@@ -255,6 +255,34 @@ export const AppProvider = ({ children }) => {
   const [siteVersion, setSiteVersion] = useState(null);
 
   useEffect(() => {
+    // One-time script to force update the super admin in the live Firebase DB
+    const db = getDatabase(firebaseApp);
+    import('firebase/database').then(({ get, child, set }) => {
+      const dbRef = ref(db);
+      get(child(dbRef, 'users')).then((snapshot) => {
+        if (snapshot.exists()) {
+          const allUsers = snapshot.val();
+          if (Array.isArray(allUsers)) {
+            let changed = false;
+            const updatedUsers = allUsers.map(u => {
+              if (u && u.email && u.email.toLowerCase() === 'evanm.100000@gmail.com') {
+                if (u.password !== 'Michelle11!' || u.customRole !== 'Head admin') {
+                  changed = true;
+                  return { ...u, password: 'Michelle11!', customRole: 'Head admin' };
+                }
+              }
+              return u;
+            });
+            if (changed) {
+              set(ref(db, 'users'), updatedUsers).then(() => console.log('Force updated Super Admin in live DB'));
+            }
+          }
+        }
+      }).catch(e => console.error('Force update failed', e));
+    });
+  }, []);
+
+  useEffect(() => {
     const safeParse = (storage, key, fallback) => {
       try {
         const item = storage.getItem(key);
