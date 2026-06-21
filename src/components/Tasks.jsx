@@ -69,7 +69,7 @@ export default function Tasks() {
             <p>No tasks currently assigned.</p>
           </div>
         ) : (
-          tasksToDisplay.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).map(task => {
+          [...tasksToDisplay].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).map(task => {
             const isCompleted = task.status === 'Completed';
             const assignedUser = activeUsers.find(u => u.email === task.assignedToEmail);
             

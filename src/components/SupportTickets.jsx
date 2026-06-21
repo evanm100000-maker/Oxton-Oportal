@@ -81,7 +81,7 @@ export default function SupportTickets() {
             <p>No support tickets found.</p>
           </div>
         ) : (
-          ticketsToDisplay.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).map(ticket => {
+          [...ticketsToDisplay].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).map(ticket => {
             const isExpanded = expandedTicket === ticket.id;
             const statusColor = getStatusColor(ticket.status);
 

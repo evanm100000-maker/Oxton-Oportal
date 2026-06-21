@@ -15,10 +15,15 @@ export default function StaffChat() {
 
   const filteredMessages = chatMessages.filter(m => m.channel === activeChannel);
 
-  // Start at the newest messages when opening a channel, then let readers scroll freely.
+  // Scroll to the newest messages when opening a channel or when new messages are added
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-  }, [activeChannel]);
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    };
+    scrollToBottom();
+    // Fallback to ensure it scrolls even if DOM takes a moment to update/render images
+    setTimeout(scrollToBottom, 100);
+  }, [activeChannel, filteredMessages.length]);
 
   const handleSend = (e) => {
     e.preventDefault();
