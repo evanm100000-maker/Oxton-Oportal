@@ -209,6 +209,8 @@ const initialAnnouncements = [
   }
 ];
 
+const initialPrivateChats = [];
+
 const STORAGE_KEYS = {
   users: 'oxton_users',
   flights: 'oxton_flights',
@@ -229,6 +231,7 @@ const STORAGE_KEYS = {
   chatMessages: 'oxton_chat_messages',
   announcements: 'oxton_announcements',
   bypassConfig: 'oxton_bypass',
+  privateChats: 'oxton_private_chats',
 };
 
 const isActiveStaff = (user) => (
@@ -329,6 +332,7 @@ export const AppProvider = ({ children }) => {
   const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', []);
   const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements);
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
+  const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
@@ -462,6 +466,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { persistData(STORAGE_KEYS.chatMessages, chatMessages); }, [chatMessages]);
   useEffect(() => { persistData(STORAGE_KEYS.announcements, announcements); }, [announcements]);
   useEffect(() => { persistData(STORAGE_KEYS.bypassConfig, bypassConfig); }, [bypassConfig]);
+  useEffect(() => { persistData(STORAGE_KEYS.privateChats, privateChats); }, [privateChats]);
 
   useEffect(() => {
       if (!currentUser) return;
@@ -503,6 +508,7 @@ export const AppProvider = ({ children }) => {
           set(ref(db, 'maintenanceConfig'), initialMaintenanceConfig);
           set(ref(db, 'announcements'), initialAnnouncements);
           set(ref(db, 'bypassConfig'), initialBypassConfig);
+          set(ref(db, 'privateChats'), initialPrivateChats);
           set(ref(db, 'siteVersion'), initialVersion);
           setSiteVersion(initialVersion);
         }
@@ -573,6 +579,7 @@ export const AppProvider = ({ children }) => {
       if (key === STORAGE_KEYS.passwordResets) setPasswordResets(value);
       if (key === STORAGE_KEYS.announcements) setAnnouncements(value);
       if (key === STORAGE_KEYS.bypassConfig) setBypassConfig(value);
+      if (key === STORAGE_KEYS.privateChats) setPrivateChats(value);
       if (key === STORAGE_KEYS.theme) setTheme(value);
     };
 
@@ -1458,6 +1465,19 @@ export const AppProvider = ({ children }) => {
         clearBypassAnnouncement: () => {
           setBypassConfig(prev => ({ ...prev, isActive: false }));
           logAction('bypass_announcement_cleared', `Cleared bypass announcement`);
+        },
+        privateChats,
+        createPrivateChat: (participantEmails, groupName = '') => {
+          const newChat = {
+            id: makeId('pchat'),
+            participants: participantEmails,
+            name: groupName,
+            createdBy: currentUser.email,
+            createdAt: new Date().toISOString()
+          };
+          setPrivateChats(prev => [...prev, newChat]);
+          logAction('create_private_chat', `Created a private chat`, { participants: participantEmails, name: groupName });
+          return newChat.id;
         },
         requestPasswordReset,
         approvePasswordReset,

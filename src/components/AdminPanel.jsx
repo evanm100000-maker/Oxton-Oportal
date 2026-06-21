@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   UserCheck, Users, Plane, Calendar, 
-  Plus, Check, X, ShieldAlert, Trash2, Settings, Activity, Key, Award, FileText
+  Plus, Check, X, ShieldAlert, Trash2, Settings, Activity, Key, Award, FileText, MessageSquare
 } from 'lucide-react';
 
 export default function AdminPanel() {
@@ -35,7 +35,9 @@ export default function AdminPanel() {
     auditLogs,
     passwordResets,
     approvePasswordReset,
-    rejectPasswordReset
+    rejectPasswordReset,
+    privateChats,
+    chatMessages
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
@@ -242,6 +244,9 @@ export default function AdminPanel() {
         </button>
         <button type="button" onClick={() => setActiveSubTab('status')} style={getTabStyle(activeSubTab === 'status')}>
           <Settings size={16} /> System Status
+        </button>
+        <button type="button" onClick={() => setActiveSubTab('privateChats')} style={getTabStyle(activeSubTab === 'privateChats')}>
+          <MessageSquare size={16} /> Private Chats
         </button>
         <button type="button" onClick={() => setActiveSubTab('audit')} style={getTabStyle(activeSubTab === 'audit')}>
           <Activity size={16} /> Audit Log
@@ -840,6 +845,63 @@ export default function AdminPanel() {
                 <ShieldAlert size={16} /> Publish Consequence
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* PRIVATE CHATS OVERSIGHT SECTION */}
+      {activeSubTab === 'privateChats' && (
+        <div id="section-privateChats" style={styles.panelSection}>
+          <div>
+            <h2 style={styles.panelTitle}>Private Chats Oversight</h2>
+            <p style={styles.panelSubtitle}>As an Admin, you have access to review all private messages sent on the platform.</p>
+          </div>
+          <div style={styles.tableWrapper} className="glass-panel">
+            <table style={styles.table}>
+              <thead>
+                <tr style={styles.trHead}>
+                  <th style={styles.th}>Chat ID / Name</th>
+                  <th style={styles.th}>Participants</th>
+                  <th style={styles.th}>Created By</th>
+                  <th style={styles.th}>Created At</th>
+                  <th style={styles.th}>Message Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(privateChats) && privateChats.length === 0 ? (
+                  <tr><td colSpan="5" style={{...styles.td, textAlign: 'center'}}>No private chats found.</td></tr>
+                ) : (
+                  Array.isArray(privateChats) && privateChats.map(chat => {
+                    const messagesInChat = Array.isArray(chatMessages) ? chatMessages.filter(m => m.channel === chat.id) : [];
+                    return (
+                      <React.Fragment key={chat.id}>
+                        <tr style={styles.trBody}>
+                          <td style={styles.td}><strong>{chat.name || chat.id}</strong></td>
+                          <td style={styles.td}>{chat.participants?.join(', ')}</td>
+                          <td style={styles.td}>{chat.createdBy}</td>
+                          <td style={styles.td}>{new Date(chat.createdAt).toLocaleString()}</td>
+                          <td style={styles.td}>{messagesInChat.length} msgs</td>
+                        </tr>
+                        {messagesInChat.length > 0 && (
+                          <tr style={styles.trBody}>
+                            <td colSpan="5" style={{ padding: '0 16px 16px 16px' }}>
+                              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+                                {messagesInChat.map(msg => (
+                                  <div key={msg.id} style={{ marginBottom: '8px', fontSize: '0.85rem' }}>
+                                    <strong style={{ color: '#3b82f6' }}>{msg.senderName}</strong> <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>{new Date(msg.timestamp).toLocaleString()}</span>
+                                    <div style={{ color: '#d1d5db', marginTop: '2px' }}>{msg.text}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

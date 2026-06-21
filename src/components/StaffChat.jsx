@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Send, ShieldAlert, Users, MessageSquare, Globe, Reply, Trash2, Flag, Smile, X, Image as ImageIcon, Paperclip } from 'lucide-react';
+import { Send, ShieldAlert, Users, MessageSquare, Globe, Reply, Trash2, Flag, Smile, X, Image as ImageIcon, Paperclip, Plus } from 'lucide-react';
 import { storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
 
 export default function StaffChat() {
-  const { currentUser, chatMessages, addChatMessage, deleteChatMessage, addMessageReaction, submitReport, setCustomRole } = useApp();
+  const { currentUser, chatMessages, addChatMessage, deleteChatMessage, addMessageReaction, submitReport, setCustomRole, privateChats, createPrivateChat, users } = useApp();
   const [activeChannel, setActiveChannel] = useState('Staff Chat');
   const [inputText, setInputText] = useState('');
   const [rolePromptTarget, setRolePromptTarget] = useState(null);
@@ -16,7 +16,16 @@ export default function StaffChat() {
   const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const filteredMessages = chatMessages.filter(m => m.channel === activeChannel);
+  // New Chat Modal State
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [newChatName, setNewChatName] = useState('');
+
+  const safeChatMessages = Array.isArray(chatMessages) ? chatMessages : [];
+  const safePrivateChats = Array.isArray(privateChats) ? privateChats : [];
+  
+  const myPrivateChats = safePrivateChats.filter(chat => chat.participants?.includes(currentUser.email));
+  const filteredMessages = safeChatMessages.filter(m => m.channel === activeChannel);
 
   // Scroll to the newest messages when opening a channel or when new messages are added
   useEffect(() => {
@@ -36,8 +45,8 @@ export default function StaffChat() {
     if (replyingTo) {
       replyData = {
         id: replyingTo.id,
-        senderName: replyingTo.senderName,
-        text: replyingTo.text.length > 50 ? replyingTo.text.substring(0, 50) + '...' : replyingTo.text
+        senderName: replyingTo.senderName || 'Unknown',
+        text: (replyingTo.text || '').length > 50 ? replyingTo.text.substring(0, 50) + '...' : (replyingTo.text || '')
       };
     }
 
@@ -75,10 +84,10 @@ export default function StaffChat() {
   };
 
   const handleReport = (msg) => {
-    if (window.confirm(`Are you sure you want to report this message by ${msg.senderName}?`)) {
+    if (window.confirm(`Are you sure you want to report this message by ${msg.senderName || 'Unknown'}?`)) {
       submitReport({
         type: 'Chat Message Report',
-        reportedPlayer: msg.senderName,
+        reportedPlayer: msg.senderName || 'Unknown',
         description: `Reported Message ID: ${msg.id}\nMessage Content: "${msg.text}"\nChannel: ${msg.channel}`,
         evidenceLink: ''
       });
@@ -94,11 +103,44 @@ export default function StaffChat() {
     setNewRoleInput('');
   };
 
+  const handleCreatePrivateChat = (e) => {
+    e.preventDefault();
+    if (selectedUsers.length === 0) return;
+    const participants = [currentUser.email, ...selectedUsers];
+    const newChatId = createPrivateChat(participants, selectedUsers.length > 1 ? newChatName : '');
+    setShowNewChatModal(false);
+    setSelectedUsers([]);
+    setNewChatName('');
+    setActiveChannel(newChatId);
+  };
+
+  const toggleUserSelection = (email) => {
+    setSelectedUsers(prev => prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]);
+  };
+
+  const getChannelName = () => {
+    if (['Staff Chat', 'Security', 'Global'].includes(activeChannel)) {
+      return `# ${activeChannel.toLowerCase().replace(' ', '-')}`;
+    }
+    const pchat = safePrivateChats.find(c => c.id === activeChannel);
+    if (pchat) {
+      if (pchat.name) return pchat.name;
+      const otherUsers = pchat.participants.filter(e => e !== currentUser.email);
+      if (otherUsers.length === 0) return 'Just You';
+      const names = otherUsers.map(email => {
+        const u = Array.isArray(users) ? users.find(user => user.email === email) : null;
+        return u ? u.firstName : email.split('@')[0];
+      });
+      return names.join(', ');
+    }
+    return '# unknown';
+  };
+
   return (
     <div className="admin-layout" style={styles.container}>
       {/* Channels Sidebar */}
       <div style={styles.sidebar} className="glass-panel admin-sidebar">
-        <h3 style={styles.sidebarTitle}><MessageSquare size={16} /> Channels</h3>
+        <h3 style={styles.sidebarTitle}><MessageSquare size={16} /> Public Channels</h3>
         <button 
           onClick={() => setActiveChannel('Staff Chat')}
           style={{
@@ -132,14 +174,54 @@ export default function StaffChat() {
         >
           <Globe size={16} /> Global
         </button>
+
+        <div style={{ ...styles.sidebarTitle, marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Users size={16} /> Private Messages</span>
+          <button onClick={() => setShowNewChatModal(true)} style={{ background: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.4)', borderRadius: '4px', color: '#3b82f6', cursor: 'pointer', display: 'flex', padding: '2px' }} title="New Message">
+            <Plus size={14} />
+          </button>
+        </div>
+        {myPrivateChats.map(chat => {
+          let chatName = chat.name;
+          if (!chatName) {
+            const others = chat.participants.filter(e => e !== currentUser.email);
+            if (others.length === 0) chatName = 'Just You';
+            else {
+              chatName = others.map(email => {
+                const u = Array.isArray(users) ? users.find(user => user.email === email) : null;
+                return u ? u.firstName : email.split('@')[0];
+              }).join(', ');
+            }
+          }
+          return (
+            <button 
+              key={chat.id}
+              onClick={() => setActiveChannel(chat.id)}
+              style={{
+                ...styles.channelBtn,
+                background: activeChannel === chat.id ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
+                borderColor: activeChannel === chat.id ? '#8b5cf6' : 'transparent',
+                color: activeChannel === chat.id ? 'var(--color-text-main)' : '#9ca3af',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis'
+              }}
+              title={chatName}
+            >
+              <Users size={16} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatName}</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Main Chat Area */}
       <div style={styles.chatArea} className="glass-panel">
         <div style={styles.chatHeader}>
-          <h2 style={styles.channelName}># {activeChannel.toLowerCase().replace(' ', '-')}</h2>
+          <h2 style={styles.channelName}>{getChannelName()}</h2>
           <span style={styles.channelDesc}>
-            {activeChannel === 'Security' ? 'Restricted security operations channel.' : 'General staff communication channel.'}
+            {activeChannel === 'Security' ? 'Restricted security operations channel.' : 
+             activeChannel === 'Staff Chat' ? 'General staff communication channel.' : 
+             activeChannel === 'Global' ? 'Global announcements channel.' : 'Private, end-to-end communication.'}
           </span>
         </div>
 
@@ -148,7 +230,7 @@ export default function StaffChat() {
             <div style={styles.emptyState}>No messages yet. Start the conversation!</div>
           ) : (
             filteredMessages.map((msg, index) => {
-              const msgDate = new Date(msg.timestamp);
+              const msgDate = new Date(msg.timestamp || Date.now());
               const isToday = new Date().toDateString() === msgDate.toDateString();
               const dateString = isToday ? 'Today' : msgDate.toLocaleDateString();
               
@@ -156,11 +238,14 @@ export default function StaffChat() {
               if (index === 0) {
                 showDateDivider = true;
               } else {
-                const prevMsgDate = new Date(filteredMessages[index - 1].timestamp);
+                const prevMsgDate = new Date(filteredMessages[index - 1].timestamp || Date.now());
                 if (msgDate.toDateString() !== prevMsgDate.toDateString()) {
                   showDateDivider = true;
                 }
               }
+
+              const senderName = msg.senderName || 'Unknown';
+              const messageText = msg.text || '';
 
               return (
                 <React.Fragment key={msg.id}>
@@ -182,7 +267,7 @@ export default function StaffChat() {
                   title={currentUser.isAdmin ? "Click to set role" : ""}
                   onClick={() => {
                     if (currentUser.isAdmin) {
-                      setRolePromptTarget({ email: msg.senderEmail, name: msg.senderName, currentRole: msg.senderRole });
+                      setRolePromptTarget({ email: msg.senderEmail, name: senderName, currentRole: msg.senderRole });
                       setNewRoleInput(msg.senderRole || '');
                     }
                   }}
@@ -190,7 +275,7 @@ export default function StaffChat() {
                   {msg.senderPfp ? (
                     <img src={msg.senderPfp} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
                   ) : (
-                    msg.senderName.charAt(0)
+                    senderName.charAt(0)
                   )}
                 </div>
                 <div style={{...styles.messageContent, flex: 1, minWidth: 0}}>
@@ -199,17 +284,17 @@ export default function StaffChat() {
                       style={styles.senderName}
                       onClick={() => {
                         if (currentUser.isAdmin) {
-                          setRolePromptTarget({ email: msg.senderEmail, name: msg.senderName, currentRole: msg.senderRole });
+                          setRolePromptTarget({ email: msg.senderEmail, name: senderName, currentRole: msg.senderRole });
                           setNewRoleInput(msg.senderRole || '');
                         }
                       }}
                       title={currentUser.isAdmin ? "Click to set role" : ""}
                     >
-                      {msg.senderName}
+                      {senderName}
                     </span>
                     {msg.senderRole && <span style={styles.senderRole}>({msg.senderRole})</span>}
                     <span style={styles.timestamp}>
-                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
+                      {msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
                     </span>
                   </div>
                   
@@ -217,14 +302,14 @@ export default function StaffChat() {
                     <div style={styles.replyQuoteBlock}>
                       <span style={{color: '#9ca3af', fontSize: '0.8rem'}}>
                         <Reply size={12} style={{marginRight: '4px', display: 'inline', verticalAlign: 'middle'}}/>
-                        Replying to <strong>{msg.replyTo.senderName}</strong>
+                        Replying to <strong>{msg.replyTo.senderName || 'Unknown'}</strong>
                       </span>
                       <div style={{color: '#d1d5db', fontSize: '0.85rem', marginTop: '2px', fontStyle: 'italic', borderLeft: '2px solid rgba(255,255,255,0.1)', paddingLeft: '8px'}}>{msg.replyTo.text}</div>
                     </div>
                   )}
                   
                   <div style={styles.messageText}>
-                    {msg.text.split(/(@[a-zA-Z0-9_.-]+)/g).map((part, i) => 
+                    {messageText.split(/(@[a-zA-Z0-9_.-]+)/g).map((part, i) => 
                       part.startsWith('@') ? <span key={i} style={{ color: '#06b6d4', fontWeight: 'bold' }}>{part}</span> : part
                     )}
                   </div>
@@ -308,7 +393,7 @@ export default function StaffChat() {
             <div style={styles.replyingBanner}>
               <div style={styles.replyingBannerText}>
                 <Reply size={12} style={{marginRight: '6px', display: 'inline', verticalAlign: 'middle'}}/>
-                Replying to <strong>{replyingTo.senderName}</strong>: {replyingTo.text.length > 50 ? replyingTo.text.substring(0, 50) + '...' : replyingTo.text}
+                Replying to <strong>{replyingTo.senderName || 'Unknown'}</strong>: {(replyingTo.text || '').length > 50 ? (replyingTo.text || '').substring(0, 50) + '...' : (replyingTo.text || '')}
               </div>
               <button type="button" onClick={() => setReplyingTo(null)} style={styles.replyingBannerClose}>
                 <X size={14} />
@@ -334,7 +419,7 @@ export default function StaffChat() {
                 type="text" 
                 value={inputText} 
                 onChange={e => setInputText(e.target.value)} 
-                placeholder={isUploading ? "Uploading attachment..." : `Message #${activeChannel.toLowerCase().replace(' ', '-')}`}
+                placeholder={isUploading ? "Uploading attachment..." : `Message ${getChannelName()}`}
                 style={styles.input}
                 disabled={isUploading}
               />
@@ -370,6 +455,39 @@ export default function StaffChat() {
           </div>
         </div>
       )}
+
+      {/* New Private Chat Modal */}
+      {showNewChatModal && (
+        <div style={styles.modalOverlay}>
+          <div className="glass-panel" style={{...styles.modalContent, width: '500px'}}>
+            <h3>New Message</h3>
+            <p style={{fontSize: '0.85rem', color: '#9ca3af', marginBottom: '16px'}}>Select one or more staff members to start a private conversation.</p>
+            <form onSubmit={handleCreatePrivateChat} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px' }}>
+                {Array.isArray(users) && users.filter(u => u.email !== currentUser.email).map(u => (
+                  <label key={u.email} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', cursor: 'pointer', borderRadius: '8px', background: selectedUsers.includes(u.email) ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
+                    <input type="checkbox" checked={selectedUsers.includes(u.email)} onChange={() => toggleUserSelection(u.email)} style={{ cursor: 'pointer' }} />
+                    <span style={{ color: 'var(--color-text-main)', fontWeight: '500' }}>{u.firstName} {u.lastName}</span>
+                    <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>({u.email})</span>
+                  </label>
+                ))}
+              </div>
+              
+              {selectedUsers.length > 1 && (
+                <div>
+                  <label style={{ display: 'block', marginBottom: '8px', color: '#9ca3af', fontSize: '0.85rem' }}>Group Name (Optional)</label>
+                  <input type="text" value={newChatName} onChange={e => setNewChatName(e.target.value)} className="input-field" placeholder="e.g. Security Task Force" />
+                </div>
+              )}
+
+              <div style={{display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px'}}>
+                <button type="button" onClick={() => { setShowNewChatModal(false); setSelectedUsers([]); setNewChatName(''); }} className="btn-secondary">Cancel</button>
+                <button type="submit" className="btn-primary" disabled={selectedUsers.length === 0}>Create Chat</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -387,6 +505,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
+    overflowY: 'auto',
   },
   sidebarTitle: {
     fontSize: '0.85rem',
@@ -550,6 +669,8 @@ const styles = {
     width: '400px',
     padding: '24px',
     borderRadius: '16px',
+    maxHeight: '90vh',
+    overflowY: 'auto'
   },
   inputContainerWrapper: {
     display: 'flex',

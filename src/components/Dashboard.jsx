@@ -61,17 +61,20 @@ export default function Dashboard() {
   // Update read count when opening the chat
   React.useEffect(() => {
     if (activeTab === 'staffChat') {
-      setLastReadChatCount(chatMessages.length);
-      localStorage.setItem(`oxton_chat_read_${currentUser.email}`, chatMessages.length);
+      const chatLen = Array.isArray(chatMessages) ? chatMessages.length : 0;
+      setLastReadChatCount(chatLen);
+      localStorage.setItem(`oxton_chat_read_${currentUser.email}`, chatLen);
     }
     if (activeTab === 'allocation') {
-      setLastReadFlightCount(flights.length);
-      localStorage.setItem(`oxton_flight_read_${currentUser.email}`, flights.length);
+      const flightLen = Array.isArray(flights) ? flights.length : 0;
+      setLastReadFlightCount(flightLen);
+      localStorage.setItem(`oxton_flight_read_${currentUser.email}`, flightLen);
     }
-  }, [activeTab, chatMessages.length, flights.length, currentUser.email]);
+  }, [activeTab, chatMessages, flights, currentUser.email]);
 
-  const unreadChatCount = Math.max(0, chatMessages.length - lastReadChatCount);
-  const unreadFlightCount = Math.max(0, flights.length - lastReadFlightCount);
+  const safeChatMessages = Array.isArray(chatMessages) ? chatMessages : [];
+  const unreadChatCount = Math.max(0, safeChatMessages.length - lastReadChatCount);
+  const unreadFlightCount = Math.max(0, (Array.isArray(flights) ? flights.length : 0) - lastReadFlightCount);
   const myInfractions = React.useMemo(
     () => infractions.filter(inf => inf.staffEmail === currentUser.email),
     [infractions, currentUser.email]
@@ -130,7 +133,7 @@ export default function Dashboard() {
     // Row 2
     {
       id: 'staffChat',
-      title: 'Staff Chat',
+      title: 'Messages',
       description: 'Communicate with staff and security in real-time.',
       icon: MessageSquare,
       color: '#10b981',
