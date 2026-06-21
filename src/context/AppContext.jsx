@@ -70,7 +70,17 @@ const initialWarningConfig = {
   isActive: false,
   title: 'Goalbound Outfits Issue',
   message: 'Goalbound Outfits are temporarily disabled due to a partying issue, you may need to unequip.',
-  type: 'warning'
+  type: 'warning',
+  countdownEnabled: false,
+  countdownTarget: ''
+};
+
+const initialBypassConfig = {
+  isActive: false,
+  id: null,
+  title: '',
+  message: '',
+  senderName: ''
 };
 
 const initialMaintenanceConfig = {
@@ -218,6 +228,7 @@ const STORAGE_KEYS = {
   passwordResets: 'oxton_password_resets',
   chatMessages: 'oxton_chat_messages',
   announcements: 'oxton_announcements',
+  bypassConfig: 'oxton_bypass',
 };
 
 const isActiveStaff = (user) => (
@@ -317,6 +328,7 @@ export const AppProvider = ({ children }) => {
   const [passwordResets, setPasswordResets] = useFirebaseArray('passwordResets', []);
   const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', []);
   const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements);
+  const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
@@ -449,6 +461,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { persistData(STORAGE_KEYS.passwordResets, passwordResets); }, [passwordResets]);
   useEffect(() => { persistData(STORAGE_KEYS.chatMessages, chatMessages); }, [chatMessages]);
   useEffect(() => { persistData(STORAGE_KEYS.announcements, announcements); }, [announcements]);
+  useEffect(() => { persistData(STORAGE_KEYS.bypassConfig, bypassConfig); }, [bypassConfig]);
 
   useEffect(() => {
       if (!currentUser) return;
@@ -489,6 +502,7 @@ export const AppProvider = ({ children }) => {
           set(ref(db, 'warningConfig'), initialWarningConfig);
           set(ref(db, 'maintenanceConfig'), initialMaintenanceConfig);
           set(ref(db, 'announcements'), initialAnnouncements);
+          set(ref(db, 'bypassConfig'), initialBypassConfig);
           set(ref(db, 'siteVersion'), initialVersion);
           setSiteVersion(initialVersion);
         }
@@ -558,6 +572,7 @@ export const AppProvider = ({ children }) => {
       if (key === STORAGE_KEYS.auditLogs) setAuditLogs(value);
       if (key === STORAGE_KEYS.passwordResets) setPasswordResets(value);
       if (key === STORAGE_KEYS.announcements) setAnnouncements(value);
+      if (key === STORAGE_KEYS.bypassConfig) setBypassConfig(value);
       if (key === STORAGE_KEYS.theme) setTheme(value);
     };
 
@@ -877,8 +892,8 @@ export const AppProvider = ({ children }) => {
 
 
   // System Status Operations
-  const setWarning = (isActive, title, message, type = 'warning') => {
-    const newConfig = { isActive, title, message, type };
+  const setWarning = (isActive, title, message, type = 'warning', countdownEnabled = false, countdownTarget = '') => {
+    const newConfig = { isActive, title, message, type, countdownEnabled, countdownTarget };
     setWarningConfig(newConfig);
     // Sync to Firebase
     const db = getDatabase(firebaseApp);
@@ -1242,7 +1257,10 @@ export const AppProvider = ({ children }) => {
     const newAnn = {
       id: makeId('ann'),
       type: annData.type,
+      title: annData.title || '',
+      subtitle: annData.subtitle || '',
       message: annData.message,
+      countdownDate: annData.countdownDate || null,
       authorEmail: currentUser.email,
       authorName: `${currentUser.firstName} ${currentUser.lastName}`,
       timestamp: new Date().toISOString()
@@ -1425,6 +1443,22 @@ export const AppProvider = ({ children }) => {
         announcements,
         addAnnouncement,
         deleteAnnouncement,
+        bypassConfig,
+        setBypassAnnouncement: (title, message) => {
+          const newConfig = {
+            isActive: true,
+            id: makeId('bypass'),
+            title,
+            message,
+            senderName: `${currentUser.firstName} ${currentUser.lastName}`
+          };
+          setBypassConfig(newConfig);
+          logAction('bypass_announcement', `Sent bypass announcement: ${title}`);
+        },
+        clearBypassAnnouncement: () => {
+          setBypassConfig(prev => ({ ...prev, isActive: false }));
+          logAction('bypass_announcement_cleared', `Cleared bypass announcement`);
+        },
         requestPasswordReset,
         approvePasswordReset,
         rejectPasswordReset,

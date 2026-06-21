@@ -8,6 +8,7 @@ import MaintenanceScreen from './components/MaintenanceScreen';
 import SuspendedScreen from './components/SuspendedScreen';
 import NotificationOverlay from './components/NotificationOverlay';
 import LoaBanner from './components/LoaBanner';
+import BypassOverlay from './components/BypassOverlay';
 import { useState } from 'react';
 
 function MainApp() {
@@ -40,6 +41,7 @@ function MainApp() {
       <LoaBanner />
       {currentUser ? <Dashboard /> : <LoginScreen />}
       <NotificationOverlay />
+      <BypassOverlay />
     </>
   );
 }

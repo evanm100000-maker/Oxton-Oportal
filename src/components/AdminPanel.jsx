@@ -79,6 +79,8 @@ export default function AdminPanel() {
   const [warnTitle, setWarnTitle] = useState(warningConfig?.title || '');
   const [warnMessage, setWarnMessage] = useState(warningConfig?.message || '');
   const [warnType, setWarnType] = useState(warningConfig?.type || 'warning');
+  const [warnCountdownEnabled, setWarnCountdownEnabled] = useState(warningConfig?.countdownEnabled || false);
+  const [warnCountdownTarget, setWarnCountdownTarget] = useState(warningConfig?.countdownTarget || '');
 
   const [maintActive, setMaintActive] = useState(maintenanceConfig?.isActive || false);
   const [maintMessage, setMaintMessage] = useState(maintenanceConfig?.message || '');
@@ -160,7 +162,7 @@ export default function AdminPanel() {
 
   const handleSaveSystemStatus = (e) => {
     e.preventDefault();
-    setWarning(warnActive, warnTitle, warnMessage, warnType);
+    setWarning(warnActive, warnTitle, warnMessage, warnType, warnCountdownEnabled, warnCountdownTarget);
     setMaintenance(maintActive, maintMessage);
     displaySuccess('System status configuration updated!');
   };
@@ -672,6 +674,16 @@ export default function AdminPanel() {
                   <option value="resolved">Resolved (Green)</option>
                 </select>
               </div>
+              <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', marginBottom: '12px'}}>
+                <input type="checkbox" id="warnCountdown" checked={warnCountdownEnabled} onChange={e => setWarnCountdownEnabled(e.target.checked)} style={{width: '20px', height: '20px'}} disabled={!warnActive} />
+                <label htmlFor="warnCountdown" style={{fontSize: '0.9rem', color: 'var(--color-text-main)', fontWeight: '600'}}>Enable Countdown Timer</label>
+              </div>
+              {warnCountdownEnabled && (
+                <div style={styles.inputWrapper}>
+                  <label style={styles.label}>Countdown Target Date/Time</label>
+                  <input type="datetime-local" value={warnCountdownTarget} onChange={e=>setWarnCountdownTarget(e.target.value)} className="input-field" disabled={!warnActive} />
+                </div>
+              )}
             </div>
 
             <div style={{ padding: '16px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>

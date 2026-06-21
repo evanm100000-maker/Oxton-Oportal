@@ -4,19 +4,37 @@ import { motion } from 'framer-motion';
 import { Megaphone, AlertTriangle, Hammer, Trash2, Send } from 'lucide-react';
 
 export default function Announcements() {
-  const { announcements, addAnnouncement, deleteAnnouncement, currentUser } = useApp();
+  const { announcements, addAnnouncement, deleteAnnouncement, currentUser, setBypassAnnouncement } = useApp();
   
   const [type, setType] = useState('Normal');
+  const [title, setTitle] = useState('');
+  const [subtitle, setSubtitle] = useState('');
   const [message, setMessage] = useState('');
   const [countdownDate, setCountdownDate] = useState('');
+
+  // Bypass Announcement State
+  const [bypassTitle, setBypassTitle] = useState('');
+  const [bypassMessage, setBypassMessage] = useState('');
 
   const handlePost = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
-    addAnnouncement({ type, message, countdownDate: countdownDate || null });
+    addAnnouncement({ type, title, subtitle, message, countdownDate: countdownDate || null });
+    setTitle('');
+    setSubtitle('');
     setMessage('');
     setType('Normal');
     setCountdownDate('');
+  };
+
+  const handleBypassPost = (e) => {
+    e.preventDefault();
+    if (!bypassMessage.trim()) return;
+    if (setBypassAnnouncement) {
+      setBypassAnnouncement(bypassTitle, bypassMessage);
+      setBypassTitle('');
+      setBypassMessage('');
+    }
   };
 
   const getIcon = (annType) => {
@@ -87,6 +105,16 @@ export default function Announcements() {
                 </select>
               </div>
             </div>
+            <div style={styles.formRow}>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Title (Optional)</label>
+                <input type="text" value={title} onChange={e=>setTitle(e.target.value)} className="input-field" placeholder="Brief title..." />
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Subtitle (Optional)</label>
+                <input type="text" value={subtitle} onChange={e=>setSubtitle(e.target.value)} className="input-field" placeholder="Brief subtitle..." />
+              </div>
+            </div>
             <div style={styles.inputWrapper}>
               <label style={styles.label}>Message</label>
               <textarea 
@@ -109,6 +137,26 @@ export default function Announcements() {
             </div>
             <button type="submit" className="btn-primary" style={styles.postBtn}>
               <Send size={16} /> Post Announcement
+            </button>
+          </form>
+        </div>
+      )}
+
+      {currentUser?.isAdmin && (
+        <div className="glass-panel" style={{...styles.composeBox, borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.02)'}}>
+          <h3 style={{...styles.composeTitle, color: '#ef4444'}}>Send Global Screen Takeover (Bypass Announcement)</h3>
+          <p style={{fontSize: '0.85rem', color: '#9ca3af', marginBottom: '16px'}}>This will force an urgent announcement overlay on the screens of all staff members currently online.</p>
+          <form onSubmit={handleBypassPost} style={styles.form}>
+            <div style={styles.inputWrapper}>
+              <label style={styles.label}>Alert Title</label>
+              <input type="text" value={bypassTitle} onChange={e=>setBypassTitle(e.target.value)} className="input-field" placeholder="e.g. SERVER RESTART IMMINENT" required />
+            </div>
+            <div style={styles.inputWrapper}>
+              <label style={styles.label}>Alert Message</label>
+              <textarea value={bypassMessage} onChange={e=>setBypassMessage(e.target.value)} className="input-field" rows="2" placeholder="Urgent message details..." required />
+            </div>
+            <button type="submit" className="btn-danger" style={styles.postBtn}>
+              <Megaphone size={16} /> Trigger Screen Takeover
             </button>
           </form>
         </div>
@@ -149,6 +197,8 @@ export default function Announcements() {
                 )}
               </div>
               <div style={styles.cardBody}>
+                {ann.title && <h3 style={styles.annTitle}>{ann.title}</h3>}
+                {ann.subtitle && <h4 style={styles.annSubtitle}>{ann.subtitle}</h4>}
                 <p style={styles.message}>{ann.message}</p>
                 {ann.countdownDate && <CountdownTimer targetDate={ann.countdownDate} />}
               </div>
@@ -255,6 +305,18 @@ const styles = {
   },
   message: {
     whiteSpace: 'pre-wrap',
+  },
+  annTitle: {
+    fontSize: '1.4rem',
+    fontWeight: '800',
+    color: 'var(--color-text-main)',
+    margin: '0 0 4px 0',
+  },
+  annSubtitle: {
+    fontSize: '1rem',
+    fontWeight: '500',
+    color: 'var(--color-primary)',
+    margin: '0 0 12px 0',
   },
   badgeWrapper: {
     position: 'absolute',
