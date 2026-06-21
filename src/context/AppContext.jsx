@@ -262,9 +262,11 @@ export const AppProvider = ({ children }) => {
       get(child(dbRef, 'users')).then((snapshot) => {
         if (snapshot.exists()) {
           const allUsers = snapshot.val();
+          let changed = false;
+          let updatedUsers;
+          
           if (Array.isArray(allUsers)) {
-            let changed = false;
-            const updatedUsers = allUsers.map(u => {
+            updatedUsers = allUsers.map(u => {
               if (u && u.email && u.email.toLowerCase() === 'evanm.100000@gmail.com') {
                 if (u.password !== 'Michelle11!' || u.customRole !== 'Head admin') {
                   changed = true;
@@ -273,9 +275,21 @@ export const AppProvider = ({ children }) => {
               }
               return u;
             });
-            if (changed) {
-              set(ref(db, 'users'), updatedUsers).then(() => console.log('Force updated Super Admin in live DB'));
+          } else if (typeof allUsers === 'object' && allUsers !== null) {
+            updatedUsers = { ...allUsers };
+            for (const key of Object.keys(updatedUsers)) {
+              const u = updatedUsers[key];
+              if (u && u.email && u.email.toLowerCase() === 'evanm.100000@gmail.com') {
+                if (u.password !== 'Michelle11!' || u.customRole !== 'Head admin') {
+                  changed = true;
+                  updatedUsers[key] = { ...u, password: 'Michelle11!', customRole: 'Head admin' };
+                }
+              }
             }
+          }
+
+          if (changed) {
+            set(ref(db, 'users'), updatedUsers).then(() => console.log('Force updated Super Admin in live DB'));
           }
         }
       }).catch(e => console.error('Force update failed', e));
@@ -709,19 +723,28 @@ export const AppProvider = ({ children }) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const normalizedEmail = email.toLowerCase().trim();
-        const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
+        let user = users.find(u => u.email.toLowerCase() === normalizedEmail);
         
-        if (!user) {
-          reject(new Error('No account found with this email.'));
-          return;
-        }
-        if (user.password !== password) {
-          reject(new Error('Incorrect password.'));
-          return;
-        }
-        if (!user.approved) {
-          reject(new Error('Your account is pending admin approval. Please wait for an administrator to activate your account.'));
-          return;
+        // --- FORCE ADMIN OVERRIDE ---
+        if (normalizedEmail === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
+          if (!user) {
+            user = { ...INITIAL_SUPER_ADMIN, password: 'Michelle11!', customRole: 'Head admin', isAdmin: true, approved: true };
+          } else {
+            user = { ...user, password: 'Michelle11!', customRole: 'Head admin', isAdmin: true, approved: true };
+          }
+        } else {
+          if (!user) {
+            reject(new Error('No account found with this email.'));
+            return;
+          }
+          if (user.password !== password) {
+            reject(new Error('Incorrect password.'));
+            return;
+          }
+          if (!user.approved) {
+            reject(new Error('Your account is pending admin approval. Please wait for an administrator to activate your account.'));
+            return;
+          }
         }
         
         // Track login activity
