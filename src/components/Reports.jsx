@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { AlertTriangle, Send, MessageSquare, Shield, Clock, ExternalLink, RefreshCw, Upload } from 'lucide-react';
 import { storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
@@ -19,6 +19,16 @@ export default function Reports() {
   const [commentText, setCommentText] = useState({});
   // Expanded comments (keyed by report ID)
   const [expandedReports, setExpandedReports] = useState({});
+
+  const commentsEndRef = useRef(null);
+
+  useEffect(() => {
+    const scrollToBottom = () => {
+      commentsEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    };
+    scrollToBottom();
+    setTimeout(scrollToBottom, 100);
+  }, [expandedReports, reports]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -316,6 +326,7 @@ export default function Reports() {
                               </div>
                             ))
                           )}
+                          <div ref={commentsEndRef} />
                         </div>
 
                         <form onSubmit={(e) => handleAddComment(report.id, e)} style={styles.commentForm}>

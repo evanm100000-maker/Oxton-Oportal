@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { LifeBuoy, Plus, MessageSquare, ShieldAlert, CheckCircle, Send } from 'lucide-react';
 
@@ -9,6 +9,15 @@ export default function SupportTickets() {
   const [description, setDescription] = useState('');
   const [expandedTicket, setExpandedTicket] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const commentsEndRef = useRef(null);
+
+  useEffect(() => {
+    const scrollToBottom = () => {
+      commentsEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    };
+    scrollToBottom();
+    setTimeout(scrollToBottom, 100);
+  }, [expandedTicket, tickets]);
 
   const myTickets = tickets.filter(t => t.authorEmail === currentUser.email);
   const ticketsToDisplay = currentUser.isAdmin ? tickets : myTickets;
@@ -125,6 +134,7 @@ export default function SupportTickets() {
                               <p style={styles.commentText}>{comment.text}</p>
                             </div>
                           ))}
+                          <div ref={commentsEndRef} />
                         </div>
                       )}
 
