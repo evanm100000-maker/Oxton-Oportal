@@ -288,9 +288,9 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Sub Tab: Infractions */}
       )}
-{activeSubTab === 'infractions' && (
+      {/* Sub Tab: Infractions */}
+      {activeSubTab === 'infractions' && (
 <div id="section-infractions">
         <div style={styles.panelSection}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
@@ -366,9 +366,9 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Sub Tab: Roles */}
       )}
-{activeSubTab === 'roles' && (
+      {/* Sub Tab: Roles */}
+      {activeSubTab === 'roles' && (
 <div id="section-roles">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Staff Role Management</h3>
@@ -415,9 +415,9 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Sub Tab: Staff Actions (Remove, Points) */}
       )}
-{activeSubTab === 'staff' && (
+      {/* Sub Tab: Staff Actions (Remove, Points) */}
+      {activeSubTab === 'staff' && (
 <div id="section-staff">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Staff Management & Points</h3>
@@ -475,9 +475,9 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Sub Tab: Flight Logs Review */}
       )}
-{activeSubTab === 'flight_logs' && (
+      {/* Sub Tab: Flight Logs Review */}
+      {activeSubTab === 'flight_logs' && (
 <div id="section-flight_logs">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Pending Flight Logs</h3>
@@ -507,9 +507,9 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Sub Tab: Schedule Flight */}
       )}
-{activeSubTab === 'flights' && (
+      {/* Sub Tab: Schedule Flight */}
+      {activeSubTab === 'flights' && (
 <div id="section-flights">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Schedule New Flight</h3>
@@ -528,9 +528,9 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Sub Tab: LOA Review */}
       )}
-{activeSubTab === 'loas' && (
+      {/* Sub Tab: LOA Review */}
+      {activeSubTab === 'loas' && (
 <div id="section-loas">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Pending LOAs</h3>
@@ -600,9 +600,9 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Sub Tab: Password Resets */}
       )}
-{activeSubTab === 'passwords' && (
+      {/* Sub Tab: Password Resets */}
+      {activeSubTab === 'passwords' && (
 <div id="section-passwords">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Password Reset Requests</h3>
@@ -642,9 +642,9 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Sub Tab: System Status */}
       )}
-{activeSubTab === 'status' && (
+      {/* Sub Tab: System Status */}
+      {activeSubTab === 'status' && (
 <div id="section-status">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>System Status Configuration</h3>
@@ -691,9 +691,10 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Sub Tab: Audit Log */}
       )}
-<div id="section-audit">
+      {/* Sub Tab: Audit Log */}
+      {activeSubTab === 'audit' && (
+      <div id="section-audit">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>System Audit Log</h3>
           <div style={styles.tableWrapper}>
@@ -723,6 +724,7 @@ export default function AdminPanel() {
           </div>
         </div>
       </div>
+      )}
 
       </div>
       {/* Audit Log Modal */}

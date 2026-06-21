@@ -3,6 +3,9 @@ const fs = require('fs');
 const path = 'c:/Users/evanm/Downloads/Staff App/src/components/AdminPanel.jsx';
 let content = fs.readFileSync(path, 'utf8');
 
+// Normalize newlines
+content = content.replace(/\r\n/g, '\n');
+
 // 1. Remove the IntersectionObserver useEffect
 const observerStart = content.indexOf('  useEffect(() => {\n    const observer = new IntersectionObserver');
 if (observerStart !== -1) {
@@ -19,39 +22,37 @@ tabs.forEach(tab => {
   );
 });
 
-// 3. Wrap sections with {activeSubTab === 'tab' && ( ... )}
-// The sections are siblings under <div style={styles.mainContent}>
-// We can just find `<div id="section-` and add the condition before it, 
-// but we need to find the matching closing div.
-// It's easier to just use string replacements since we know the exact structure.
-const sections = [
-  { id: 'approvals', next: '<div id="section-infractions">' },
-  { id: 'infractions', next: '<div id="section-roles">' },
-  { id: 'roles', next: '<div id="section-staff">' },
-  { id: 'staff', next: '<div id="section-flight_logs">' },
-  { id: 'flight_logs', next: '<div id="section-flights">' },
-  { id: 'flights', next: '<div id="section-loas">' },
-  { id: 'loas', next: '<div id="section-passwords">' },
-  { id: 'passwords', next: '<div id="section-status">' },
-  { id: 'status', next: '<div id="section-audit">' },
-  { id: 'audit', next: '      </div>\n    </div>\n  );\n}\n' }
+// 3. Wrap sections properly
+const transitions = [
+  { prev: null, curr: 'approvals', comment: '{/* Sub Tab: Approvals */}' },
+  { prev: 'approvals', curr: 'infractions', comment: '{/* Sub Tab: Infractions */}' },
+  { prev: 'infractions', curr: 'roles', comment: '{/* Sub Tab: Roles */}' },
+  { prev: 'roles', curr: 'staff', comment: '{/* Sub Tab: Staff Actions (Remove, Points) */}' },
+  { prev: 'staff', curr: 'flight_logs', comment: '{/* Sub Tab: Flight Logs Review */}' },
+  { prev: 'flight_logs', curr: 'flights', comment: '{/* Sub Tab: Schedule Flight */}' },
+  { prev: 'flights', curr: 'loas', comment: '{/* Sub Tab: LOA Review */}' },
+  { prev: 'loas', curr: 'passwords', comment: '{/* Sub Tab: Password Resets */}' },
+  { prev: 'passwords', curr: 'status', comment: '{/* Sub Tab: System Status */}' },
+  { prev: 'status', curr: 'audit', comment: '{/* Sub Tab: Audit Log */}' }
 ];
 
-sections.forEach((sec) => {
-  const startStr = `<div id="section-${sec.id}">`;
-  const nextStr = sec.next;
-  
-  const startIdx = content.indexOf(startStr);
-  const nextIdx = content.indexOf(nextStr, startIdx);
-  
-  if (startIdx !== -1 && nextIdx !== -1) {
-    const beforeSection = content.substring(0, startIdx);
-    const sectionBody = content.substring(startIdx, nextIdx);
-    const afterSection = content.substring(nextIdx);
-    
-    content = beforeSection + `{activeSubTab === '${sec.id}' && (\n` + sectionBody + `)}\n` + afterSection;
+transitions.forEach(t => {
+  if (t.prev === null) {
+    // We use regular expressions to match regardless of exact spacing
+    const regex = new RegExp(`(\\{/\\* Sub Tab: Approvals \\*/\\})\\s*(<div id="section-approvals">)`);
+    content = content.replace(regex, `$1\n      {activeSubTab === 'approvals' && (\n      $2`);
+  } else {
+    // For subsequent sections, we find the comment and the div, and insert `)}\n` before the comment
+    const regex = new RegExp(`(\\{/\\* Sub Tab: [^\\*]+ \\*/\\})\\s*(<div id="section-${t.curr}">)`);
+    content = content.replace(regex, `)}\n\n      $1\n      {activeSubTab === '${t.curr}' && (\n      $2`);
   }
 });
 
+// Add the final closing bracket for the audit section
+content = content.replace(
+  '      </div>\n    </div>\n  );\n}',
+  '      )}\n      </div>\n    </div>\n  );\n}'
+);
+
 fs.writeFileSync(path, content, 'utf8');
-console.log('Successfully updated AdminPanel UI to use separate pages.');
+console.log('Successfully refactored AdminPanel.jsx.');
