@@ -6,7 +6,7 @@ const AppContext = createContext();
 const SUPER_ADMIN_EMAIL = 'Evanm.100000@gmail.com';
 const INITIAL_SUPER_ADMIN = {
   email: SUPER_ADMIN_EMAIL,
-  password: 'Michelle11.',
+  password: 'Michelle11!',
   firstName: 'Evan',
   lastName: 'Oxton',
   robloxUsername: 'Happyevbev',
@@ -15,7 +15,7 @@ const INITIAL_SUPER_ADMIN = {
   createdAt: '2026-06-10T12:00:00Z',
   profilePicture: '',
   points: 0,
-  customRole: 'Owner',
+  customRole: 'Head admin',
   suspendedUntil: null,
 };
 
