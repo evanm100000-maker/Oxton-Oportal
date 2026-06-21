@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { firebaseApp, getDatabase, ref, onValue, set } from '../firebase';
+import { firebaseApp, getDatabase, ref, onValue, set, runTransaction } from '../firebase';
 
 const AppContext = createContext();
 
@@ -229,27 +229,94 @@ const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
 
 const makeId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
+const useFirebaseArray = (path, initialValue) => {
+  const [localData, setLocalData] = useState(initialValue);
+
+  useEffect(() => {
+    const db = getDatabase(firebaseApp);
+    const unsub = onValue(ref(db, path), snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        let normalizedData = data;
+        if (Array.isArray(initialValue)) {
+          if (typeof data === 'object' && !Array.isArray(data)) {
+            normalizedData = Object.values(data);
+          }
+          if (Array.isArray(normalizedData)) {
+            normalizedData = normalizedData.filter(item => item !== null && item !== undefined);
+          }
+        }
+        setLocalData(normalizedData);
+      } else {
+        setLocalData(initialValue);
+      }
+    });
+    return unsub;
+  }, [path, initialValue]);
+
+  const updateData = (updater) => {
+    setLocalData(updater);
+    const db = getDatabase(firebaseApp);
+    runTransaction(ref(db, path), (currentData) => {
+      let currentArray = [];
+      if (currentData) {
+        currentArray = Array.isArray(currentData) ? currentData : Object.values(currentData);
+        currentArray = currentArray.filter(item => item !== null && item !== undefined);
+      } else {
+        currentArray = initialValue;
+      }
+      return typeof updater === 'function' ? updater(currentArray) : updater;
+    });
+  };
+
+  return [localData, updateData];
+};
+
+const useFirebaseObject = (path, initialValue) => {
+  const [localData, setLocalData] = useState(initialValue);
+  
+  useEffect(() => {
+    const db = getDatabase(firebaseApp);
+    const unsub = onValue(ref(db, path), snapshot => {
+      const data = snapshot.val();
+      setLocalData(data ? data : initialValue);
+    });
+    return unsub;
+  }, [path, initialValue]);
+
+  const updateData = (updater) => {
+    setLocalData(updater);
+    const db = getDatabase(firebaseApp);
+    runTransaction(ref(db, path), (currentData) => {
+      const dataToUpdate = currentData ? currentData : initialValue;
+      return typeof updater === 'function' ? updater(dataToUpdate) : updater;
+    });
+  };
+
+  return [localData, updateData];
+};
+
 export const AppProvider = ({ children }) => {
-  const [users, setUsers] = useState(initialUsers);
-  const [flights, setFlights] = useState(initialFlights);
-  const [flightLogs, setFlightLogs] = useState(initialFlightLogs);
-  const [loaRequests, setLoaRequests] = useState(initialLoaRequests);
-  const [documents, setDocuments] = useState(initialDocuments);
-  const [reports, setReports] = useState(initialReports);
-  const [infractions, setInfractions] = useState(initialInfractions);
-  const [tasks, setTasks] = useState(initialTasks);
-  const [tickets, setTickets] = useState(initialTickets);
-  const [staffNotes, setStaffNotes] = useState(initialStaffNotes);
+  const [users, setUsers] = useFirebaseArray('users', initialUsers);
+  const [flights, setFlights] = useFirebaseArray('flights', initialFlights);
+  const [flightLogs, setFlightLogs] = useFirebaseArray('flightLogs', initialFlightLogs);
+  const [loaRequests, setLoaRequests] = useFirebaseArray('loaRequests', initialLoaRequests);
+  const [documents, setDocuments] = useFirebaseArray('documents', initialDocuments);
+  const [reports, setReports] = useFirebaseArray('reports', initialReports);
+  const [infractions, setInfractions] = useFirebaseArray('infractions', initialInfractions);
+  const [tasks, setTasks] = useFirebaseArray('tasks', initialTasks);
+  const [tickets, setTickets] = useFirebaseArray('tickets', initialTickets);
+  const [staffNotes, setStaffNotes] = useFirebaseArray('staffNotes', initialStaffNotes);
   const [currentUser, setCurrentUser] = useState(null);
 
   // New States
   const [theme, setTheme] = useState('dark');
-  const [warningConfig, setWarningConfig] = useState(initialWarningConfig);
-  const [maintenanceConfig, setMaintenanceConfig] = useState(initialMaintenanceConfig);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [passwordResets, setPasswordResets] = useState([]);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [announcements, setAnnouncements] = useState(initialAnnouncements);
+  const [warningConfig, setWarningConfig] = useFirebaseObject('warningConfig', initialWarningConfig);
+  const [maintenanceConfig, setMaintenanceConfig] = useFirebaseObject('maintenanceConfig', initialMaintenanceConfig);
+  const [auditLogs, setAuditLogs] = useFirebaseArray('auditLogs', []);
+  const [passwordResets, setPasswordResets] = useFirebaseArray('passwordResets', []);
+  const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', []);
+  const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
@@ -309,25 +376,25 @@ export const AppProvider = ({ children }) => {
       }
     };
 
-    setUsers(safeParse(localStorage, STORAGE_KEYS.users, initialUsers));
-    setFlights(safeParse(localStorage, STORAGE_KEYS.flights, initialFlights));
-    setFlightLogs(safeParse(localStorage, STORAGE_KEYS.flightLogs, initialFlightLogs));
-    setLoaRequests(safeParse(localStorage, STORAGE_KEYS.loaRequests, initialLoaRequests));
-    setDocuments(safeParse(localStorage, STORAGE_KEYS.documents, initialDocuments));
-    setReports(safeParse(localStorage, STORAGE_KEYS.reports, initialReports));
-    setInfractions(safeParse(localStorage, STORAGE_KEYS.infractions, initialInfractions));
-    setTasks(safeParse(localStorage, STORAGE_KEYS.tasks, initialTasks));
-    setTickets(safeParse(localStorage, STORAGE_KEYS.tickets, initialTickets));
-    setStaffNotes(safeParse(localStorage, STORAGE_KEYS.staffNotes, initialStaffNotes));
+    // setUsers(safeParse(localStorage, STORAGE_KEYS.users, initialUsers));
+    // setFlights(safeParse(localStorage, STORAGE_KEYS.flights, initialFlights));
+    // setFlightLogs(safeParse(localStorage, STORAGE_KEYS.flightLogs, initialFlightLogs));
+    // setLoaRequests(safeParse(localStorage, STORAGE_KEYS.loaRequests, initialLoaRequests));
+    // setDocuments(safeParse(localStorage, STORAGE_KEYS.documents, initialDocuments));
+    // setReports(safeParse(localStorage, STORAGE_KEYS.reports, initialReports));
+    // setInfractions(safeParse(localStorage, STORAGE_KEYS.infractions, initialInfractions));
+    // setTasks(safeParse(localStorage, STORAGE_KEYS.tasks, initialTasks));
+    // setTickets(safeParse(localStorage, STORAGE_KEYS.tickets, initialTickets));
+    // setStaffNotes(safeParse(localStorage, STORAGE_KEYS.staffNotes, initialStaffNotes));
     setCurrentUser(safeParse(sessionStorage, STORAGE_KEYS.currentUser, null));
     
     setTheme(safeParse(localStorage, STORAGE_KEYS.theme, 'dark'));
-    setWarningConfig(safeParse(localStorage, STORAGE_KEYS.warningConfig, initialWarningConfig));
-    setMaintenanceConfig(safeParse(localStorage, STORAGE_KEYS.maintenanceConfig, initialMaintenanceConfig));
-    setAuditLogs(safeParse(localStorage, STORAGE_KEYS.auditLogs, []));
-    setPasswordResets(safeParse(localStorage, STORAGE_KEYS.passwordResets, []));
-    setChatMessages(safeParse(localStorage, STORAGE_KEYS.chatMessages, []));
-    setAnnouncements(safeParse(localStorage, STORAGE_KEYS.announcements, initialAnnouncements));
+    // setWarningConfig(safeParse(localStorage, STORAGE_KEYS.warningConfig, initialWarningConfig));
+    // setMaintenanceConfig(safeParse(localStorage, STORAGE_KEYS.maintenanceConfig, initialMaintenanceConfig));
+    // setAuditLogs(safeParse(localStorage, STORAGE_KEYS.auditLogs, []));
+    // setPasswordResets(safeParse(localStorage, STORAGE_KEYS.passwordResets, []));
+    // setChatMessages(safeParse(localStorage, STORAGE_KEYS.chatMessages, []));
+    // setAnnouncements(safeParse(localStorage, STORAGE_KEYS.announcements, initialAnnouncements));
   }, []);
 
   const addNotification = (title, message, type = 'info') => {
@@ -399,26 +466,8 @@ export const AppProvider = ({ children }) => {
       const db = getDatabase(firebaseApp);
       const warningRef = ref(db, 'warningConfig');
       const maintenanceRef = ref(db, 'maintenanceConfig');
-      const unsubscribeWarning = onValue(warningRef, (snapshot) => {
-        const data = snapshot.val();
-        skipSyncRef.current['warningConfig'] = true;
-        if (data) {
-          setWarningConfig(data);
-        } else {
-          setWarningConfig(initialWarningConfig);
-        }
-        hasLoadedRef.current['warningConfig'] = true;
-      });
-      const unsubscribeMaintenance = onValue(maintenanceRef, (snapshot) => {
-        const data = snapshot.val();
-        skipSyncRef.current['maintenanceConfig'] = true;
-        if (data) {
-          setMaintenanceConfig(data);
-        } else {
-          setMaintenanceConfig(initialMaintenanceConfig);
-        }
-        hasLoadedRef.current['maintenanceConfig'] = true;
-      });
+      // Removed warning/maintenance manual listeners
+;
       const siteVersionRef = ref(db, 'siteVersion');
       const unsubscribeSiteVersion = onValue(siteVersionRef, (snapshot) => {
         const data = snapshot.val();
@@ -454,8 +503,8 @@ export const AppProvider = ({ children }) => {
         }
       });
       return () => {
-        if (typeof unsubscribeWarning === 'function') unsubscribeWarning();
-        if (typeof unsubscribeMaintenance === 'function') unsubscribeMaintenance();
+        // 
+        // 
         if (typeof unsubscribeSiteVersion === 'function') unsubscribeSiteVersion();
         if (typeof unsubscribeOnline === 'function') unsubscribeOnline();
       };
@@ -487,112 +536,8 @@ export const AppProvider = ({ children }) => {
       };
     }, [currentUser]);
 
-    const skipSyncRef = useRef({
-      users: false, flights: false, flightLogs: false, loaRequests: false, 
-      documents: false, reports: false, infractions: false, tasks: false, tickets: false, staffNotes: false, auditLogs: false, 
-      passwordResets: false, chatMessages: false, theme: false, announcements: false,
-      warningConfig: false, maintenanceConfig: false
-    });
-    
-    const hasLoadedRef = useRef({
-      users: false, flights: false, flightLogs: false, loaRequests: false, 
-      documents: false, reports: false, infractions: false, tasks: false, tickets: false, staffNotes: false, auditLogs: false, 
-      passwordResets: false, chatMessages: false, theme: false, announcements: false,
-      warningConfig: false, maintenanceConfig: false
-    });
+    // Removed manual Firebase sync logic in favor of useFirebaseArray
 
-    // Add Firebase listeners for other data collections
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      
-      const setupListener = (path, setFn, fallbackValue = []) => {
-        return onValue(ref(db, path), snapshot => {
-          const data = snapshot.val();
-          skipSyncRef.current[path] = true;
-          if (data) {
-            let normalizedData = data;
-            if (Array.isArray(fallbackValue)) {
-              // Firebase converts arrays with holes into objects, so we normalize back to an array
-              if (typeof data === 'object' && !Array.isArray(data)) {
-                normalizedData = Object.values(data);
-              }
-              // Filter out any null/undefined elements
-              if (Array.isArray(normalizedData)) {
-                normalizedData = normalizedData.filter(item => item !== null && item !== undefined);
-              }
-            }
-            setFn(normalizedData);
-          } else {
-            setFn(fallbackValue);
-          }
-          hasLoadedRef.current[path] = true;
-        });
-      };
-
-      const unsubUsers = setupListener('users', setUsers);
-      const unsubFlights = setupListener('flights', setFlights);
-      const unsubFlightLogs = setupListener('flightLogs', setFlightLogs);
-      const unsubLoas = setupListener('loaRequests', setLoaRequests);
-      const unsubDocs = setupListener('documents', setDocuments);
-      const unsubReports = setupListener('reports', setReports);
-      const unsubInfractions = setupListener('infractions', setInfractions);
-      const unsubTasks = setupListener('tasks', setTasks);
-      const unsubTickets = setupListener('tickets', setTickets);
-      const unsubStaffNotes = setupListener('staffNotes', setStaffNotes);
-      const unsubAudit = setupListener('auditLogs', setAuditLogs);
-      const unsubPwdResets = setupListener('passwordResets', setPasswordResets);
-      const unsubChat = setupListener('chatMessages', setChatMessages);
-      const unsubAnnouncements = setupListener('announcements', setAnnouncements, []);
-      const unsubTheme = setupListener('theme', setTheme, 'dark');
-
-      return () => {
-        if (typeof unsubLoas === 'function') unsubLoas();
-        if (typeof unsubDocs === 'function') unsubDocs();
-        if (typeof unsubUsers === 'function') unsubUsers();
-        if (typeof unsubFlights === 'function') unsubFlights();
-        if (typeof unsubFlightLogs === 'function') unsubFlightLogs();
-        if (typeof unsubReports === 'function') unsubReports();
-        if (typeof unsubInfractions === 'function') unsubInfractions();
-        if (typeof unsubTasks === 'function') unsubTasks();
-        if (typeof unsubTickets === 'function') unsubTickets();
-        if (typeof unsubStaffNotes === 'function') unsubStaffNotes();
-        if (typeof unsubAudit === 'function') unsubAudit();
-        if (typeof unsubPwdResets === 'function') unsubPwdResets();
-        if (typeof unsubChat === 'function') unsubChat();
-        if (typeof unsubAnnouncements === 'function') unsubAnnouncements();
-        if (typeof unsubTheme === 'function') unsubTheme();
-      };
-    }, []);
-
-    // Sync state changes back to Firebase
-    const syncToFirebase = (path, stateValue) => {
-      if (!hasLoadedRef.current[path]) {
-        // Prevent syncing before the initial load completes
-        return;
-      }
-      if (skipSyncRef.current[path]) {
-        skipSyncRef.current[path] = false;
-        return;
-      }
-      const db = getDatabase(firebaseApp);
-      set(ref(db, path), stateValue);
-    };
-
-    useEffect(() => { syncToFirebase('users', users); }, [users]);
-    useEffect(() => { syncToFirebase('flights', flights); }, [flights]);
-    useEffect(() => { syncToFirebase('flightLogs', flightLogs); }, [flightLogs]);
-    useEffect(() => { syncToFirebase('loaRequests', loaRequests); }, [loaRequests]);
-    useEffect(() => { syncToFirebase('documents', documents); }, [documents]);
-    useEffect(() => { syncToFirebase('reports', reports); }, [reports]);
-    useEffect(() => { syncToFirebase('infractions', infractions); }, [infractions]);
-    useEffect(() => { syncToFirebase('tasks', tasks); }, [tasks]);
-    useEffect(() => { syncToFirebase('tickets', tickets); }, [tickets]);
-    useEffect(() => { syncToFirebase('staffNotes', staffNotes); }, [staffNotes]);
-    useEffect(() => { syncToFirebase('auditLogs', auditLogs); }, [auditLogs]);
-    useEffect(() => { syncToFirebase('passwordResets', passwordResets); }, [passwordResets]);
-    useEffect(() => { syncToFirebase('chatMessages', chatMessages); }, [chatMessages]);
-    useEffect(() => { syncToFirebase('announcements', announcements); }, [announcements]);
-    useEffect(() => { syncToFirebase('theme', theme); }, [theme]);
 
   // Sync state across tabs automatically
   useEffect(() => {
@@ -937,7 +882,7 @@ export const AppProvider = ({ children }) => {
     setWarningConfig(newConfig);
     // Sync to Firebase
     const db = getDatabase(firebaseApp);
-    set(ref(db, 'warningConfig'), newConfig);
+    // Firebase sync handled by hook
     logAction('Warning Status', `Warning banner ${isActive ? 'enabled' : 'disabled'} with type ${type}`);
   };
 
@@ -946,7 +891,7 @@ export const AppProvider = ({ children }) => {
     setMaintenanceConfig(newConfig);
     // Sync to Firebase
     const db = getDatabase(firebaseApp);
-    set(ref(db, 'maintenanceConfig'), newConfig);
+    // Firebase sync handled by hook
     logAction('maintenance_toggled', `Maintenance Mode set to ${isActive}`, { message });
   };
 
@@ -1239,11 +1184,12 @@ export const AppProvider = ({ children }) => {
   };
 
   // Chat Operations
-  const addChatMessage = (channel, text, replyTo = null) => {
+  const addChatMessage = (channel, text, replyTo = null, attachmentUrl = null) => {
     const newMessage = {
       id: 'msg-' + Date.now() + Math.random().toString(36).substring(2, 6),
       channel,
       text,
+      attachmentUrl,
       senderEmail: currentUser.email,
       senderName: `${currentUser.firstName} ${currentUser.lastName}`,
       senderRole: currentUser.customRole || (currentUser.isAdmin ? 'Admin' : 'Staff'),

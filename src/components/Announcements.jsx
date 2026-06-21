@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { motion } from 'framer-motion';
 import { Megaphone, AlertTriangle, Hammer, Trash2, Send } from 'lucide-react';
@@ -8,13 +8,15 @@ export default function Announcements() {
   
   const [type, setType] = useState('Normal');
   const [message, setMessage] = useState('');
+  const [countdownDate, setCountdownDate] = useState('');
 
   const handlePost = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
-    addAnnouncement({ type, message });
+    addAnnouncement({ type, message, countdownDate: countdownDate || null });
     setMessage('');
     setType('Normal');
+    setCountdownDate('');
   };
 
   const getIcon = (annType) => {
@@ -35,6 +37,39 @@ export default function Announcements() {
 
   // Sort announcements newest first
   const sortedAnnouncements = [...(announcements || [])].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  const CountdownTimer = ({ targetDate }) => {
+    const calculateTimeLeft = () => {
+      const difference = new Date(targetDate) - new Date();
+      if (difference <= 0) return null;
+      return {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60)
+      };
+    };
+
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        setTimeLeft(calculateTimeLeft());
+      }, 1000);
+      return () => clearTimeout(timer);
+    });
+
+    if (!timeLeft) return <div style={styles.countdownBox}><span style={{color: '#10b981', fontWeight: 'bold'}}>Event has passed</span></div>;
+
+    return (
+      <div style={styles.countdownBox}>
+        <div style={styles.countdownUnit}><span style={styles.countdownSpan}>{timeLeft.days}</span><label style={styles.countdownLabel}>Days</label></div>
+        <div style={styles.countdownUnit}><span style={styles.countdownSpan}>{timeLeft.hours}</span><label style={styles.countdownLabel}>Hrs</label></div>
+        <div style={styles.countdownUnit}><span style={styles.countdownSpan}>{timeLeft.minutes}</span><label style={styles.countdownLabel}>Min</label></div>
+        <div style={styles.countdownUnit}><span style={styles.countdownSpan}>{timeLeft.seconds}</span><label style={styles.countdownLabel}>Sec</label></div>
+      </div>
+    );
+  };
 
   return (
     <div style={styles.container}>
@@ -61,6 +96,15 @@ export default function Announcements() {
                 rows="3" 
                 placeholder="What do you want to announce to the staff?"
                 required
+              />
+            </div>
+            <div style={styles.inputWrapper}>
+              <label style={styles.label}>Countdown Target Date (Optional)</label>
+              <input 
+                type="datetime-local" 
+                value={countdownDate} 
+                onChange={e => setCountdownDate(e.target.value)} 
+                className="input-field" 
               />
             </div>
             <button type="submit" className="btn-primary" style={styles.postBtn}>
@@ -106,6 +150,7 @@ export default function Announcements() {
               </div>
               <div style={styles.cardBody}>
                 <p style={styles.message}>{ann.message}</p>
+                {ann.countdownDate && <CountdownTimer targetDate={ann.countdownDate} />}
               </div>
               <div style={styles.badgeWrapper}>
                 <span style={styles.badge}>{ann.type}</span>
@@ -233,5 +278,36 @@ const styles = {
     padding: '60px 0',
     color: 'var(--color-text-muted)',
     gap: '16px',
+  },
+  countdownBox: {
+    display: 'flex',
+    gap: '12px',
+    marginTop: '16px',
+    padding: '12px',
+    background: 'rgba(0,0,0,0.2)',
+    borderRadius: '8px',
+    border: '1px solid rgba(255,255,255,0.05)',
+    width: 'fit-content'
+  },
+  countdownUnit: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(255,255,255,0.05)',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    minWidth: '50px',
+  },
+  countdownSpan: {
+    fontSize: '1.2rem',
+    fontWeight: 'bold',
+    color: 'var(--color-text-main)'
+  },
+  countdownLabel: {
+    fontSize: '0.7rem',
+    color: '#9ca3af',
+    textTransform: 'uppercase',
+    marginTop: '4px'
   }
 };

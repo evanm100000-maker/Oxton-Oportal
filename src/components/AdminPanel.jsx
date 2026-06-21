@@ -214,34 +214,34 @@ export default function AdminPanel() {
     <div className="admin-layout" style={styles.layoutContainer}>
       {/* Sub tabs navigation */}
       <div className="admin-sidebar" style={styles.sidebar}>
-        <button type="button" onClick={() => document.getElementById('section-approvals')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'approvals')}>
+        <button type="button" onClick={() => setActiveSubTab('approvals')} style={getTabStyle(activeSubTab === 'approvals')}>
           <UserCheck size={16} /> Approvals ({pendingUsers.length})
         </button>
-        <button type="button" onClick={() => document.getElementById('section-roles')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'roles')}>
+        <button type="button" onClick={() => setActiveSubTab('roles')} style={getTabStyle(activeSubTab === 'roles')}>
           <Users size={16} /> Roles
         </button>
-        <button type="button" onClick={() => document.getElementById('section-staff')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'staff')}>
+        <button type="button" onClick={() => setActiveSubTab('staff')} style={getTabStyle(activeSubTab === 'staff')}>
           <UserCheck size={16} /> Staff Actions
         </button>
-        <button type="button" onClick={() => document.getElementById('section-infractions')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'infractions')}>
+        <button type="button" onClick={() => setActiveSubTab('infractions')} style={getTabStyle(activeSubTab === 'infractions')}>
           <ShieldAlert size={16} /> Consequences ({infractions.length})
         </button>
-        <button type="button" onClick={() => document.getElementById('section-flights')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'flights')}>
+        <button type="button" onClick={() => setActiveSubTab('flights')} style={getTabStyle(activeSubTab === 'flights')}>
           <Plane size={16} /> Schedule
         </button>
-        <button type="button" onClick={() => document.getElementById('section-flight_logs')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'flight_logs')}>
+        <button type="button" onClick={() => setActiveSubTab('flight_logs')} style={getTabStyle(activeSubTab === 'flight_logs')}>
           <FileText size={16} /> Flight Logs ({pendingFlightLogs.length})
         </button>
-        <button type="button" onClick={() => document.getElementById('section-loas')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'loas')}>
+        <button type="button" onClick={() => setActiveSubTab('loas')} style={getTabStyle(activeSubTab === 'loas')}>
           <Calendar size={16} /> LOAs ({pendingLoas.length})
         </button>
-        <button type="button" onClick={() => document.getElementById('section-passwords')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'passwords')}>
+        <button type="button" onClick={() => setActiveSubTab('passwords')} style={getTabStyle(activeSubTab === 'passwords')}>
           <Key size={16} /> Passwords ({pendingPasswords.length})
         </button>
-        <button type="button" onClick={() => document.getElementById('section-status')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'status')}>
+        <button type="button" onClick={() => setActiveSubTab('status')} style={getTabStyle(activeSubTab === 'status')}>
           <Settings size={16} /> System Status
         </button>
-        <button type="button" onClick={() => document.getElementById('section-audit')?.scrollIntoView({ behavior: 'smooth' })} style={getTabStyle(activeSubTab === 'audit')}>
+        <button type="button" onClick={() => setActiveSubTab('audit')} style={getTabStyle(activeSubTab === 'audit')}>
           <Activity size={16} /> Audit Log
         </button>
       </div>
@@ -252,7 +252,8 @@ export default function AdminPanel() {
       )}
 
       {/* Sub Tab: Approvals */}
-      <div id="section-approvals">
+      {activeSubTab === 'approvals' && (
+<div id="section-approvals">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Pending User Registrations</h3>
           {pendingUsers.length === 0 ? (
@@ -288,7 +289,9 @@ export default function AdminPanel() {
       </div>
 
       {/* Sub Tab: Infractions */}
-      <div id="section-infractions">
+      )}
+{activeSubTab === 'infractions' && (
+<div id="section-infractions">
         <div style={styles.panelSection}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             <h3 style={styles.panelTitle}>Staff Consequences</h3>
@@ -364,7 +367,9 @@ export default function AdminPanel() {
       </div>
 
       {/* Sub Tab: Roles */}
-      <div id="section-roles">
+      )}
+{activeSubTab === 'roles' && (
+<div id="section-roles">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Staff Role Management</h3>
           {!isSuperAdmin && (
@@ -411,7 +416,9 @@ export default function AdminPanel() {
       </div>
 
       {/* Sub Tab: Staff Actions (Remove, Points) */}
-      <div id="section-staff">
+      )}
+{activeSubTab === 'staff' && (
+<div id="section-staff">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Staff Management & Points</h3>
           <div style={styles.tableWrapper}>
@@ -469,7 +476,9 @@ export default function AdminPanel() {
       </div>
 
       {/* Sub Tab: Flight Logs Review */}
-      <div id="section-flight_logs">
+      )}
+{activeSubTab === 'flight_logs' && (
+<div id="section-flight_logs">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Pending Flight Logs</h3>
           {pendingFlightLogs.length === 0 ? (
@@ -499,7 +508,9 @@ export default function AdminPanel() {
       </div>
 
       {/* Sub Tab: Schedule Flight */}
-      <div id="section-flights">
+      )}
+{activeSubTab === 'flights' && (
+<div id="section-flights">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Schedule New Flight</h3>
           <form onSubmit={handleCreateFlight} style={styles.form}>
@@ -518,7 +529,9 @@ export default function AdminPanel() {
       </div>
 
       {/* Sub Tab: LOA Review */}
-      <div id="section-loas">
+      )}
+{activeSubTab === 'loas' && (
+<div id="section-loas">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Pending LOAs</h3>
           {pendingLoas.length === 0 ? (
@@ -588,7 +601,9 @@ export default function AdminPanel() {
       </div>
 
       {/* Sub Tab: Password Resets */}
-      <div id="section-passwords">
+      )}
+{activeSubTab === 'passwords' && (
+<div id="section-passwords">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Password Reset Requests</h3>
           {pendingPasswords.length === 0 ? (
@@ -628,7 +643,9 @@ export default function AdminPanel() {
       </div>
 
       {/* Sub Tab: System Status */}
-      <div id="section-status">
+      )}
+{activeSubTab === 'status' && (
+<div id="section-status">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>System Status Configuration</h3>
           <p style={styles.panelSubtitle}>Configure warning banners and full site maintenance lockouts.</p>
@@ -675,7 +692,8 @@ export default function AdminPanel() {
       </div>
 
       {/* Sub Tab: Audit Log */}
-      <div id="section-audit">
+      )}
+<div id="section-audit">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>System Audit Log</h3>
           <div style={styles.tableWrapper}>

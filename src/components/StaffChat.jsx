@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Send, ShieldAlert, Users, MessageSquare, Globe, Reply, Trash2, Flag, Smile, X } from 'lucide-react';
+import { Send, ShieldAlert, Users, MessageSquare, Globe, Reply, Trash2, Flag, Smile, X, Image as ImageIcon, Paperclip } from 'lucide-react';
+import { storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
 
 export default function StaffChat() {
   const { currentUser, chatMessages, addChatMessage, deleteChatMessage, addMessageReaction, submitReport, setCustomRole } = useApp();
@@ -11,6 +12,8 @@ export default function StaffChat() {
   const [replyingTo, setReplyingTo] = useState(null);
   const [activeReactionMsgId, setActiveReactionMsgId] = useState(null);
   const [hoveredMsgId, setHoveredMsgId] = useState(null);
+  const [attachment, setAttachment] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef(null);
 
   const filteredMessages = chatMessages.filter(m => m.channel === activeChannel);
@@ -25,9 +28,9 @@ export default function StaffChat() {
     setTimeout(scrollToBottom, 100);
   }, [activeChannel, filteredMessages.length]);
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() && !attachment) return;
     
     let replyData = null;
     if (replyingTo) {
@@ -37,10 +40,38 @@ export default function StaffChat() {
         text: replyingTo.text.length > 50 ? replyingTo.text.substring(0, 50) + '...' : replyingTo.text
       };
     }
+
+    let attachmentUrl = null;
+    if (attachment) {
+      setIsUploading(true);
+      try {
+        const fileRef = storageRef(storage, `chat_attachments/${Date.now()}_${attachment.name}`);
+        const snapshot = await uploadBytes(fileRef, attachment);
+        attachmentUrl = await getDownloadURL(snapshot.ref);
+      } catch (err) {
+        console.error("Upload failed", err);
+        alert("Failed to upload image. Please try again.");
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
     
-    addChatMessage(activeChannel, inputText.trim(), replyData);
+    addChatMessage(activeChannel, inputText.trim(), replyData, attachmentUrl);
     setInputText('');
     setReplyingTo(null);
+    setAttachment(null);
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        alert("File size exceeds 5MB limit.");
+        return;
+      }
+      setAttachment(file);
+    }
   };
 
   const handleReport = (msg) => {
@@ -116,10 +147,30 @@ export default function StaffChat() {
           {filteredMessages.length === 0 ? (
             <div style={styles.emptyState}>No messages yet. Start the conversation!</div>
           ) : (
-            filteredMessages.map((msg) => (
-              <div 
-                key={msg.id} 
-                style={{...styles.messageRow, position: 'relative'}}
+            filteredMessages.map((msg, index) => {
+              const msgDate = new Date(msg.timestamp);
+              const isToday = new Date().toDateString() === msgDate.toDateString();
+              const dateString = isToday ? 'Today' : msgDate.toLocaleDateString();
+              
+              let showDateDivider = false;
+              if (index === 0) {
+                showDateDivider = true;
+              } else {
+                const prevMsgDate = new Date(filteredMessages[index - 1].timestamp);
+                if (msgDate.toDateString() !== prevMsgDate.toDateString()) {
+                  showDateDivider = true;
+                }
+              }
+
+              return (
+                <React.Fragment key={msg.id}>
+                  {showDateDivider && (
+                    <div style={styles.dateDivider}>
+                      <span>{dateString}</span>
+                    </div>
+                  )}
+                  <div 
+                    style={{...styles.messageRow, position: 'relative'}}
                 onMouseEnter={() => setHoveredMsgId(msg.id)}
                 onMouseLeave={() => {
                   setHoveredMsgId(null);
@@ -157,7 +208,9 @@ export default function StaffChat() {
                       {msg.senderName}
                     </span>
                     {msg.senderRole && <span style={styles.senderRole}>({msg.senderRole})</span>}
-                    <span style={styles.timestamp}>{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <span style={styles.timestamp}>
+                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
+                    </span>
                   </div>
                   
                   {msg.replyTo && (
@@ -175,6 +228,12 @@ export default function StaffChat() {
                       part.startsWith('@') ? <span key={i} style={{ color: '#06b6d4', fontWeight: 'bold' }}>{part}</span> : part
                     )}
                   </div>
+                  
+                  {msg.attachmentUrl && (
+                    <div style={{ marginTop: '8px', maxWidth: '300px', borderRadius: '8px', overflow: 'hidden' }}>
+                      <img src={msg.attachmentUrl} alt="Attachment" style={{ width: '100%', display: 'block' }} />
+                    </div>
+                  )}
 
                   {msg.reactions && msg.reactions.length > 0 && (
                     <div style={styles.reactionsContainer}>
@@ -237,7 +296,9 @@ export default function StaffChat() {
                   )}
                 </div>
               </div>
-            ))
+                </React.Fragment>
+              );
+            })
           )}
           <div ref={messagesEndRef} />
         </div>
@@ -255,14 +316,30 @@ export default function StaffChat() {
             </div>
           )}
           <form onSubmit={handleSend} style={{...styles.inputArea, borderTopLeftRadius: replyingTo ? 0 : '16px', borderTopRightRadius: replyingTo ? 0 : '16px'}}>
-            <input 
-              type="text" 
-              value={inputText} 
-              onChange={e => setInputText(e.target.value)} 
-              placeholder={`Message #${activeChannel.toLowerCase().replace(' ', '-')}`}
-              style={styles.input}
-            />
-            <button type="submit" className="btn-primary" style={styles.sendBtn} disabled={!inputText.trim()}>
+            <label style={styles.uploadBtn}>
+              <input type="file" accept="image/*" onChange={handleFileChange} style={{display: 'none'}} disabled={isUploading} />
+              <Paperclip size={20} color={attachment ? '#3b82f6' : '#9ca3af'} />
+            </label>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {attachment && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#3b82f6', background: 'rgba(59, 130, 246, 0.1)', padding: '4px 8px', borderRadius: '4px', width: 'fit-content' }}>
+                  <ImageIcon size={14} />
+                  <span>{attachment.name}</span>
+                  <button type="button" onClick={() => setAttachment(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+              <input 
+                type="text" 
+                value={inputText} 
+                onChange={e => setInputText(e.target.value)} 
+                placeholder={isUploading ? "Uploading attachment..." : `Message #${activeChannel.toLowerCase().replace(' ', '-')}`}
+                style={styles.input}
+                disabled={isUploading}
+              />
+            </div>
+            <button type="submit" className="btn-primary" style={styles.sendBtn} disabled={(!inputText.trim() && !attachment) || isUploading}>
               <Send size={18} />
             </button>
           </form>
@@ -431,6 +508,26 @@ const styles = {
     padding: '12px 16px',
     color: 'var(--color-text-main)',
     outline: 'none',
+    width: '100%',
+  },
+  uploadBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '10px',
+    cursor: 'pointer',
+    borderRadius: '8px',
+    transition: 'background 0.2s',
+  },
+  dateDivider: {
+    display: 'flex',
+    alignItems: 'center',
+    textAlign: 'center',
+    margin: '20px 0 10px 0',
+    color: '#6b7280',
+    fontSize: '0.85rem',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
   },
   sendBtn: {
     padding: '0 20px',

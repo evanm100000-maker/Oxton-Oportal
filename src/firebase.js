@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, set } from 'firebase/database';
+import { getDatabase, ref, onValue, set, get, runTransaction } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -19,4 +19,4 @@ export const db = getDatabase(firebaseApp);
 export const auth = getAuth(firebaseApp);
 export const storage = getStorage(firebaseApp);
 
-export { getDatabase, ref, onValue, set, storageRef, uploadBytes, getDownloadURL };
+export { getDatabase, ref, onValue, set, get, runTransaction, storageRef, uploadBytes, getDownloadURL };
