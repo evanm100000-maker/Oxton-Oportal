@@ -230,50 +230,63 @@ const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
 const makeId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
 export const AppProvider = ({ children }) => {
-  // Helper to load localStorage with seed fallback
-  const getStoredData = (key, initialVal) => {
-    try {
-      const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : initialVal;
-    } catch (e) {
-      console.error('Error reading localStorage', e);
-      return initialVal;
-    }
-  };
-
-  const getSessionData = (key, initialVal) => {
-    try {
-      const data = sessionStorage.getItem(key);
-      return data ? JSON.parse(data) : initialVal;
-    } catch (e) {
-      console.error('Error reading sessionStorage', e);
-      return initialVal;
-    }
-  };
-
-  const [users, setUsers] = useState(() => getStoredData(STORAGE_KEYS.users, initialUsers));
-  const [flights, setFlights] = useState(() => getStoredData(STORAGE_KEYS.flights, initialFlights));
-  const [flightLogs, setFlightLogs] = useState(() => getStoredData(STORAGE_KEYS.flightLogs, initialFlightLogs));
-  const [loaRequests, setLoaRequests] = useState(() => getStoredData(STORAGE_KEYS.loaRequests, initialLoaRequests));
-  const [documents, setDocuments] = useState(() => getStoredData(STORAGE_KEYS.documents, initialDocuments));
-  const [reports, setReports] = useState(() => getStoredData(STORAGE_KEYS.reports, initialReports));
-  const [infractions, setInfractions] = useState(() => getStoredData(STORAGE_KEYS.infractions, initialInfractions));
-  const [tasks, setTasks] = useState(() => getStoredData(STORAGE_KEYS.tasks, initialTasks));
-  const [tickets, setTickets] = useState(() => getStoredData(STORAGE_KEYS.tickets, initialTickets));
-  const [staffNotes, setStaffNotes] = useState(() => getStoredData(STORAGE_KEYS.staffNotes, initialStaffNotes));
-  const [currentUser, setCurrentUser] = useState(() => getSessionData(STORAGE_KEYS.currentUser, null));
+  const [users, setUsers] = useState(initialUsers);
+  const [flights, setFlights] = useState(initialFlights);
+  const [flightLogs, setFlightLogs] = useState(initialFlightLogs);
+  const [loaRequests, setLoaRequests] = useState(initialLoaRequests);
+  const [documents, setDocuments] = useState(initialDocuments);
+  const [reports, setReports] = useState(initialReports);
+  const [infractions, setInfractions] = useState(initialInfractions);
+  const [tasks, setTasks] = useState(initialTasks);
+  const [tickets, setTickets] = useState(initialTickets);
+  const [staffNotes, setStaffNotes] = useState(initialStaffNotes);
+  const [currentUser, setCurrentUser] = useState(null);
 
   // New States
-  const [theme, setTheme] = useState(() => getStoredData(STORAGE_KEYS.theme, 'dark'));
-  const [warningConfig, setWarningConfig] = useState(() => getStoredData(STORAGE_KEYS.warningConfig, initialWarningConfig));
-  const [maintenanceConfig, setMaintenanceConfig] = useState(() => getStoredData(STORAGE_KEYS.maintenanceConfig, initialMaintenanceConfig));
-  const [auditLogs, setAuditLogs] = useState(() => getStoredData(STORAGE_KEYS.auditLogs, []));
-  const [passwordResets, setPasswordResets] = useState(() => getStoredData(STORAGE_KEYS.passwordResets, []));
-  const [chatMessages, setChatMessages] = useState(() => getStoredData(STORAGE_KEYS.chatMessages, []));
-  const [announcements, setAnnouncements] = useState(() => getStoredData(STORAGE_KEYS.announcements, initialAnnouncements));
+  const [theme, setTheme] = useState('dark');
+  const [warningConfig, setWarningConfig] = useState(initialWarningConfig);
+  const [maintenanceConfig, setMaintenanceConfig] = useState(initialMaintenanceConfig);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [passwordResets, setPasswordResets] = useState([]);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [announcements, setAnnouncements] = useState(initialAnnouncements);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
+
+  useEffect(() => {
+    const safeParse = (storage, key, fallback) => {
+      try {
+        const item = storage.getItem(key);
+        if (item === null) return fallback;
+        const parsed = JSON.parse(item);
+        return parsed !== null && parsed !== undefined ? parsed : fallback;
+      } catch (e) {
+        console.error(`Error reading ${key}`, e);
+        return fallback;
+      }
+    };
+
+    setUsers(safeParse(localStorage, STORAGE_KEYS.users, initialUsers));
+    setFlights(safeParse(localStorage, STORAGE_KEYS.flights, initialFlights));
+    setFlightLogs(safeParse(localStorage, STORAGE_KEYS.flightLogs, initialFlightLogs));
+    setLoaRequests(safeParse(localStorage, STORAGE_KEYS.loaRequests, initialLoaRequests));
+    setDocuments(safeParse(localStorage, STORAGE_KEYS.documents, initialDocuments));
+    setReports(safeParse(localStorage, STORAGE_KEYS.reports, initialReports));
+    setInfractions(safeParse(localStorage, STORAGE_KEYS.infractions, initialInfractions));
+    setTasks(safeParse(localStorage, STORAGE_KEYS.tasks, initialTasks));
+    setTickets(safeParse(localStorage, STORAGE_KEYS.tickets, initialTickets));
+    setStaffNotes(safeParse(localStorage, STORAGE_KEYS.staffNotes, initialStaffNotes));
+    setCurrentUser(safeParse(sessionStorage, STORAGE_KEYS.currentUser, null));
+    
+    setTheme(safeParse(localStorage, STORAGE_KEYS.theme, 'dark'));
+    setWarningConfig(safeParse(localStorage, STORAGE_KEYS.warningConfig, initialWarningConfig));
+    setMaintenanceConfig(safeParse(localStorage, STORAGE_KEYS.maintenanceConfig, initialMaintenanceConfig));
+    setAuditLogs(safeParse(localStorage, STORAGE_KEYS.auditLogs, []));
+    setPasswordResets(safeParse(localStorage, STORAGE_KEYS.passwordResets, []));
+    setChatMessages(safeParse(localStorage, STORAGE_KEYS.chatMessages, []));
+    setAnnouncements(safeParse(localStorage, STORAGE_KEYS.announcements, initialAnnouncements));
+  }, []);
 
   const addNotification = (title, message, type = 'info') => {
     const id = makeId('notif');

@@ -29,21 +29,34 @@ export default function Dashboard() {
   const { currentUser, logout, chatMessages, infractions } = useApp();
   const [activeTab, setActiveTab] = useState('home');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [lastReadChatCount, setLastReadChatCount] = useState(() => {
-    return parseInt(localStorage.getItem(`oxton_chat_read_${currentUser.email}`) || '0', 10);
-  });
+  const [lastReadChatCount, setLastReadChatCount] = useState(0);
   const { flights } = useApp();
-  const [lastReadFlightCount, setLastReadFlightCount] = useState(() => {
-    return parseInt(localStorage.getItem(`oxton_flight_read_${currentUser.email}`) || '0', 10);
-  });
-  const getReviewedInfractionIds = React.useCallback(() => {
-    try {
-      return JSON.parse(localStorage.getItem(`oxton_infraction_reviewed_${currentUser.email}`) || '[]');
-    } catch {
-      return [];
+  const [lastReadFlightCount, setLastReadFlightCount] = useState(0);
+  const [reviewedInfractionIds, setReviewedInfractionIds] = useState([]);
+
+  React.useEffect(() => {
+    if (currentUser?.email) {
+      try {
+        const chatRead = localStorage.getItem(`oxton_chat_read_${currentUser.email}`);
+        if (chatRead !== null) setLastReadChatCount(parseInt(chatRead, 10) || 0);
+
+        const flightRead = localStorage.getItem(`oxton_flight_read_${currentUser.email}`);
+        if (flightRead !== null) setLastReadFlightCount(parseInt(flightRead, 10) || 0);
+
+        const infractionsRead = localStorage.getItem(`oxton_infraction_reviewed_${currentUser.email}`);
+        if (infractionsRead !== null) {
+          try {
+            const parsed = JSON.parse(infractionsRead);
+            if (Array.isArray(parsed)) setReviewedInfractionIds(parsed);
+          } catch (e) {
+            console.error('Failed to parse reviewed infractions', e);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to access localStorage', e);
+      }
     }
-  }, [currentUser.email]);
-  const [reviewedInfractionIds, setReviewedInfractionIds] = useState(getReviewedInfractionIds);
+  }, [currentUser?.email]);
 
   // Update read count when opening the chat
   React.useEffect(() => {

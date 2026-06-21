@@ -17,7 +17,7 @@ try {
 if (serviceAccount) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: 'https://oxton-staff-default-rtdb.europe-west1.firebasedatabase.app' // actual URL
+    databaseURL: 'https://oxton-oportal-v2-default-rtdb.europe-west1.firebasedatabase.app' // actual URL
   });
 }
 
