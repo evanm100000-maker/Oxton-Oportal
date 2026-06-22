@@ -44,7 +44,7 @@ export default function WarningBanner() {
         <div className="warning-icon-container">
           <Icon size={48} color="#1f2937" />
         </div>
-        <div className="warning-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div className="warning-content" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', gap: '12px' }}>
           <div>
             <div className="warning-header">
               {warningConfig.title}
@@ -59,10 +59,11 @@ export default function WarningBanner() {
               fontWeight: '900',
               fontFamily: 'monospace',
               color: timeLeft.isExpired ? '#ef4444' : '#1f2937',
-              marginLeft: '20px',
+              marginTop: '8px',
               padding: '10px 20px',
               background: 'rgba(0,0,0,0.05)',
-              borderRadius: '12px'
+              borderRadius: '12px',
+              alignSelf: 'flex-start'
             }}>
               {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
             </div>
