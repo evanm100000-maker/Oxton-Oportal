@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getDatabase, ref, onValue, set, get, runTransaction } from 'firebase/database';
+import { getDatabase as firebaseGetDatabase, ref, onValue, set, get, runTransaction } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
@@ -15,7 +15,8 @@ const firebaseConfig = {
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
-export const db = getDatabase(firebaseApp);
+export const db = firebaseGetDatabase(firebaseApp, "https://oxton-oportal-default-rtdb.europe-west1.firebasedatabase.app");
+const getDatabase = () => db;
 export const auth = getAuth(firebaseApp);
 export const storage = getStorage(firebaseApp);
 
