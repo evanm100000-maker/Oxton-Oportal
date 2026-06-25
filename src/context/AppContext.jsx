@@ -1208,37 +1208,55 @@ export const AppProvider = ({ children }) => {
 
   // Chat Operations
 const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = null) => {
-  const newMessage = {
-    id: 'msg-' + Date.now() + Math.random().toString(36).substring(2, 6),
-    channel,
-    text,
-    attachmentUrl,
-    senderEmail: currentUser.email,
-    senderName: `${currentUser.firstName} ${currentUser.lastName}`,
-    senderRole: currentUser.customRole || (currentUser.isAdmin ? 'Admin' : 'Staff'),
-    senderPfp: currentUser.profilePicture || '',
-    timestamp: new Date().toISOString(),
-    replyTo,
-    reactions: []
+    const newMessage = {
+      id: 'msg-' + Date.now() + Math.random().toString(36).substring(2, 6),
+      channel,
+      text,
+      attachmentUrl,
+      senderEmail: currentUser.email,
+      senderName: `${currentUser.firstName} ${currentUser.lastName}`,
+      senderRole: currentUser.customRole || (currentUser.isAdmin ? 'Admin' : 'Staff'),
+      senderPfp: currentUser.profilePicture || '',
+      timestamp: new Date().toISOString(),
+      replyTo,
+      reactions: []
+    };
+
+    try {
+      // 1. Save directly to Firebase
+      const messagesRef = ref(db, 'chats');
+      const newMessageRef = push(messagesRef);
+      await set(newMessageRef, newMessage);
+
+      // 2. Update local state instantly so it pops up
+      setChatMessages(prev => [...prev, newMessage]);
+    } catch (error) {
+      console.error("Error saving message to Firebase:", error);
+    }
   };
-try {
-    // 1. Save directly to your new database list
-    const messagesRef = ref(db, 'chats'); // Change 'messages' to 'chats' if that's what your old DB used
-    const newMessageRef = push(messagesRef);
-    await set(newMessageRef, newMessage);
 
-    // 2. Add it locally right away so your screen updates instantly!
-    setChatMessages(prev => [...prev, newMessage]);
-  } catch (error) {
-    console.error("Error saving message to Firebase:", error);
-  }
-};
-
-  const deleteChatMessage = (msgId) => {
+  const deleteChatMessage = async (msgId) => {
+    // 1. Update UI instantly
     setChatMessages(prev => prev.filter(m => m.id !== msgId));
+
+    try {
+      // 2. Delete from database
+      const chatRef = ref(db, 'chats');
+      const snapshot = await get(chatRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const firebaseKey = Object.keys(data).find(key => data[key].id === msgId);
+        if (firebaseKey) {
+          await remove(ref(db, `chats/${firebaseKey}`));
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting message from Firebase:", error);
+    }
   };
 
-  const addMessageReaction = (msgId, emoji) => {
+  const addMessageReaction = async (msgId, emoji) => {
+    // 1. Update UI instantly for lag-free performance
     setChatMessages(prev => prev.map(m => {
       if (m.id !== msgId) return m;
       const currentReactions = m.reactions || [];
@@ -1250,7 +1268,6 @@ try {
       if (existingReactionIndex >= 0) {
         const reaction = newReactions[existingReactionIndex];
         if (reaction.users.includes(userEmail)) {
-          // Remove user's reaction
           const updatedUsers = reaction.users.filter(u => u !== userEmail);
           if (updatedUsers.length === 0) {
             newReactions.splice(existingReactionIndex, 1);
@@ -1258,18 +1275,56 @@ try {
             newReactions[existingReactionIndex] = { ...reaction, users: updatedUsers, count: updatedUsers.length };
           }
         } else {
-          // Add user's reaction
           const updatedUsers = [...reaction.users, userEmail];
           newReactions[existingReactionIndex] = { ...reaction, users: updatedUsers, count: updatedUsers.length };
         }
       } else {
-        // Add new reaction
         newReactions.push({ emoji, count: 1, users: [userEmail] });
       }
       return { ...m, reactions: newReactions };
     }));
-  };
 
+    try {
+      // 2. Sync changes securely to Firebase using a transaction
+      const chatRef = ref(db, 'chats');
+      const snapshot = await get(chatRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const firebaseKey = Object.keys(data).find(key => data[key].id === msgId);
+        
+        if (firebaseKey) {
+          const reactionRef = ref(db, `chats/${firebaseKey}/reactions`);
+          await runTransaction(reactionRef, (currentReactions) => {
+            const reactions = currentReactions || [];
+            const userEmail = currentUser.email;
+            const existingIndex = reactions.findIndex(r => r.emoji === emoji);
+            let updatedReactions = [...reactions];
+
+            if (existingIndex >= 0) {
+              const reaction = updatedReactions[existingIndex];
+              if (reaction.users && reaction.users.includes(userEmail)) {
+                const updatedUsers = reaction.users.filter(u => u !== userEmail);
+                if (updatedUsers.length === 0) {
+                  updatedReactions.splice(existingIndex, 1);
+                } else {
+                  updatedReactions[existingIndex] = { ...reaction, users: updatedUsers, count: updatedUsers.length };
+                }
+              } else {
+                const updatedUsers = [...(reaction.users || []), userEmail];
+                updatedReactions[existingIndex] = { ...reaction, users: updatedUsers, count: updatedUsers.length };
+              }
+            } else {
+              updatedReactions.push({ emoji, count: 1, users: [userEmail] });
+            }
+            return updatedReactions;
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error updating reaction in Firebase:", error);
+    }
+  };
+  
   // Announcements Operations
   const addAnnouncement = (annData) => {
     const newAnn = {
