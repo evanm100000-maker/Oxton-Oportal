@@ -1,23 +1,19 @@
-import { initializeApp } from 'firebase/app';
-import { getDatabase as firebaseGetDatabase, ref, onValue, set, get, runTransaction } from 'firebase/database';
-import { getAuth } from 'firebase/auth';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { initializeApp } from "firebase/app";
+import { getDatabase } from "firebase/database";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDEZpHFYQz6KJov4ETDWuEoYXZ-6kv3rxE",
-  authDomain: "oxton-oportal.firebaseapp.com",
-  databaseURL: "https://oxton-oportal-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "oxton-oportal",
-  storageBucket: "oxton-oportal.firebasestorage.app",
-  messagingSenderId: "100648529507",
-  appId: "1:100648529507:web:899b33ce57b06596365256",
-  measurementId: "G-YTQKHNNW6W"
+  apiKey: "AIzaSyCAb1-Cth-6UOQs8qXJuoIRR-nEsEJjK6k",
+  authDomain: "oxton-oportal-v2.firebaseapp.com",
+  databaseURL: "https://oxton-oportal-v2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "oxton-oportal-v2",
+  storageBucket: "oxton-oportal-v2.firebasestorage.app",
+  messagingSenderId: "836838921694",
+  appId: "1:836838921694:web:586ca42581c24a6752f94f",
+  measurementId: "G-VWPWJBL7S6"
 };
 
-export const firebaseApp = initializeApp(firebaseConfig);
-export const db = firebaseGetDatabase(firebaseApp, "https://oxton-oportal-default-rtdb.europe-west1.firebasedatabase.app");
-const getDatabase = () => db;
-export const auth = getAuth(firebaseApp);
-export const storage = getStorage(firebaseApp);
+const app = initializeApp(firebaseConfig);
 
-export { getDatabase, ref, onValue, set, get, runTransaction, storageRef, uploadBytes, getDownloadURL };
+export const db = getDatabase(app);
+export const auth = getAuth(app);
