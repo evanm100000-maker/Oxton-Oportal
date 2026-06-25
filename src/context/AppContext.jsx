@@ -9,16 +9,16 @@ const AppContext = createContext();
 const SUPER_ADMIN_EMAIL = 'Evanm.100000@gmail.com';
 const INITIAL_SUPER_ADMIN = {
   email: SUPER_ADMIN_EMAIL,
-  password: 'Michelle11!',
-  firstName: 'Evan',
-  lastName: 'Oxton',
+  password: 'Pauljack2003.',
+  firstName: 'Jamie',
+  lastName: '',
   robloxUsername: 'Happyevbev',
   isAdmin: true,
   approved: true,
-  createdAt: '2026-06-10T12:00:00Z',
+  createdAt: '1952-06-10T12:00:00Z',
   profilePicture: '',
   points: 0,
-  customRole: 'Head admin',
+  customRole: 'Chairman',
   suspendedUntil: null,
 };
 
@@ -88,130 +88,20 @@ const initialBypassConfig = {
 
 const initialMaintenanceConfig = {
   isActive: false,
-  message: 'The system is currently undergoing scheduled maintenance. Please use discord operations.'
+  message: 'The system is currently undergoing maintenance. Error code {Access Denied}'
 };
 
-const initialFlights = [
-  {
-    id: 'fl-101',
-    flightCode: 'OX-902',
-    date: '2026-06-18',
-    time: '18:00',
-    location: 'Oxton International Airport',
-    serverLink: 'https://www.roblox.com/games/123456/Oxton-Airport-V2',
-    allocatedStaff: ['staff@oxton.com']
-  },
-  {
-    id: 'fl-102',
-    flightCode: 'OX-104',
-    date: '2026-06-20',
-    time: '15:00',
-    location: 'Oxton Regional HQ',
-    serverLink: 'https://www.roblox.com/games/123456/Oxton-Airport-V2',
-    allocatedStaff: []
-  }
-];
+const initialFlights = [];
 
-const initialFlightLogs = [
-  {
-    id: 'log-1',
-    flightCode: 'OX-902',
-    pilot: 'DavidOxton',
-    coPilot: 'SarahOxton',
-    passengers: 12,
-    status: 'Completed',
-    notes: 'Smooth flight, no disturbances. Arrived 5 minutes ahead of schedule.',
-    submitterEmail: 'staff@oxton.com',
-    submitterName: 'David Miller',
-    timestamp: '2026-06-14T19:30:00Z'
-  }
-];
-
-const initialLoaRequests = [
-  {
-    id: 'loa-1',
-    startDate: '2026-06-22',
-    endDate: '2026-06-29',
-    reason: 'Family vacation out of town. Will not have stable internet connection.',
-    status: 'Approved',
-    userEmail: 'staff@oxton.com',
-    userName: 'David Miller',
-    adminComment: 'Approved. Enjoy your vacation!',
-    timestamp: '2026-06-13T10:00:00Z'
-  }
-];
-
-const initialDocuments = [
-  {
-    id: 'doc-1',
-    title: 'Standard Operating Procedures V1.4',
-    category: 'Protocol',
-    content: `## Oxton Aviation Staff Operating Procedures
-
-Welcome to the official Oxton Roblox staff training manual. Below are the basic regulations all staff must follow:
-
-### 1. Attendance & Punctuality
-* Staff must arrive at the designated airport server at least 15 minutes before the scheduled flight time.
-* If you cannot make your shift, you must log a Leave of Absence (LOA) request or find a cover in the Allocation Requests panel at least 12 hours in advance.
-
-### 2. Player Moderation
-* Be polite to all passengers, including difficult players.
-* For toxic behavior, issue one warning. If behavior persists, submit a report in the Staff Portal under the Reports tab.
-* In case of severe exploiters, take a video clip, log the player report, and notify a server admin immediately.
-`,
-    authorEmail: 'Evanm.100000@gmail.com',
-    authorName: 'Evan Oxton',
-    date: '2026-06-10'
-  }
-];
-
-const initialReports = [
-  {
-    id: 'rep-1',
-    reportedPlayer: 'RobloxGamer999',
-    type: 'Exploiting',
-    description: 'Player was flying around the gate lobby and bypassing terminal doors.',
-    evidenceLink: 'https://imgur.com/example-evidence',
-    status: 'Under Review',
-    reporterEmail: 'staff@oxton.com',
-    reporterName: 'David Miller',
-    timestamp: '2026-06-15T15:20:00Z',
-    comments: [
-      {
-        id: 'comm-1',
-        authorName: 'Sarah Conner',
-        authorEmail: 'admin@oxton.com',
-        text: 'Checking the server logs for this timestamp. Did you manage to grab a video file?',
-        timestamp: '2026-06-15T16:00:00Z',
-        isAdmin: true
-      },
-      {
-        id: 'comm-2',
-        authorName: 'David Miller',
-        authorEmail: 'staff@oxton.com',
-        text: 'Yes, the Imgur link has a short video clip showing the flight exploit.',
-        timestamp: '2026-06-15T16:15:00Z',
-        isAdmin: false
-      }
-    ]
-  }
-];
-
+const initialFlightLogs = [];
+const initialLoaRequests = [];
+const initialDocuments = [];
+const initialReports = [];
 const initialInfractions = [];
 const initialTasks = [];
 const initialTickets = [];
 const initialStaffNotes = [];
-const initialAnnouncements = [
-  {
-    id: 'ann-1',
-    type: 'Normal',
-    message: 'Welcome to the new Oxton Staff Portal. Please check the documents for updated operating procedures.',
-    authorName: 'System',
-    authorEmail: 'System',
-    timestamp: '2026-06-10T12:00:00Z'
-  }
-];
-
+const initialAnnouncements = [];
 const initialPrivateChats = [];
 
 const STORAGE_KEYS = {
