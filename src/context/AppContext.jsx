@@ -1217,9 +1217,13 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
+    // 1. Double check that db exists before setting up the listener
+    if (!db) return;
+
     const chatRef = ref(db, 'chats');
     
+    // 2. Keep the listener reference clear
     const unsubscribe = onValue(chatRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -1228,14 +1232,26 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
         }));
         
         loadedMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        setChatMessages(loadedMessages);
+        
+        // 3. Only update state if the data actually changed to prevent render spam
+        setChatMessages(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(loadedMessages)) {
+            return prev; // Stops React from re-rendering if data is identical
+          }
+          return loadedMessages;
+        });
       } else {
-        setChatMessages([]);
+        setChatMessages(prev => prev.length === 0 ? prev : []);
       }
+    }, (error) => {
+      console.error("Firebase listener error:", error);
     });
 
-    return () => unsubscribe();
-  }, []);
+    // 4. CRITICAL: Turn off the listener when the component re-renders or unmounts
+    return () => {
+      unsubscribe();
+    };
+  }, []); // KEEP THIS EMPTY ARRAY EXACTLY LIKE THIS so it only runs ONCE on startup!
 
   // Announcements Operations
   const addAnnouncement = (annData) => {
