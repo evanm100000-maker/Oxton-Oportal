@@ -1207,22 +1207,30 @@ export const AppProvider = ({ children }) => {
   };
 
   // Chat Operations
-  const addChatMessage = (channel, text, replyTo = null, attachmentUrl = null) => {
-    const newMessage = {
-      id: 'msg-' + Date.now() + Math.random().toString(36).substring(2, 6),
-      channel,
-      text,
-      attachmentUrl,
-      senderEmail: currentUser.email,
-      senderName: `${currentUser.firstName} ${currentUser.lastName}`,
-      senderRole: currentUser.customRole || (currentUser.isAdmin ? 'Admin' : 'Staff'),
-      senderPfp: currentUser.profilePicture || '',
-      timestamp: new Date().toISOString(),
-      replyTo,
-      reactions: []
-    };
-    setChatMessages(prev => [...prev, newMessage]);
+const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = null) => {
+  const newMessage = {
+    id: 'msg-' + Date.now() + Math.random().toString(36).substring(2, 6),
+    channel,
+    text,
+    attachmentUrl,
+    senderEmail: currentUser.email,
+    senderName: `${currentUser.firstName} ${currentUser.lastName}`,
+    senderRole: currentUser.customRole || (currentUser.isAdmin ? 'Admin' : 'Staff'),
+    senderPfp: currentUser.profilePicture || '',
+    timestamp: new Date().toISOString(),
+    replyTo,
+    reactions: []
   };
+
+  try {
+    // Save directly to your new database list instead of just updating local state
+    const messagesRef = ref(db, 'messages');
+    const newMessageRef = push(messagesRef);
+    await set(newMessageRef, newMessage);
+  } catch (error) {
+    console.error("Error saving message to Firebase:", error);
+  }
+};
 
   const deleteChatMessage = (msgId) => {
     setChatMessages(prev => prev.filter(m => m.id !== msgId));
