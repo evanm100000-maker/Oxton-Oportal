@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getDatabase } from "firebase/database"; // Need this for the chat!
+import { getDatabase } from "firebase/database"; 
+import { getStorage } from "firebase/storage"; // <-- Added this back for file uploads!
 
 // Your brand-new web app's Firebase configuration
 const firebaseConfig = {
@@ -18,6 +19,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const analytics = getAnalytics(firebaseApp);
 const db = getDatabase(firebaseApp);
+const storage = getStorage(firebaseApp); // <-- Added this initialization
 
-// Export them exactly how your AppContext expects them
-export { firebaseApp, analytics, db };
+// Export them so all your components can read them
+export { firebaseApp, analytics, db, storage }; // <-- Added storage to the exports
