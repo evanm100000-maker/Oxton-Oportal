@@ -1,8 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { db, storage } from "../firebase"; // <-- Clean import straight from your new config!
+import { db, storage } from "../firebase"; 
 import { ref, onValue, set, runTransaction, push, get, remove } from "firebase/database";
-
-// LINE 5 REMOVED - You don't need "const db = getDatabase(firebaseApp);" here anymore!
 
 const AppContext = createContext();
 
