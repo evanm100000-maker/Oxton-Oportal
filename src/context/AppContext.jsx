@@ -1223,7 +1223,7 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
   };
 try {
     // 1. Save directly to your new database list
-    const messagesRef = ref(db, 'messages');
+    const messagesRef = ref(db, 'chats'); // Change 'messages' to 'chats' if that's what your old DB used
     const newMessageRef = push(messagesRef);
     await set(newMessageRef, newMessage);
 
