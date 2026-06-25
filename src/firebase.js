@@ -1,11 +1,9 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getDatabase } from "firebase/database"; 
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getDatabase } from "firebase/database"; 
 import { getStorage } from "firebase/storage"; 
 
+// Your brand-new web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDAL9CpDUOiNYK3ny41gK3XM6BrtrU0Nu0",
   authDomain: "oxton-staff.firebaseapp.com",
@@ -17,11 +15,11 @@ const firebaseConfig = {
   measurementId: "G-PP9GD2H3F1"
 };
 
-// Initialize services
+// Initialize Firebase services cleanly (exactly once)
 const firebaseApp = initializeApp(firebaseConfig);
 const analytics = getAnalytics(firebaseApp);
 const db = getDatabase(firebaseApp);
 const storage = getStorage(firebaseApp);
 
-// CRITICAL: Ensure these named exports exactly match what your components import
+// Export them for your application components
 export { firebaseApp, analytics, db, storage };
