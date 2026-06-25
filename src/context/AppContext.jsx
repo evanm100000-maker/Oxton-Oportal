@@ -1230,8 +1230,8 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
       const newMessageRef = push(messagesRef);
       await set(newMessageRef, newMessage);
 
-      // 2. Update local state instantly so it pops up
-      setChatMessages(prev => [...prev, newMessage]);
+      // LINE 1231 DELETED REMOVED FROM HERE 
+      // Your useEffect below will automatically handle showing it smoothly!
     } catch (error) {
       console.error("Error saving message to Firebase:", error);
     }
@@ -1346,7 +1346,7 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
 
     return () => unsubscribe();
   }, []);
-  
+
   // Announcements Operations
   const addAnnouncement = (annData) => {
     const newAnn = {
