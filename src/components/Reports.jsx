@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { AlertTriangle, Send, MessageSquare, Shield, Clock, ExternalLink, RefreshCw, Upload } from 'lucide-react';
-import { storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
+import { storage } from "../firebase";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function Reports() {
   const { reports, submitReport, addReportComment, updateReportStatus, currentUser } = useApp();

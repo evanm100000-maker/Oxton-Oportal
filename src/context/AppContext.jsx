@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { firebaseApp, getDatabase, ref, onValue, set, runTransaction } from '../firebase';
+import { firebaseApp } from "../firebase";
+import { getDatabase, ref, onValue, set, runTransaction } from "firebase/database";
 
 const AppContext = createContext();
 
@@ -68,8 +69,8 @@ const initialUsers = [
 
 const initialWarningConfig = {
   isActive: false,
-  title: 'Goalbound Outfits Issue',
-  message: 'Goalbound Outfits are temporarily disabled due to a partying issue, you may need to unequip.',
+  title: 'Title',
+  message: 'Message.',
   type: 'warning',
   countdownEnabled: false,
   countdownTarget: ''
@@ -85,7 +86,7 @@ const initialBypassConfig = {
 
 const initialMaintenanceConfig = {
   isActive: false,
-  message: 'The system is currently undergoing scheduled maintenance. Please check back later.'
+  message: 'The system is currently undergoing scheduled maintenance. Please use discord operations.'
 };
 
 const initialFlights = [

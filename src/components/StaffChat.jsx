@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { Send, ShieldAlert, Users, MessageSquare, Globe, Reply, Trash2, Flag, Smile, X, Image as ImageIcon, Paperclip, Plus } from 'lucide-react';
-import { storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
+import { storage } from "../firebase";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function StaffChat() {
   const { currentUser, chatMessages, addChatMessage, deleteChatMessage, addMessageReaction, submitReport, setCustomRole, privateChats, createPrivateChat, users } = useApp();

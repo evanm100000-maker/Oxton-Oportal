@@ -3,7 +3,8 @@ import { useApp } from '../context/AppContext';
 import { X, Moon, Sun, Save, User, Image as ImageIcon, Upload } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../utils/cropImage';
-import { storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
+import { storage } from "../firebase";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function SettingsModal({ isOpen, onClose }) {
   const { currentUser, updateUserProfile, theme, toggleTheme } = useApp();
