@@ -1,25 +1,23 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
-import { getAuth } from "firebase/auth";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"; 
+import { getAnalytics } from "firebase/analytics";
+import { getDatabase } from "firebase/database"; // Need this for the chat!
 
+// Your brand-new web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCAb1-CtH-6UOQs8qXJuoIRR-nEsEJjX6k",
-  authDomain: "oxton-oportal-v2.firebaseapp.com",
-  databaseURL: "https://oxton-oportal-v2-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "oxton-oportal-v2",
-  storageBucket: "oxton-oportal-v2.firebasestorage.app",
-  messagingSenderId: "836838921694",
-  appId: "1:836838921694:web:568ca42581c24a6752f94f",
-  measurementId: "G-VWPWJBL7S6"
+  apiKey: "AIzaSyDAL9CpDUOiNYK3ny41gK3XM6BrtrU0Nu0",
+  authDomain: "oxton-staff.firebaseapp.com",
+  databaseURL: "https://oxton-staff-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "oxton-staff",
+  storageBucket: "oxton-staff.firebasestorage.app",
+  messagingSenderId: "88535281205",
+  appId: "1:88535281205:web:e506e4a8768e622953b43c",
+  measurementId: "G-PP9GD2H3F1"
 };
 
-// Main App Instances
-export const firebaseApp = initializeApp(firebaseConfig);
-export const db = getDatabase(firebaseApp);
-export const auth = getAuth(firebaseApp);
-export const storage = getStorage(firebaseApp);
+// Initialize Firebase services
+const firebaseApp = initializeApp(firebaseConfig);
+const analytics = getAnalytics(firebaseApp);
+const db = getDatabase(firebaseApp);
 
-// Compatibility mappings to fix the broken files instantly:
-export const storageRef = ref;
-export { uploadBytes, getDownloadURL };
+// Export them exactly how your AppContext expects them
+export { firebaseApp, analytics, db };
