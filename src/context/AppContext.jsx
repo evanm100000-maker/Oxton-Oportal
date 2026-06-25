@@ -1221,12 +1221,14 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
     replyTo,
     reactions: []
   };
-
-  try {
-    // Save directly to your new database list instead of just updating local state
+try {
+    // 1. Save directly to your new database list
     const messagesRef = ref(db, 'messages');
     const newMessageRef = push(messagesRef);
     await set(newMessageRef, newMessage);
+
+    // 2. Add it locally right away so your screen updates instantly!
+    setChatMessages(prev => [...prev, newMessage]);
   } catch (error) {
     console.error("Error saving message to Firebase:", error);
   }
