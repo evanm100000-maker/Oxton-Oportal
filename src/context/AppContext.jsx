@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { firebaseApp } from "../firebase";
-import { getDatabase, ref, onValue, set, runTransaction } from "firebase/database";
+import { getDatabase, ref, onValue, set, runTransaction, push, get, remove } from "firebase/database";
+
+const db = getDatabase(firebaseApp);
 
 const AppContext = createContext();
 
@@ -1324,6 +1326,26 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
       console.error("Error updating reaction in Firebase:", error);
     }
   };
+
+  useEffect(() => {
+    const chatRef = ref(db, 'chats');
+    
+    const unsubscribe = onValue(chatRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const loadedMessages = Object.keys(data).map(key => ({
+          ...data[key]
+        }));
+        
+        loadedMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        setChatMessages(loadedMessages);
+      } else {
+        setChatMessages([]);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
   
   // Announcements Operations
   const addAnnouncement = (annData) => {
