@@ -1242,14 +1242,15 @@ useEffect(() => {
       } else {
         setChatMessages(prev => prev.length === 0 ? prev : []);
       }
-    }, (error) => {
+}, (error) => {
       console.error("Firebase listener error:", error);
     });
 
     // CLEANUP: Unsubscribes instantly if the page transitions, preventing ghost listeners
     return () => {
       unsubscribe();
-  }, []); // Empty dependency array guarantees this runs exactly ONCE on app bootup
+    };
+  }, []); 
 
   // Announcements Operations
   const addAnnouncement = (annData) => {
