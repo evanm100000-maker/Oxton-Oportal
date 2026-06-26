@@ -4,41 +4,35 @@ import { motion } from 'framer-motion';
 
 export default function LandingPage({ onSelectPortal }) {
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[100px]" />
-      </div>
-
+    <div style={styles.container}>
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="z-10 text-center mb-12"
+        style={styles.heroSection}
       >
-        <div className="w-20 h-20 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-500/20">
-          <Plane className="w-10 h-10 text-white" />
+        <div style={styles.logoIconContainer}>
+          <img src="/logo.png" alt="Oxton Logo" style={styles.logoIcon} />
         </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">Oxton Oportal</h1>
-        <p className="text-slate-400 text-lg max-w-md mx-auto">Please select your portal to continue</p>
+        <h1 style={styles.brandTitle}>OXTON OPORTAL</h1>
+        <p style={styles.brandSubtitle}>Please select your destination to continue</p>
       </motion.div>
 
-      <div className="z-10 grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
+      <div style={styles.grid}>
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 }}
           onClick={() => onSelectPortal('passenger')}
-          className="group relative p-8 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-blue-500/50 rounded-2xl transition-all duration-300 text-left overflow-hidden flex flex-col h-full"
+          className="glass-panel interactive-card"
+          style={styles.card}
         >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-500" />
-          <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-6 text-blue-400 group-hover:scale-110 transition-transform duration-300">
-            <Users className="w-6 h-6" />
+          <div style={{...styles.iconWrapper, background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', borderColor: 'rgba(59, 130, 246, 0.3)'}}>
+            <Users size={28} />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">I am a Passenger</h2>
-          <p className="text-slate-400 flex-grow">Access upcoming flights, announcements, submit support tickets, and apply for a staff position.</p>
-          <div className="mt-6 flex items-center text-blue-400 font-medium">
-            Enter Portal <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+          <h2 style={styles.cardTitle}>I am a Passenger</h2>
+          <p style={styles.cardDesc}>Access upcoming flights, read public announcements, submit support tickets, and apply for a staff position.</p>
+          <div style={{...styles.actionText, color: '#60a5fa'}}>
+            Enter Portal <span className="arrow">→</span>
           </div>
         </motion.button>
 
@@ -47,19 +41,127 @@ export default function LandingPage({ onSelectPortal }) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2 }}
           onClick={() => onSelectPortal('staff')}
-          className="group relative p-8 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 hover:border-purple-500/50 rounded-2xl transition-all duration-300 text-left overflow-hidden flex flex-col h-full"
+          className="glass-panel-glow interactive-card"
+          style={styles.card}
         >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-500" />
-          <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-6 text-purple-400 group-hover:scale-110 transition-transform duration-300">
-            <Plane className="w-6 h-6" />
+          <div style={{...styles.iconWrapper, background: 'rgba(139, 92, 246, 0.15)', color: '#c084fc', borderColor: 'rgba(139, 92, 246, 0.3)'}}>
+            <Plane size={28} />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">I am a Staff Member</h2>
-          <p className="text-slate-400 flex-grow">Access the staff dashboard, manage operations, moderate the community, and review applications.</p>
-          <div className="mt-6 flex items-center text-purple-400 font-medium">
-            Staff Login <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+          <h2 style={styles.cardTitle}>I am a Staff Member</h2>
+          <p style={styles.cardDesc}>Access the secure staff dashboard to manage operations, moderate the community, and review applications.</p>
+          <div style={{...styles.actionText, color: '#c084fc'}}>
+            Staff Login <span className="arrow">→</span>
           </div>
         </motion.button>
       </div>
+      
+      <div style={styles.versionText}>V1.1.1</div>
     </div>
   );
 }
+
+const styles = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    padding: '20px',
+  },
+  heroSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    marginBottom: '48px',
+  },
+  logoIconContainer: {
+    width: '90px',
+    height: '90px',
+    borderRadius: '24px',
+    background: 'rgba(139, 92, 246, 0.1)',
+    border: '1px solid rgba(139, 92, 246, 0.2)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 0 30px rgba(139, 92, 246, 0.2)',
+    marginBottom: '20px',
+  },
+  logoIcon: {
+    width: '70px',
+    height: '70px',
+    objectFit: 'contain',
+    filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.5))',
+  },
+  brandTitle: {
+    fontSize: '2.5rem',
+    fontWeight: '900',
+    letterSpacing: '3px',
+    color: 'var(--color-text-main)',
+    textShadow: '0 0 15px rgba(255, 255, 255, 0.15)',
+    marginBottom: '8px',
+  },
+  brandSubtitle: {
+    fontSize: '1.1rem',
+    color: 'var(--color-text-muted)',
+    fontWeight: '500',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '24px',
+    width: '100%',
+    maxWidth: '800px',
+    zIndex: 10,
+  },
+  card: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    padding: '32px',
+    textAlign: 'left',
+    background: 'transparent',
+    cursor: 'pointer',
+    position: 'relative',
+    minHeight: '260px',
+  },
+  iconWrapper: {
+    width: '60px',
+    height: '60px',
+    borderRadius: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '24px',
+    border: '1px solid',
+  },
+  cardTitle: {
+    fontSize: '1.5rem',
+    fontWeight: '800',
+    color: 'var(--color-text-main)',
+    marginBottom: '12px',
+  },
+  cardDesc: {
+    fontSize: '0.95rem',
+    color: 'var(--color-text-muted)',
+    lineHeight: '1.6',
+    flexGrow: 1,
+  },
+  actionText: {
+    marginTop: '24px',
+    fontWeight: '700',
+    fontSize: '1.05rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  versionText: {
+    position: 'absolute',
+    bottom: '20px',
+    color: '#6b7280',
+    fontSize: '0.85rem',
+    fontWeight: '500',
+    letterSpacing: '1px',
+  },
+};

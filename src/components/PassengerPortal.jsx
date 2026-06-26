@@ -43,28 +43,28 @@ export default function PassengerPortal({ onBack }) {
     }
 
     return (
-      <div className="space-y-6">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div style={styles.grid}>
             {/* Upcoming Flights */}
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">
-              <div className="flex items-center gap-3 mb-6 border-b border-slate-700 pb-4">
-                <div className="p-2 bg-blue-500/20 text-blue-400 rounded-lg"><Plane className="w-5 h-5" /></div>
-                <h2 className="text-xl font-semibold text-white">Upcoming Flights</h2>
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <div style={styles.sectionHeader}>
+                <div style={{...styles.sectionIcon, background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa'}}><Plane size={20} /></div>
+                <h2 style={styles.sectionTitle}>Upcoming Flights</h2>
               </div>
-              <div className="space-y-4">
+              <div>
                 {flights.filter(f => f.status === 'Scheduled').length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">No scheduled flights at this time.</div>
+                  <div style={{ textAlign: 'center', padding: '32px 0', color: '#9ca3af' }}>No scheduled flights at this time.</div>
                 ) : (
                   flights.filter(f => f.status === 'Scheduled').slice(0, 5).map(flight => (
-                    <div key={flight.id} className="p-4 bg-slate-700/30 rounded-lg flex justify-between items-center border border-slate-700/50 hover:bg-slate-700/50 transition-colors">
+                    <div key={flight.id} style={styles.itemCard}>
                       <div>
-                        <div className="font-semibold text-white">{flight.destination}</div>
-                        <div className="text-sm text-slate-400">{flight.hostName}</div>
+                        <div style={{ fontWeight: '600', color: '#fff' }}>{flight.destination}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{flight.hostName}</div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-blue-400 font-medium">{new Date(flight.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                        <div className="text-xs text-slate-500">{new Date(flight.departureTime).toLocaleDateString()}</div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ color: '#60a5fa', fontWeight: '600' }}>{new Date(flight.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{new Date(flight.departureTime).toLocaleDateString()}</div>
                       </div>
                     </div>
                   ))
@@ -73,21 +73,21 @@ export default function PassengerPortal({ onBack }) {
             </div>
 
             {/* Recent Announcements */}
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">
-              <div className="flex items-center gap-3 mb-6 border-b border-slate-700 pb-4">
-                <div className="p-2 bg-purple-500/20 text-purple-400 rounded-lg"><Megaphone className="w-5 h-5" /></div>
-                <h2 className="text-xl font-semibold text-white">Latest Announcements</h2>
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <div style={styles.sectionHeader}>
+                <div style={{...styles.sectionIcon, background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc'}}><Megaphone size={20} /></div>
+                <h2 style={styles.sectionTitle}>Latest Announcements</h2>
               </div>
-              <div className="space-y-4">
+              <div>
                 {passengerAnnouncements.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">No recent announcements.</div>
+                  <div style={{ textAlign: 'center', padding: '32px 0', color: '#9ca3af' }}>No recent announcements.</div>
                 ) : (
                   passengerAnnouncements.slice(0, 3).map(ann => (
-                    <div key={ann.id} className="p-4 bg-slate-700/30 rounded-lg border border-slate-700/50">
-                      <div className="font-semibold text-white mb-1">{ann.title}</div>
-                      <div className="text-sm text-slate-300 line-clamp-2 mb-2">{ann.message}</div>
-                      <div className="text-xs text-slate-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                    <div key={ann.id} style={styles.annCard}>
+                      <div style={{ fontWeight: '600', color: '#fff', marginBottom: '4px' }}>{ann.title}</div>
+                      <div style={{ fontSize: '0.9rem', color: '#d1d5db', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ann.message}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={12} />
                         {new Date(ann.timestamp).toLocaleDateString()}
                       </div>
                     </div>
@@ -95,7 +95,7 @@ export default function PassengerPortal({ onBack }) {
                 )}
               </div>
               {passengerAnnouncements.length > 3 && (
-                <button onClick={() => setActiveTab('announcements')} className="w-full mt-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">
+                <button onClick={() => setActiveTab('announcements')} style={styles.viewAllBtn}>
                   View all announcements
                 </button>
               )}
@@ -104,25 +104,26 @@ export default function PassengerPortal({ onBack }) {
         )}
 
         {activeTab === 'announcements' && (
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <Megaphone className="w-5 h-5 text-purple-400" /> All Announcements
-            </h2>
-            <div className="space-y-4">
+          <div className="glass-panel" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <div style={{...styles.sectionIcon, background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc'}}><Megaphone size={24} /></div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', margin: 0, color: '#fff' }}>All Announcements</h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {passengerAnnouncements.length === 0 ? (
-                <div className="text-center py-12 text-slate-500">No announcements found.</div>
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af' }}>No announcements found.</div>
               ) : (
                 passengerAnnouncements.map(ann => (
-                  <div key={ann.id} className="p-5 bg-slate-700/30 rounded-lg border border-slate-700/50">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="font-semibold text-lg text-white">{ann.title}</div>
-                      <div className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded-full">
+                  <div key={ann.id} style={{ ...styles.annCard, padding: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff' }}>{ann.title}</div>
+                      <div style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '20px', color: '#d1d5db' }}>
                         {new Date(ann.timestamp).toLocaleDateString()}
                       </div>
                     </div>
-                    {ann.subtitle && <div className="text-sm font-medium text-slate-400 mb-2">{ann.subtitle}</div>}
-                    <div className="text-slate-300 whitespace-pre-wrap">{ann.message}</div>
-                    <div className="mt-4 text-xs text-slate-500 text-right">Posted by {ann.authorName}</div>
+                    {ann.subtitle && <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#c084fc', marginBottom: '12px' }}>{ann.subtitle}</div>}
+                    <div style={{ color: '#d1d5db', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{ann.message}</div>
+                    <div style={{ marginTop: '16px', fontSize: '0.8rem', color: '#6b7280', textAlign: 'right' }}>Posted by {ann.authorName}</div>
                   </div>
                 ))
               )}
@@ -131,25 +132,26 @@ export default function PassengerPortal({ onBack }) {
         )}
 
         {activeTab === 'events' && (
-          <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-green-400" /> Upcoming Events
-            </h2>
-            <div className="space-y-4">
+          <div className="glass-panel" style={{ padding: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <div style={{...styles.sectionIcon, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399'}}><Calendar size={24} /></div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', margin: 0, color: '#fff' }}>Upcoming Events</h2>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {events.length === 0 ? (
-                <div className="text-center py-12 text-slate-500">No events scheduled. Check back later!</div>
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af' }}>No events scheduled. Check back later!</div>
               ) : (
                 events.map(event => (
-                  <div key={event.id} className="p-5 bg-slate-700/30 rounded-lg border border-slate-700/50 flex gap-4">
-                    <div className="flex flex-col items-center justify-center p-3 bg-slate-800 rounded-lg min-w-20">
-                      <div className="text-green-400 font-bold text-xl">{new Date(event.date).getDate()}</div>
-                      <div className="text-xs text-slate-400 uppercase">{new Date(event.date).toLocaleString('default', { month: 'short' })}</div>
+                  <div key={event.id} style={styles.eventCard}>
+                    <div style={styles.dateBox}>
+                      <div style={{ color: '#34d399', fontWeight: '800', fontSize: '1.5rem', lineHeight: '1' }}>{new Date(event.date).getDate()}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', marginTop: '4px', fontWeight: '600' }}>{new Date(event.date).toLocaleString('default', { month: 'short' })}</div>
                     </div>
                     <div>
-                      <div className="font-semibold text-lg text-white">{event.title}</div>
-                      <div className="text-slate-400 text-sm mt-1">{event.description}</div>
-                      <div className="text-xs text-slate-500 mt-2 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      <div style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff' }}>{event.title}</div>
+                      <div style={{ color: '#9ca3af', fontSize: '0.9rem', marginTop: '4px' }}>{event.description}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Clock size={14} /> {new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </div>
                     </div>
                   </div>
@@ -160,58 +162,60 @@ export default function PassengerPortal({ onBack }) {
         )}
 
         {activeTab === 'support' && (
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 shadow-xl">
-              <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
-                <Ticket className="w-5 h-5 text-orange-400" /> Submit a Support Ticket
-              </h2>
-              <p className="text-slate-400 text-sm mb-6">Need help? Open a ticket and our staff team will assist you.</p>
+          <div style={{ maxWidth: '700px', margin: '0 auto', width: '100%' }}>
+            <div className="glass-panel" style={{ padding: '32px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <div style={{...styles.sectionIcon, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24'}}><Ticket size={24} /></div>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '700', margin: 0, color: '#fff' }}>Submit a Support Ticket</h2>
+              </div>
+              <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '24px' }}>Need help? Open a ticket and our staff team will assist you.</p>
 
               {ticketSubmitted ? (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-green-500/10 border border-green-500/30 text-green-400 p-6 rounded-lg text-center">
-                  <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Plane className="w-6 h-6" />
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: '32px', borderRadius: '16px', textAlign: 'center' }}>
+                  <div style={{ width: '60px', height: '60px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+                    <Plane size={28} />
                   </div>
-                  <h3 className="text-lg font-semibold mb-1">Ticket Submitted Successfully</h3>
-                  <p className="text-sm opacity-80">Our staff team has received your ticket and will look into it.</p>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '4px', color: '#fff' }}>Ticket Submitted Successfully</h3>
+                  <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>Our staff team has received your ticket and will look into it.</p>
                 </motion.div>
               ) : (
-                <form onSubmit={handleTicketSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Your Roblox Username</label>
+                <form onSubmit={handleTicketSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Your Roblox Username</label>
                     <input 
                       type="text" 
                       required
                       value={ticketForm.robloxUsername}
                       onChange={(e) => setTicketForm({...ticketForm, robloxUsername: e.target.value})}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="input-field"
                       placeholder="e.g. Builderman123"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Subject / Title</label>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Subject / Title</label>
                     <input 
                       type="text" 
                       required
                       value={ticketForm.title}
                       onChange={(e) => setTicketForm({...ticketForm, title: e.target.value})}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="input-field"
                       placeholder="Brief summary of your issue"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
+                  <div style={styles.formGroup}>
+                    <label style={styles.label}>Description</label>
                     <textarea 
                       required
                       rows={5}
                       value={ticketForm.description}
                       onChange={(e) => setTicketForm({...ticketForm, description: e.target.value})}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+                      className="input-field"
+                      style={{ resize: 'vertical' }}
                       placeholder="Please describe your issue in detail..."
                     />
                   </div>
-                  <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
-                    <Send className="w-4 h-4" /> Submit Ticket
+                  <button type="submit" className="btn-primary" style={{ padding: '14px', borderRadius: '10px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '8px' }}>
+                    <Send size={18} /> Submit Ticket
                   </button>
                 </form>
               )}
@@ -223,41 +227,44 @@ export default function PassengerPortal({ onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-200">
+    <div>
       {/* Top Navbar */}
-      <header className="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <header style={styles.header}>
+        <div style={styles.headerInner}>
+          <div style={styles.headerLeft}>
             <button 
               onClick={onBack}
-              className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+              style={styles.backBtn}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft size={20} />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Plane className="w-5 h-5 text-white" />
+            <div style={styles.logoContainer}>
+              <div style={styles.logoIconBox}>
+                <Plane size={20} color="#fff" />
               </div>
-              <span className="font-bold text-xl text-white tracking-tight">Oportal <span className="text-slate-500 font-normal">| Passenger</span></span>
+              <span style={styles.logoText}>OPORTAL <span style={{ color: '#9ca3af', fontWeight: '500', fontSize: '1rem' }}>| Passenger</span></span>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="page-container" style={{ padding: '0 12px 32px 12px' }}>
         {/* Navigation Tabs */}
-        <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-8 bg-slate-800/50 p-1.5 rounded-xl border border-slate-700/50">
+        <div style={{ display: 'flex', overflowX: 'auto', gap: '8px', marginBottom: '32px', background: 'rgba(0,0,0,0.2)', padding: '6px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', scrollbarWidth: 'none' }}>
           {navItems.map(item => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${
-                activeTab === item.id 
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-              }`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                borderRadius: '8px', fontWeight: '600', fontSize: '0.9rem', transition: 'all 0.2s',
+                whiteSpace: 'nowrap', border: 'none', cursor: 'pointer',
+                background: activeTab === item.id ? '#2563eb' : 'transparent',
+                color: activeTab === item.id ? '#fff' : '#9ca3af',
+                boxShadow: activeTab === item.id ? '0 4px 14px rgba(37, 99, 235, 0.4)' : 'none'
+              }}
             >
-              <item.icon className="w-4 h-4" />
+              <item.icon size={18} />
               {item.label}
             </button>
           ))}
@@ -279,3 +286,154 @@ export default function PassengerPortal({ onBack }) {
     </div>
   );
 }
+
+const styles = {
+  header: {
+    background: 'rgba(15, 23, 42, 0.8)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    position: 'sticky',
+    top: 0,
+    zIndex: 50,
+    marginBottom: '32px',
+  },
+  headerInner: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    padding: '0 24px',
+    height: '70px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+  },
+  backBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    color: '#9ca3af',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  logoContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  logoIconBox: {
+    width: '36px',
+    height: '36px',
+    background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+    borderRadius: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+  },
+  logoText: {
+    fontSize: '1.25rem',
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: '1px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '24px',
+  },
+  sectionHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '24px',
+    paddingBottom: '16px',
+    borderBottom: '1px solid rgba(255,255,255,0.1)',
+  },
+  sectionIcon: {
+    padding: '10px',
+    borderRadius: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: {
+    fontSize: '1.25rem',
+    fontWeight: '700',
+    color: '#fff',
+    margin: 0,
+  },
+  itemCard: {
+    padding: '16px',
+    background: 'rgba(255,255,255,0.03)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255,255,255,0.05)',
+    marginBottom: '12px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    transition: 'background 0.2s',
+  },
+  annCard: {
+    padding: '20px',
+    background: 'rgba(255,255,255,0.03)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255,255,255,0.05)',
+    marginBottom: '16px',
+  },
+  eventCard: {
+    padding: '20px',
+    background: 'rgba(255,255,255,0.03)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255,255,255,0.05)',
+    marginBottom: '16px',
+    display: 'flex',
+    gap: '16px',
+    alignItems: 'center',
+  },
+  dateBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '12px',
+    background: 'rgba(0,0,0,0.3)',
+    borderRadius: '10px',
+    minWidth: '70px',
+    border: '1px solid rgba(255,255,255,0.05)',
+  },
+  viewAllBtn: {
+    width: '100%',
+    padding: '12px',
+    background: 'transparent',
+    border: 'none',
+    color: '#9ca3af',
+    fontSize: '0.9rem',
+    fontWeight: '600',
+    cursor: 'pointer',
+    marginTop: '8px',
+    transition: 'color 0.2s',
+  },
+  formGroup: {
+    marginBottom: '16px',
+  },
+  label: {
+    display: 'block',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    color: '#d1d5db',
+    marginBottom: '8px',
+  },
+};
