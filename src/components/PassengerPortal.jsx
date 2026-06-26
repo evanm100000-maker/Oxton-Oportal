@@ -52,7 +52,10 @@ export default function PassengerPortal({ onBack }) {
           return;
         }
         await signup({ ...authForm, role: 'passenger' });
-        await login(authForm.email, authForm.password);
+        setAuthMode('login');
+        setAuthError(''); // Clear any previous errors
+        setAuthForm(prev => ({ ...prev, password: '' })); // Clear password for security
+        alert('Account created successfully! Please log in with your new credentials.');
       }
     } catch (err) {
       setAuthError(err.message);

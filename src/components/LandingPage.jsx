@@ -55,7 +55,7 @@ export default function LandingPage({ onSelectPortal }) {
         </motion.button>
       </div>
       
-      <div style={styles.versionText}>V1.1.1</div>
+      <div style={styles.versionText}>V1.1</div>
     </div>
   );
 }
