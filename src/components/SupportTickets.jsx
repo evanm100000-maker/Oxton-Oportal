@@ -104,7 +104,20 @@ export default function SupportTickets() {
                     </span>
                   </div>
                   <div style={styles.ticketMeta}>
-                    <span>Opened by {ticket.authorName}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      Opened by {ticket.authorName}
+                      <span style={{
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold',
+                        background: ticket.authorType === 'Passenger' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                        color: ticket.authorType === 'Passenger' ? '#34d399' : '#60a5fa',
+                        textTransform: 'uppercase'
+                      }}>
+                        {ticket.authorType || 'Staff'}
+                      </span>
+                    </span>
                     <span> • {new Date(ticket.timestamp).toLocaleString()}</span>
                     <span> • {ticket.comments?.length || 0} replies</span>
                   </div>

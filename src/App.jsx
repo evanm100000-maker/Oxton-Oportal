@@ -9,22 +9,21 @@ import SuspendedScreen from './components/SuspendedScreen';
 import NotificationOverlay from './components/NotificationOverlay';
 import LoaBanner from './components/LoaBanner';
 import BypassOverlay from './components/BypassOverlay';
+import LandingPage from './components/LandingPage';
+import PassengerPortal from './components/PassengerPortal';
 import { useState } from 'react';
 
 function MainApp() {
   const { currentUser, maintenanceConfig } = useApp();
   const [bypassMaint, setBypassMaint] = useState(false);
+  const [portalType, setPortalType] = useState(null); // 'passenger' | 'staff' | null
 
   // If maintenance is active, and they aren't logged in as an admin, show Maintenance.
-  // We hide it ONLY if they click the bypass button AND they are not currently logged in as a non-admin.
-  // Wait, if they are logged in as non-admin, they should never bypass.
   if (maintenanceConfig?.isActive && !currentUser?.isAdmin) {
     if (currentUser && !currentUser.isAdmin) {
-      // Logged in as non-admin, strictly enforce maintenance screen
       return <MaintenanceScreen onBypass={() => {}} allowBypass={false} />;
     }
     if (!bypassMaint) {
-      // Not logged in, show maintenance screen but allow bypass to try logging in
       return <MaintenanceScreen onBypass={() => setBypassMaint(true)} allowBypass={true} />;
     }
   }
@@ -34,12 +33,40 @@ function MainApp() {
     return <SuspendedScreen />;
   }
 
+  // Landing Page Selection
+  if (!portalType && !currentUser) {
+    return (
+      <>
+        <WarningBanner />
+        <UpdateBanner />
+        <LoaBanner />
+        <LandingPage onSelectPortal={(type) => setPortalType(type)} />
+        <NotificationOverlay />
+        <BypassOverlay />
+      </>
+    );
+  }
+
+  // Passenger Portal
+  if (portalType === 'passenger' && !currentUser) {
+    return (
+      <>
+        <WarningBanner />
+        <UpdateBanner />
+        <LoaBanner />
+        <PassengerPortal onBack={() => setPortalType(null)} />
+        <NotificationOverlay />
+      </>
+    );
+  }
+
+  // Staff Portal (Dashboard or Login)
   return (
     <>
       <WarningBanner />
       <UpdateBanner />
       <LoaBanner />
-      {currentUser ? <Dashboard /> : <LoginScreen />}
+      {currentUser ? <Dashboard /> : <LoginScreen onBack={() => setPortalType(null)} />}
       <NotificationOverlay />
       <BypassOverlay />
     </>

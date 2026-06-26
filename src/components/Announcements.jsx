@@ -10,6 +10,7 @@ export default function Announcements() {
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
   const [message, setMessage] = useState('');
+  const [targetAudience, setTargetAudience] = useState('All');
   const [countdownDate, setCountdownDate] = useState('');
 
   // Bypass Announcement State
@@ -19,11 +20,12 @@ export default function Announcements() {
   const handlePost = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
-    addAnnouncement({ type, title, subtitle, message, countdownDate: countdownDate || null });
+    addAnnouncement({ type, title, subtitle, message, targetAudience, countdownDate: countdownDate || null });
     setTitle('');
     setSubtitle('');
     setMessage('');
     setType('Normal');
+    setTargetAudience('All');
     setCountdownDate('');
   };
 
@@ -102,6 +104,14 @@ export default function Announcements() {
                   <option value="Normal">Normal</option>
                   <option value="Maintenance">Maintenance</option>
                   <option value="Severe">Severe</option>
+                </select>
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Target Audience</label>
+                <select value={targetAudience} onChange={e => setTargetAudience(e.target.value)} className="input-field">
+                  <option value="All">All (Staff & Passengers)</option>
+                  <option value="Staff">Staff Only</option>
+                  <option value="Passenger">Passengers Only</option>
                 </select>
               </div>
             </div>
@@ -204,6 +214,11 @@ export default function Announcements() {
               </div>
               <div style={styles.badgeWrapper}>
                 <span style={styles.badge}>{ann.type}</span>
+                {ann.targetAudience && ann.targetAudience !== 'All' && (
+                  <span style={{...styles.badge, marginLeft: '8px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa'}}>
+                    {ann.targetAudience}
+                  </span>
+                )}
               </div>
             </motion.div>
           ))

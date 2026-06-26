@@ -101,6 +101,15 @@ const initialTickets = [];
 const initialStaffNotes = [];
 const initialAnnouncements = [];
 const initialPrivateChats = [];
+const initialEvents = [];
+const initialApplications = [];
+const initialApplicationConfig = {
+  isActive: true,
+  questions: [
+    { id: 'q1', text: 'Why do you want to join the staff team?', type: 'text' },
+    { id: 'q2', text: 'Have you had prior experience?', type: 'multiple_choice', options: ['Yes', 'No'] }
+  ]
+};
 
 const STORAGE_KEYS = {
   users: 'oxton_users',
@@ -224,6 +233,9 @@ export const AppProvider = ({ children }) => {
   const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements);
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
   const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats);
+  const [events, setEvents] = useFirebaseArray('events', initialEvents);
+  const [applications, setApplications] = useFirebaseArray('applications', initialApplications);
+  const [applicationConfig, setApplicationConfig] = useFirebaseObject('applicationConfig', initialApplicationConfig);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
@@ -317,185 +329,97 @@ export const AppProvider = ({ children }) => {
   };
 
 
-  // Sync state to LocalStorage
-  const persistData = (key, value) => {
-    try {
-      const stringifiedValue = JSON.stringify(value);
-      if (localStorage.getItem(key) === stringifiedValue) return;
-      localStorage.setItem(key, stringifiedValue);
-      const channel = new BroadcastChannel('oxton_staff_portal');
-      channel.postMessage({ key, value });
-      channel.close();
-    } catch (err) {
-      console.error(`Unable to save ${key}`, err);
+  // Apply Theme
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-mode');
+    } else {
+      document.body.classList.remove('light-mode');
     }
-  };
+    localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
+  }, [theme]);
 
-  useEffect(() => { persistData(STORAGE_KEYS.users, users); }, [users]);
-  useEffect(() => { persistData(STORAGE_KEYS.flights, flights); }, [flights]);
-  useEffect(() => { persistData(STORAGE_KEYS.flightLogs, flightLogs); }, [flightLogs]);
-  useEffect(() => { persistData(STORAGE_KEYS.loaRequests, loaRequests); }, [loaRequests]);
-  useEffect(() => { persistData(STORAGE_KEYS.documents, documents); }, [documents]);
-  useEffect(() => { persistData(STORAGE_KEYS.reports, reports); }, [reports]);
-  useEffect(() => { persistData(STORAGE_KEYS.infractions, infractions); }, [infractions]);
-  useEffect(() => { persistData(STORAGE_KEYS.tasks, tasks); }, [tasks]);
-  useEffect(() => { persistData(STORAGE_KEYS.tickets, tickets); }, [tickets]);
-  useEffect(() => { persistData(STORAGE_KEYS.staffNotes, staffNotes); }, [staffNotes]);
   useEffect(() => {
     if (currentUser) {
       sessionStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
     } else {
       sessionStorage.removeItem(STORAGE_KEYS.currentUser);
     }
-    localStorage.removeItem(STORAGE_KEYS.currentUser);
   }, [currentUser]);
-  useEffect(() => { persistData(STORAGE_KEYS.theme, theme); }, [theme]);
-  useEffect(() => { persistData(STORAGE_KEYS.warningConfig, warningConfig); }, [warningConfig]);
-  useEffect(() => { persistData(STORAGE_KEYS.maintenanceConfig, maintenanceConfig); }, [maintenanceConfig]);
-  useEffect(() => { persistData(STORAGE_KEYS.auditLogs, auditLogs); }, [auditLogs]);
-  useEffect(() => { persistData(STORAGE_KEYS.passwordResets, passwordResets); }, [passwordResets]);
-  useEffect(() => { persistData(STORAGE_KEYS.chatMessages, chatMessages); }, [chatMessages]);
-  useEffect(() => { persistData(STORAGE_KEYS.announcements, announcements); }, [announcements]);
-  useEffect(() => { persistData(STORAGE_KEYS.bypassConfig, bypassConfig); }, [bypassConfig]);
-  useEffect(() => { persistData(STORAGE_KEYS.privateChats, privateChats); }, [privateChats]);
 
   useEffect(() => {
-      if (!currentUser) return;
-      const latestUser = users.find(u => u.email === currentUser.email);
-      if (!latestUser || !latestUser.approved) {
-        setCurrentUser(null);
-        return;
+    const db = getDatabase(firebaseApp);
+    const siteVersionRef = ref(db, 'siteVersion');
+    const unsubscribeSiteVersion = onValue(siteVersionRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setSiteVersion(data);
+      } else {
+        const initialVersion = '1.0.0';
+        set(ref(db, 'users'), initialUsers);
+        set(ref(db, 'flights'), initialFlights);
+        set(ref(db, 'flightLogs'), initialFlightLogs);
+        set(ref(db, 'loaRequests'), initialLoaRequests);
+        set(ref(db, 'documents'), initialDocuments);
+        set(ref(db, 'reports'), initialReports);
+        set(ref(db, 'infractions'), initialInfractions);
+        set(ref(db, 'tasks'), initialTasks);
+        set(ref(db, 'tickets'), initialTickets);
+        set(ref(db, 'staffNotes'), initialStaffNotes);
+        set(ref(db, 'warningConfig'), initialWarningConfig);
+        set(ref(db, 'maintenanceConfig'), initialMaintenanceConfig);
+        set(ref(db, 'announcements'), initialAnnouncements);
+        set(ref(db, 'bypassConfig'), initialBypassConfig);
+        set(ref(db, 'privateChats'), initialPrivateChats);
+        set(ref(db, 'events'), initialEvents);
+        set(ref(db, 'applications'), initialApplications);
+        set(ref(db, 'applicationConfig'), initialApplicationConfig);
+        set(ref(db, 'siteVersion'), initialVersion);
+        setSiteVersion(initialVersion);
       }
-      if (JSON.stringify(latestUser) !== JSON.stringify(currentUser)) {
-        setCurrentUser(latestUser);
+    });
+
+    const onlinePresenceRef = ref(db, 'onlinePresence');
+    const unsubscribeOnline = onValue(onlinePresenceRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setOnlineUsers(data);
+      } else {
+        setOnlineUsers({});
       }
-    }, [users, currentUser]);
+    });
 
-    useEffect(() => {
-      const db = getDatabase(firebaseApp);
-      const warningRef = ref(db, 'warningConfig');
-      const maintenanceRef = ref(db, 'maintenanceConfig');
-      // Removed warning/maintenance manual listeners
-;
-      const siteVersionRef = ref(db, 'siteVersion');
-      const unsubscribeSiteVersion = onValue(siteVersionRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          setSiteVersion(data);
-        } else {
-          // Bootstrap brand new empty database
-          const initialVersion = '1.0.0';
-          set(ref(db, 'users'), initialUsers);
-          set(ref(db, 'flights'), initialFlights);
-          set(ref(db, 'flightLogs'), initialFlightLogs);
-          set(ref(db, 'loaRequests'), initialLoaRequests);
-          set(ref(db, 'documents'), initialDocuments);
-          set(ref(db, 'reports'), initialReports);
-          set(ref(db, 'infractions'), initialInfractions);
-          set(ref(db, 'tasks'), initialTasks);
-          set(ref(db, 'tickets'), initialTickets);
-          set(ref(db, 'staffNotes'), initialStaffNotes);
-          set(ref(db, 'warningConfig'), initialWarningConfig);
-          set(ref(db, 'maintenanceConfig'), initialMaintenanceConfig);
-          set(ref(db, 'announcements'), initialAnnouncements);
-          set(ref(db, 'bypassConfig'), initialBypassConfig);
-          set(ref(db, 'privateChats'), initialPrivateChats);
-          set(ref(db, 'siteVersion'), initialVersion);
-          setSiteVersion(initialVersion);
-        }
-      });
-      const onlinePresenceRef = ref(db, 'onlinePresence');
-      const unsubscribeOnline = onValue(onlinePresenceRef, (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          setOnlineUsers(data);
-        } else {
-          setOnlineUsers({});
-        }
-      });
-      return () => {
-        // 
-        // 
-        if (typeof unsubscribeSiteVersion === 'function') unsubscribeSiteVersion();
-        if (typeof unsubscribeOnline === 'function') unsubscribeOnline();
-      };
-    }, []);
-
-    useEffect(() => {
-      if (!currentUser) return;
-      const db = getDatabase(firebaseApp);
-      const safeEmail = currentUser.email.replace(/\./g, ',');
-      const myPresenceRef = ref(db, `onlinePresence/${safeEmail}`);
-      const connectedRef = ref(db, '.info/connected');
-
-      let onDisconnectRef = null;
-
-      const unsubConnected = onValue(connectedRef, (snap) => {
-        if (snap.val() === true) {
-          import('firebase/database').then(({ onDisconnect, set }) => {
-             onDisconnectRef = onDisconnect(myPresenceRef);
-             onDisconnectRef.set(false).then(() => {
-               set(myPresenceRef, true);
-             });
-          });
-        }
-      });
-      return () => {
-        if (typeof unsubConnected === 'function') unsubConnected();
-        if (onDisconnectRef) onDisconnectRef.cancel();
-        set(myPresenceRef, false);
-      };
-    }, [currentUser]);
-
-    // Removed manual Firebase sync logic in favor of useFirebaseArray
-
-
-  // Sync state across tabs automatically
-  useEffect(() => {
-    const applySyncedValue = (key, value) => {
-      if (key === STORAGE_KEYS.warningConfig) setWarningConfig(value);
-      if (key === STORAGE_KEYS.maintenanceConfig) setMaintenanceConfig(value);
-      if (key === STORAGE_KEYS.users) setUsers(value);
-      if (key === STORAGE_KEYS.chatMessages) setChatMessages(value);
-      if (key === STORAGE_KEYS.flights) setFlights(value);
-      if (key === STORAGE_KEYS.flightLogs) setFlightLogs(value);
-      if (key === STORAGE_KEYS.infractions) setInfractions(value);
-      if (key === STORAGE_KEYS.tasks) setTasks(value);
-      if (key === STORAGE_KEYS.tickets) setTickets(value);
-      if (key === STORAGE_KEYS.staffNotes) setStaffNotes(value);
-      if (key === STORAGE_KEYS.reports) setReports(value);
-      if (key === STORAGE_KEYS.loaRequests) setLoaRequests(value);
-      if (key === STORAGE_KEYS.documents) setDocuments(value);
-      if (key === STORAGE_KEYS.auditLogs) setAuditLogs(value);
-      if (key === STORAGE_KEYS.passwordResets) setPasswordResets(value);
-      if (key === STORAGE_KEYS.announcements) setAnnouncements(value);
-      if (key === STORAGE_KEYS.bypassConfig) setBypassConfig(value);
-      if (key === STORAGE_KEYS.privateChats) setPrivateChats(value);
-      if (key === STORAGE_KEYS.theme) setTheme(value);
-    };
-
-    const handleStorage = (e) => {
-      try {
-        if (e.key && e.newValue !== null) applySyncedValue(e.key, JSON.parse(e.newValue));
-      } catch (err) {
-        console.error('Error syncing state', err);
-      }
-    };
-
-    let channel;
-    try {
-      channel = new BroadcastChannel('oxton_staff_portal');
-      channel.onmessage = (e) => applySyncedValue(e.data.key, e.data.value);
-    } catch (err) {
-      channel = null;
-    }
-
-    window.addEventListener('storage', handleStorage);
     return () => {
-      window.removeEventListener('storage', handleStorage);
-      channel?.close();
+      if (typeof unsubscribeSiteVersion === 'function') unsubscribeSiteVersion();
+      if (typeof unsubscribeOnline === 'function') unsubscribeOnline();
     };
   }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const db = getDatabase(firebaseApp);
+    const safeEmail = currentUser.email.replace(/\./g, ',');
+    const myPresenceRef = ref(db, `onlinePresence/${safeEmail}`);
+    const connectedRef = ref(db, '.info/connected');
+
+    let onDisconnectRef = null;
+
+    const unsubConnected = onValue(connectedRef, (snap) => {
+      if (snap.val() === true) {
+        import('firebase/database').then(({ onDisconnect, set }) => {
+           onDisconnectRef = onDisconnect(myPresenceRef);
+           onDisconnectRef.set(false).then(() => {
+             set(myPresenceRef, true);
+           });
+        });
+      }
+    });
+    return () => {
+      if (typeof unsubConnected === 'function') unsubConnected();
+      if (onDisconnectRef) onDisconnectRef.cancel();
+      set(myPresenceRef, false);
+    };
+  }, [currentUser]);
 
   // Apply Theme
   useEffect(() => {
@@ -1258,6 +1182,7 @@ useEffect(() => {
       title: annData.title || '',
       subtitle: annData.subtitle || '',
       message: annData.message,
+      targetAudience: annData.targetAudience || 'All',
       countdownDate: annData.countdownDate || null,
       authorEmail: currentUser.email,
       authorName: `${currentUser.firstName} ${currentUser.lastName}`,
@@ -1302,8 +1227,9 @@ useEffect(() => {
   const createTicket = (ticketData) => {
     const newTicket = {
       id: makeId('ticket'),
-      authorEmail: currentUser.email,
-      authorName: `${currentUser.firstName} ${currentUser.lastName}`,
+      authorEmail: currentUser ? currentUser.email : null,
+      authorName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : (ticketData.authorName || 'Anonymous'),
+      authorType: ticketData.authorType || 'Staff',
       title: ticketData.title,
       description: ticketData.description,
       status: 'Open',
@@ -1311,6 +1237,7 @@ useEffect(() => {
       comments: []
     };
     setTickets(prev => [newTicket, ...prev]);
+    return newTicket.id;
   };
 
   const updateTicketStatus = (ticketId, status) => {
@@ -1361,6 +1288,32 @@ useEffect(() => {
     if (currentUser.email === staffEmail) {
       setCurrentUser(prev => ({ ...prev, sotwWins: (prev.sotwWins || 0) + 1 }));
     }
+  };
+
+  // --- Staff Applications Operations ---
+  const submitApplication = (appData) => {
+    const newApp = {
+      id: makeId('app'),
+      applicantName: appData.applicantName,
+      robloxUsername: appData.robloxUsername,
+      answers: appData.answers,
+      status: 'Pending',
+      timestamp: new Date().toISOString()
+    };
+    setApplications(prev => [newApp, ...prev]);
+    return newApp.id;
+  };
+
+  const updateApplicationConfig = (newConfig) => {
+    setApplicationConfig(newConfig);
+    logAction('app_config_updated', 'Updated staff application config');
+  };
+
+  const updateApplicationStatus = (appId, status, feedback = '') => {
+    setApplications(prev => prev.map(a => 
+      a.id === appId ? { ...a, status, feedback, reviewedBy: currentUser.email, reviewedAt: new Date().toISOString() } : a
+    ));
+    logAction('application_reviewed', `Reviewed application ${appId} - ${status}`);
   };
 
   return (
@@ -1470,9 +1423,12 @@ useEffect(() => {
           logAction('create_private_chat', `Created a private chat`, { participants: participantEmails, name: groupName });
           return newChat.id;
         },
-        requestPasswordReset,
-        approvePasswordReset,
-        rejectPasswordReset,
+        applications,
+        applicationConfig,
+        events,
+        submitApplication,
+        updateApplicationConfig,
+        updateApplicationStatus,
         superAdminEmail: SUPER_ADMIN_EMAIL,
       }}
     >

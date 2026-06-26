@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { LogIn, UserPlus, Key, Mail, User, ShieldAlert, Award } from 'lucide-react';
+import { LogIn, UserPlus, Key, Mail, User, ShieldAlert, Award, ChevronLeft } from 'lucide-react';
 
-export default function LoginScreen() {
+export default function LoginScreen({ onBack }) {
   const { login, signup, requestPasswordReset } = useApp();
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -50,6 +50,17 @@ export default function LoginScreen() {
   return (
     <div style={styles.container}>
       <div className="glass-panel-glow" style={styles.card}>
+        {onBack && (
+          <button 
+            onClick={onBack}
+            style={styles.backButton}
+            type="button"
+          >
+            <ChevronLeft size={20} />
+            Back to Portal
+          </button>
+        )}
+        
         <div style={styles.logoSection}>
           <div style={styles.logoIconContainer}>
             <img src="/logo.png" alt="Oxton Logo" style={styles.logoIcon} />
@@ -235,6 +246,19 @@ const styles = {
     justifyContent: 'center',
     minHeight: '100vh',
     padding: '20px',
+  },
+  backButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    background: 'none',
+    border: 'none',
+    color: '#9ca3af',
+    fontSize: '0.9rem',
+    cursor: 'pointer',
+    marginBottom: '20px',
+    padding: '0',
+    transition: 'color 0.2s ease'
   },
   card: {
     width: '100%',
