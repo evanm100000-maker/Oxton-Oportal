@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { db, storage } from "../firebase"; 
-import { ref, onValue, set, runTransaction, push, get, remove } from "firebase/database";
+import { db, storage, firebaseApp } from "../firebase"; 
+import { ref, onValue, set, runTransaction, push, get, remove, getDatabase } from "firebase/database";
 
 const AppContext = createContext();
 
