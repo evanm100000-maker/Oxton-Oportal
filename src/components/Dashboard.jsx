@@ -24,10 +24,13 @@ import Leaderboard from './Leaderboard';
 import SettingsModal from './SettingsModal';
 import StaffChat from './StaffChat';
 import AllStaff from './AllStaff';
+import Events from './Events';
 
 export default function Dashboard() {
   const { currentUser, logout, chatMessages, infractions } = useApp();
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(() => {
+    return sessionStorage.getItem('oxton_activeTab') || 'home';
+  });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [lastReadChatCount, setLastReadChatCount] = useState(0);
   const { flights } = useApp();
@@ -72,6 +75,10 @@ export default function Dashboard() {
     }
   }, [activeTab, chatMessages, flights, currentUser.email]);
 
+  React.useEffect(() => {
+    sessionStorage.setItem('oxton_activeTab', activeTab);
+  }, [activeTab]);
+
   const safeChatMessages = Array.isArray(chatMessages) ? chatMessages : [];
   const unreadChatCount = Math.max(0, safeChatMessages.length - lastReadChatCount);
   const unreadFlightCount = Math.max(0, (Array.isArray(flights) ? flights.length : 0) - lastReadFlightCount);
@@ -104,6 +111,14 @@ export default function Dashboard() {
       icon: Megaphone,
       color: '#8b5cf6',
       component: Announcements
+    },
+    {
+      id: 'events',
+      title: 'Upcoming Events',
+      description: 'View scheduled events and meetings.',
+      icon: Calendar,
+      color: '#10b981',
+      component: Events
     },
     {
       id: 'performance',

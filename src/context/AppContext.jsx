@@ -523,7 +523,7 @@ export const AppProvider = ({ children }) => {
             reject(new Error('Incorrect password.'));
             return;
           }
-          if (!user.approved) {
+          if (!user.approved && user.role !== 'passenger') {
             reject(new Error('Your account is pending admin approval. Please wait for an administrator to activate your account.'));
             return;
           }
@@ -555,6 +555,8 @@ export const AppProvider = ({ children }) => {
           return;
         }
         
+        const isPassenger = userData.role === 'passenger';
+        
         const newUser = {
           email: normalizedEmail,
           password: userData.password,
@@ -562,7 +564,8 @@ export const AppProvider = ({ children }) => {
           lastName: userData.lastName,
           robloxUsername: userData.robloxUsername,
           isAdmin: false,
-          approved: false, 
+          approved: isPassenger ? true : false, 
+          role: userData.role || 'staff',
           createdAt: new Date().toISOString(),
           profilePicture: '',
           points: 0,
@@ -1260,6 +1263,24 @@ useEffect(() => {
     ));
   };
 
+  // --- Events Operations ---
+  const addEvent = (eventData) => {
+    const newEvent = {
+      id: makeId('event'),
+      title: eventData.title,
+      description: eventData.description,
+      date: eventData.date,
+      timestamp: new Date().toISOString()
+    };
+    setEvents(prev => [...prev, newEvent]);
+    logAction('event_added', `Added event: ${eventData.title}`);
+  };
+
+  const deleteEvent = (eventId) => {
+    setEvents(prev => prev.filter(e => e.id !== eventId));
+    logAction('event_deleted', `Deleted event`);
+  };
+
   // --- Staff Notes Operations ---
   const addStaffNote = (staffEmail, type, text) => {
     const newNote = {
@@ -1401,6 +1422,7 @@ useEffect(() => {
             id: makeId('bypass'),
             title,
             message,
+            timestamp: Date.now(),
             senderName: `${currentUser.firstName} ${currentUser.lastName}`
           };
           setBypassConfig(newConfig);
@@ -1426,6 +1448,8 @@ useEffect(() => {
         applications,
         applicationConfig,
         events,
+        addEvent,
+        deleteEvent,
         submitApplication,
         updateApplicationConfig,
         updateApplicationStatus,

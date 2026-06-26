@@ -121,7 +121,6 @@ const styles = {
     alignItems: 'flex-start',
     padding: '32px',
     textAlign: 'left',
-    background: 'transparent',
     cursor: 'pointer',
     position: 'relative',
     minHeight: '260px',

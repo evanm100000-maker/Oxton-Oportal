@@ -41,18 +41,38 @@ export default function AdminPanel() {
     applications = [],
     applicationConfig,
     updateApplicationStatus,
-    updateApplicationConfig
+    updateApplicationConfig,
+    events,
+    addEvent,
+    deleteEvent,
+    announcements,
+    addAnnouncement,
+    setBypassAnnouncement
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Flight Creator states
   const [flightCode, setFlightCode] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
   const [serverLink, setServerLink] = useState('');
+
+  // Announcement states
+  const [annType, setAnnType] = useState('Normal');
+  const [annTitle, setAnnTitle] = useState('');
+  const [annSubtitle, setAnnSubtitle] = useState('');
+  const [annMessage, setAnnMessage] = useState('');
+  const [annTargetAudience, setAnnTargetAudience] = useState('All');
+  const [annCountdownDate, setAnnCountdownDate] = useState('');
+  const [bypassTitle, setBypassTitle] = useState('');
+  const [bypassMessage, setBypassMessage] = useState('');
+
+  // Event states
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDescription, setEventDescription] = useState('');
+  const [eventDate, setEventDate] = useState('');
 
   // LOA Review comments
   const [loaComments, setLoaComments] = useState({});
@@ -185,6 +205,40 @@ export default function AdminPanel() {
     displaySuccess(`Password reset approved for ${email}.`);
   };
 
+  const handlePostAnnouncement = (e) => {
+    e.preventDefault();
+    if (!annMessage.trim()) return;
+    addAnnouncement({ type: annType, title: annTitle, subtitle: annSubtitle, message: annMessage, targetAudience: annTargetAudience, countdownDate: annCountdownDate || null });
+    setAnnTitle('');
+    setAnnSubtitle('');
+    setAnnMessage('');
+    setAnnType('Normal');
+    setAnnTargetAudience('All');
+    setAnnCountdownDate('');
+    displaySuccess('Announcement posted successfully.');
+  };
+
+  const handleBypassPost = (e) => {
+    e.preventDefault();
+    if (!bypassMessage.trim()) return;
+    if (setBypassAnnouncement) {
+      setBypassAnnouncement(bypassTitle, bypassMessage);
+      setBypassTitle('');
+      setBypassMessage('');
+      displaySuccess('Global screen takeover triggered.');
+    }
+  };
+
+  const handleAddEvent = (e) => {
+    e.preventDefault();
+    if (!eventTitle || !eventDate) return;
+    addEvent({ title: eventTitle, description: eventDescription, date: eventDate });
+    setEventTitle('');
+    setEventDescription('');
+    setEventDate('');
+    displaySuccess('Event scheduled successfully.');
+  };
+
   // Derived lists
   const pendingUsers = users.filter(u => !u.approved);
   const approvedUsers = users.filter(u => u.approved);
@@ -247,6 +301,12 @@ export default function AdminPanel() {
         </button>
         <button type="button" onClick={() => setActiveSubTab('loas')} style={getTabStyle(activeSubTab === 'loas')}>
           <Calendar size={16} /> LOAs ({pendingLoas.length})
+        </button>
+        <button type="button" onClick={() => setActiveSubTab('announcements')} style={getTabStyle(activeSubTab === 'announcements')}>
+          <MessageSquare size={16} /> Announcements
+        </button>
+        <button type="button" onClick={() => setActiveSubTab('events')} style={getTabStyle(activeSubTab === 'events')}>
+          <Calendar size={16} /> Events
         </button>
         <button type="button" onClick={() => setActiveSubTab('passwords')} style={getTabStyle(activeSubTab === 'passwords')}>
           <Key size={16} /> Passwords ({pendingPasswords.length})
@@ -621,6 +681,123 @@ export default function AdminPanel() {
 
       )}
       {/* Sub Tab: Password Resets */}
+      {activeSubTab === 'announcements' && (
+        <div id="section-announcements" className="admin-section active">
+          <div className="section-header">
+            <h2><MessageSquare size={20} /> Manage Announcements</h2>
+            <p>Post announcements or trigger global screen takeovers.</p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="glass-panel" style={styles.composeBox}>
+              <h3 style={styles.composeTitle}>Post Announcement</h3>
+              <form onSubmit={handlePostAnnouncement} style={styles.form}>
+                <div style={styles.formRow}>
+                  <div style={styles.inputWrapper}>
+                    <label style={styles.label}>Type</label>
+                    <select value={annType} onChange={e => setAnnType(e.target.value)} className="input-field">
+                      <option value="Normal">Normal</option>
+                      <option value="Maintenance">Maintenance</option>
+                      <option value="Severe">Severe</option>
+                    </select>
+                  </div>
+                  <div style={styles.inputWrapper}>
+                    <label style={styles.label}>Target</label>
+                    <select value={annTargetAudience} onChange={e => setAnnTargetAudience(e.target.value)} className="input-field">
+                      <option value="All">All</option>
+                      <option value="Staff">Staff</option>
+                      <option value="Passenger">Passengers</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={styles.formRow}>
+                  <div style={styles.inputWrapper}>
+                    <label style={styles.label}>Title</label>
+                    <input type="text" value={annTitle} onChange={e=>setAnnTitle(e.target.value)} className="input-field" placeholder="Optional" />
+                  </div>
+                  <div style={styles.inputWrapper}>
+                    <label style={styles.label}>Subtitle</label>
+                    <input type="text" value={annSubtitle} onChange={e=>setAnnSubtitle(e.target.value)} className="input-field" placeholder="Optional" />
+                  </div>
+                </div>
+                <div style={styles.inputWrapper}>
+                  <label style={styles.label}>Message</label>
+                  <textarea value={annMessage} onChange={e=>setAnnMessage(e.target.value)} className="input-field" rows="2" required />
+                </div>
+                <div style={styles.inputWrapper}>
+                  <label style={styles.label}>Countdown Target (Optional)</label>
+                  <input type="datetime-local" value={annCountdownDate} onChange={e=>setAnnCountdownDate(e.target.value)} className="input-field" />
+                </div>
+                <button type="submit" className="btn-primary" style={styles.postBtn}>Post Announcement</button>
+              </form>
+            </div>
+
+            <div className="glass-panel" style={{...styles.composeBox, borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.02)'}}>
+              <h3 style={{...styles.composeTitle, color: '#ef4444'}}>Send Global Screen Takeover (Bypass Announcement)</h3>
+              <form onSubmit={handleBypassPost} style={styles.form}>
+                <div style={styles.inputWrapper}>
+                  <label style={styles.label}>Alert Title</label>
+                  <input type="text" value={bypassTitle} onChange={e=>setBypassTitle(e.target.value)} className="input-field" required />
+                </div>
+                <div style={styles.inputWrapper}>
+                  <label style={styles.label}>Alert Message</label>
+                  <textarea value={bypassMessage} onChange={e=>setBypassMessage(e.target.value)} className="input-field" rows="2" required />
+                </div>
+                <button type="submit" className="btn-danger" style={styles.postBtn}>Trigger Screen Takeover</button>
+              </form>
+            </div>
+            
+            <div>
+              <h3 style={{...styles.composeTitle, marginTop: '20px'}}>Active Announcements</h3>
+              {announcements.map(ann => (
+                <div key={ann.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                  <div>
+                    <strong>{ann.title || 'Untitled'}</strong> ({ann.type})
+                  </div>
+                  <button onClick={() => deleteAnnouncement(ann.id)} className="btn-danger" style={{ padding: '4px 12px' }}>Delete</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSubTab === 'events' && (
+        <div id="section-events" className="admin-section active">
+          <div className="section-header">
+            <h2><Calendar size={20} /> Manage Events</h2>
+            <p>Schedule upcoming events for passengers and staff.</p>
+          </div>
+          <div className="glass-panel" style={styles.composeBox}>
+            <form onSubmit={handleAddEvent} style={styles.form}>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Event Title</label>
+                <input type="text" value={eventTitle} onChange={e=>setEventTitle(e.target.value)} className="input-field" required />
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Event Description (Optional)</label>
+                <textarea value={eventDescription} onChange={e=>setEventDescription(e.target.value)} className="input-field" rows="2" />
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Event Date & Time</label>
+                <input type="datetime-local" value={eventDate} onChange={e=>setEventDate(e.target.value)} className="input-field" required />
+              </div>
+              <button type="submit" className="btn-primary" style={styles.postBtn}>Schedule Event</button>
+            </form>
+          </div>
+          <div style={{ marginTop: '24px' }}>
+            <h3 style={styles.composeTitle}>Scheduled Events</h3>
+            {events && events.map(event => (
+              <div key={event.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                <div>
+                  <strong>{event.title}</strong> - {new Date(event.date).toLocaleString()}
+                </div>
+                <button onClick={() => deleteEvent(event.id)} className="btn-danger" style={{ padding: '4px 12px' }}>Cancel</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {activeSubTab === 'passwords' && (
 <div id="section-passwords">
         <div style={styles.panelSection}>

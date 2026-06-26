@@ -24,7 +24,9 @@ export default function BypassOverlay() {
 
   if (!currentUser) return null; // Only show to logged in staff
   
-  if (!bypassConfig?.isActive || bypassConfig.id === dismissedId) {
+  const isExpired = bypassConfig?.timestamp ? (Date.now() - bypassConfig.timestamp > 5 * 60 * 1000) : false;
+
+  if (!bypassConfig?.isActive || bypassConfig.id === dismissedId || isExpired) {
     return null;
   }
 

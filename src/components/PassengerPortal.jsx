@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, Calendar, Megaphone, Ticket, ChevronLeft, Send, Clock, AlertCircle, FileText } from 'lucide-react';
+import { Plane, Calendar, Megaphone, Ticket, ChevronLeft, Send, Clock, AlertCircle, FileText, UserPlus, LogIn, MessageSquare } from 'lucide-react';
 import StaffApplication from './StaffApplication';
+import SupportTickets from './SupportTickets';
 
 export default function PassengerPortal({ onBack }) {
-  const { flights, events, announcements, createTicket } = useApp();
-  const [activeTab, setActiveTab] = useState('overview');
+  const { flights, events, announcements, createTicket, currentUser, login, signup } = useApp();
+  const [activeTab, setActiveTab] = useState(() => {
+    return sessionStorage.getItem('oxton_passengerTab') || 'overview';
+  });
+  
+  React.useEffect(() => {
+    sessionStorage.setItem('oxton_passengerTab', activeTab);
+  }, [activeTab]);
+
   const [ticketForm, setTicketForm] = useState({ title: '', description: '', robloxUsername: '' });
   const [ticketSubmitted, setTicketSubmitted] = useState(false);
-  
+  const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+  const [authForm, setAuthForm] = useState({ email: '', password: '', firstName: '', lastName: '', robloxUsername: '' });
+  const [authError, setAuthError] = useState('');
+
   // Filter announcements for passengers
   const passengerAnnouncements = announcements.filter(a => a.targetAudience === 'Passenger' || a.targetAudience === 'All' || !a.targetAudience);
 
@@ -27,6 +38,25 @@ export default function PassengerPortal({ onBack }) {
     setTicketSubmitted(true);
     setTicketForm({ title: '', description: '', robloxUsername: '' });
     setTimeout(() => setTicketSubmitted(false), 5000);
+  };
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    try {
+      if (authMode === 'login') {
+        await login(authForm.email, authForm.password);
+      } else {
+        if (!authForm.firstName || !authForm.lastName || !authForm.robloxUsername) {
+          setAuthError('Please fill in all fields.');
+          return;
+        }
+        await signup({ ...authForm, role: 'passenger' });
+        await login(authForm.email, authForm.password);
+      }
+    } catch (err) {
+      setAuthError(err.message);
+    }
   };
 
   const navItems = [
@@ -137,9 +167,9 @@ export default function PassengerPortal({ onBack }) {
               <div style={{...styles.sectionIcon, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399'}}><Calendar size={24} /></div>
               <h2 style={{ fontSize: '1.5rem', fontWeight: '700', margin: 0, color: '#fff' }}>Upcoming Events</h2>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {events.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af' }}>No events scheduled. Check back later!</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+              {(!events || events.length === 0) ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#9ca3af', gridColumn: '1 / -1' }}>No events scheduled. Check back later!</div>
               ) : (
                 events.map(event => (
                   <div key={event.id} style={styles.eventCard}>
@@ -162,64 +192,72 @@ export default function PassengerPortal({ onBack }) {
         )}
 
         {activeTab === 'support' && (
-          <div style={{ maxWidth: '700px', margin: '0 auto', width: '100%' }}>
-            <div className="glass-panel" style={{ padding: '32px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <div style={{...styles.sectionIcon, background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24'}}><Ticket size={24} /></div>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '700', margin: 0, color: '#fff' }}>Submit a Support Ticket</h2>
-              </div>
-              <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '24px' }}>Need help? Open a ticket and our staff team will assist you.</p>
+          <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
+            {!currentUser ? (
+              <div className="glass-panel" style={{ padding: '32px', maxWidth: '450px', margin: '0 auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                  <div style={{...styles.sectionIcon, background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6'}}>
+                    {authMode === 'login' ? <LogIn size={24} /> : <UserPlus size={24} />}
+                  </div>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: '700', margin: 0, color: '#fff' }}>
+                    {authMode === 'login' ? 'Passenger Login' : 'Create Account'}
+                  </h2>
+                </div>
+                <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '24px' }}>
+                  {authMode === 'login' ? 'Log in to view and create support tickets.' : 'Create an account to submit support tickets.'}
+                </p>
 
-              {ticketSubmitted ? (
-                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: '32px', borderRadius: '16px', textAlign: 'center' }}>
-                  <div style={{ width: '60px', height: '60px', background: 'rgba(16, 185, 129, 0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
-                    <Plane size={28} />
+                {authError && (
+                  <div style={{ padding: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#fca5a5', fontSize: '0.85rem', marginBottom: '16px' }}>
+                    {authError}
                   </div>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '4px', color: '#fff' }}>Ticket Submitted Successfully</h3>
-                  <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>Our staff team has received your ticket and will look into it.</p>
-                </motion.div>
-              ) : (
-                <form onSubmit={handleTicketSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                )}
+
+                <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={styles.formGroup}>
-                    <label style={styles.label}>Your Roblox Username</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={ticketForm.robloxUsername}
-                      onChange={(e) => setTicketForm({...ticketForm, robloxUsername: e.target.value})}
-                      className="input-field"
-                      placeholder="e.g. Builderman123"
-                    />
+                    <label style={styles.label}>Email</label>
+                    <input type="email" required value={authForm.email} onChange={e => setAuthForm({...authForm, email: e.target.value})} className="input-field" placeholder="your@email.com" />
                   </div>
                   <div style={styles.formGroup}>
-                    <label style={styles.label}>Subject / Title</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={ticketForm.title}
-                      onChange={(e) => setTicketForm({...ticketForm, title: e.target.value})}
-                      className="input-field"
-                      placeholder="Brief summary of your issue"
-                    />
+                    <label style={styles.label}>Password</label>
+                    <input type="password" required value={authForm.password} onChange={e => setAuthForm({...authForm, password: e.target.value})} className="input-field" placeholder="••••••••" />
                   </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>Description</label>
-                    <textarea 
-                      required
-                      rows={5}
-                      value={ticketForm.description}
-                      onChange={(e) => setTicketForm({...ticketForm, description: e.target.value})}
-                      className="input-field"
-                      style={{ resize: 'vertical' }}
-                      placeholder="Please describe your issue in detail..."
-                    />
-                  </div>
-                  <button type="submit" className="btn-primary" style={{ padding: '14px', borderRadius: '10px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '8px' }}>
-                    <Send size={18} /> Submit Ticket
+                  
+                  {authMode === 'signup' && (
+                    <>
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={styles.label}>First Name</label>
+                          <input type="text" required value={authForm.firstName} onChange={e => setAuthForm({...authForm, firstName: e.target.value})} className="input-field" />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <label style={styles.label}>Last Name</label>
+                          <input type="text" required value={authForm.lastName} onChange={e => setAuthForm({...authForm, lastName: e.target.value})} className="input-field" />
+                        </div>
+                      </div>
+                      <div style={styles.formGroup}>
+                        <label style={styles.label}>Roblox Username</label>
+                        <input type="text" required value={authForm.robloxUsername} onChange={e => setAuthForm({...authForm, robloxUsername: e.target.value})} className="input-field" />
+                      </div>
+                    </>
+                  )}
+
+                  <button type="submit" className="btn-primary" style={{ padding: '14px', borderRadius: '10px', marginTop: '8px' }}>
+                    {authMode === 'login' ? 'Login' : 'Create Account'}
                   </button>
+                  
+                  <div style={{ textAlign: 'center', marginTop: '8px' }}>
+                    <button type="button" onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '0.9rem', textDecoration: 'underline' }}>
+                      {authMode === 'login' ? 'Need an account? Sign up' : 'Already have an account? Log in'}
+                    </button>
+                  </div>
                 </form>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="glass-panel" style={{ padding: '32px' }}>
+                <SupportTickets />
+              </div>
+            )}
           </div>
         )}
       </div>

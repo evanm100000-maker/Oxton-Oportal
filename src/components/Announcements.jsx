@@ -81,96 +81,20 @@ export default function Announcements() {
 
     if (!timeLeft) return <div style={styles.countdownBox}><span style={{color: '#10b981', fontWeight: 'bold'}}>Event has passed</span></div>;
 
+    const pad = (num) => num.toString().padStart(2, '0');
+    
+    // HH:MM:SS format where HH can be > 24 if days exist
+    const totalHours = (timeLeft.days || 0) * 24 + (timeLeft.hours || 0);
+
     return (
-      <div style={styles.countdownBox}>
-        <div style={styles.countdownUnit}><span style={styles.countdownSpan}>{timeLeft.days}</span><label style={styles.countdownLabel}>Days</label></div>
-        <div style={styles.countdownUnit}><span style={styles.countdownSpan}>{timeLeft.hours}</span><label style={styles.countdownLabel}>Hrs</label></div>
-        <div style={styles.countdownUnit}><span style={styles.countdownSpan}>{timeLeft.minutes}</span><label style={styles.countdownLabel}>Min</label></div>
-        <div style={styles.countdownUnit}><span style={styles.countdownSpan}>{timeLeft.seconds}</span><label style={styles.countdownLabel}>Sec</label></div>
+      <div style={{...styles.countdownBox, color: '#fff', fontSize: '1.2rem', fontWeight: 'bold'}}>
+        {pad(totalHours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
       </div>
     );
   };
 
   return (
     <div style={styles.container}>
-      {currentUser?.isAdmin && (
-        <div className="glass-panel" style={styles.composeBox}>
-          <h3 style={styles.composeTitle}>Post Announcement</h3>
-          <form onSubmit={handlePost} style={styles.form}>
-            <div style={styles.formRow}>
-              <div style={styles.inputWrapper}>
-                <label style={styles.label}>Announcement Type</label>
-                <select value={type} onChange={e => setType(e.target.value)} className="input-field">
-                  <option value="Normal">Normal</option>
-                  <option value="Maintenance">Maintenance</option>
-                  <option value="Severe">Severe</option>
-                </select>
-              </div>
-              <div style={styles.inputWrapper}>
-                <label style={styles.label}>Target Audience</label>
-                <select value={targetAudience} onChange={e => setTargetAudience(e.target.value)} className="input-field">
-                  <option value="All">All (Staff & Passengers)</option>
-                  <option value="Staff">Staff Only</option>
-                  <option value="Passenger">Passengers Only</option>
-                </select>
-              </div>
-            </div>
-            <div style={styles.formRow}>
-              <div style={styles.inputWrapper}>
-                <label style={styles.label}>Title (Optional)</label>
-                <input type="text" value={title} onChange={e=>setTitle(e.target.value)} className="input-field" placeholder="Brief title..." />
-              </div>
-              <div style={styles.inputWrapper}>
-                <label style={styles.label}>Subtitle (Optional)</label>
-                <input type="text" value={subtitle} onChange={e=>setSubtitle(e.target.value)} className="input-field" placeholder="Brief subtitle..." />
-              </div>
-            </div>
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Message</label>
-              <textarea 
-                value={message} 
-                onChange={e => setMessage(e.target.value)} 
-                className="input-field" 
-                rows="3" 
-                placeholder="What do you want to announce to the staff?"
-                required
-              />
-            </div>
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Countdown Target Date (Optional)</label>
-              <input 
-                type="datetime-local" 
-                value={countdownDate} 
-                onChange={e => setCountdownDate(e.target.value)} 
-                className="input-field" 
-              />
-            </div>
-            <button type="submit" className="btn-primary" style={styles.postBtn}>
-              <Send size={16} /> Post Announcement
-            </button>
-          </form>
-        </div>
-      )}
-
-      {currentUser?.isAdmin && (
-        <div className="glass-panel" style={{...styles.composeBox, borderColor: 'rgba(239, 68, 68, 0.4)', background: 'rgba(239, 68, 68, 0.02)'}}>
-          <h3 style={{...styles.composeTitle, color: '#ef4444'}}>Send Global Screen Takeover (Bypass Announcement)</h3>
-          <p style={{fontSize: '0.85rem', color: '#9ca3af', marginBottom: '16px'}}>This will force an urgent announcement overlay on the screens of all staff members currently online.</p>
-          <form onSubmit={handleBypassPost} style={styles.form}>
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Alert Title</label>
-              <input type="text" value={bypassTitle} onChange={e=>setBypassTitle(e.target.value)} className="input-field" placeholder="e.g. SERVER RESTART IMMINENT" required />
-            </div>
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Alert Message</label>
-              <textarea value={bypassMessage} onChange={e=>setBypassMessage(e.target.value)} className="input-field" rows="2" placeholder="Urgent message details..." required />
-            </div>
-            <button type="submit" className="btn-danger" style={styles.postBtn}>
-              <Megaphone size={16} /> Trigger Screen Takeover
-            </button>
-          </form>
-        </div>
-      )}
 
       <div style={styles.feed}>
         {sortedAnnouncements.length === 0 ? (

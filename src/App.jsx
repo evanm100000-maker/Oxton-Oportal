@@ -16,7 +16,17 @@ import { useState } from 'react';
 function MainApp() {
   const { currentUser, maintenanceConfig } = useApp();
   const [bypassMaint, setBypassMaint] = useState(false);
-  const [portalType, setPortalType] = useState(null); // 'passenger' | 'staff' | null
+  const [portalType, setPortalType] = useState(() => {
+    return sessionStorage.getItem('oxton_portalType') || null;
+  }); // 'passenger' | 'staff' | null
+
+  React.useEffect(() => {
+    if (portalType) {
+      sessionStorage.setItem('oxton_portalType', portalType);
+    } else {
+      sessionStorage.removeItem('oxton_portalType');
+    }
+  }, [portalType]);
 
   // If maintenance is active, and they aren't logged in as an admin, show Maintenance.
   if (maintenanceConfig?.isActive && !currentUser?.isAdmin) {
@@ -48,7 +58,7 @@ function MainApp() {
   }
 
   // Passenger Portal
-  if (portalType === 'passenger' && !currentUser) {
+  if (portalType === 'passenger' || currentUser?.role === 'passenger') {
     return (
       <>
         <WarningBanner />
