@@ -118,9 +118,35 @@ export default function AdminPanel() {
   // Audit modal state
   const [selectedAuditLog, setSelectedAuditLog] = useState(null);
 
+  // Private Chats Oversight state
+  const [passwordPromptChatId, setPasswordPromptChatId] = useState(null);
+  const [chatPasswordInput, setChatPasswordInput] = useState('');
+  const [chatPasswordError, setChatPasswordError] = useState('');
+  const [activeOversightChatId, setActiveOversightChatId] = useState(null);
+  const [oversightMessageText, setOversightMessageText] = useState('');
+
   const displaySuccess = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const handleOversightAuth = (e) => {
+    e.preventDefault();
+    if (chatPasswordInput === '1186') {
+      setActiveOversightChatId(passwordPromptChatId);
+      setPasswordPromptChatId(null);
+      setChatPasswordInput('');
+      setChatPasswordError('');
+    } else {
+      setChatPasswordError('Incorrect password');
+    }
+  };
+
+  const handleOversightSend = (e) => {
+    e.preventDefault();
+    if (!oversightMessageText.trim()) return;
+    addChatMessage(activeOversightChatId, oversightMessageText.trim());
+    setOversightMessageText('');
   };
 
   const handleCreateFlight = (e) => {
@@ -930,9 +956,9 @@ export default function AdminPanel() {
           </div>
         </div>
       </div>
+      </div>
       )}
 
-      </div>
       {/* Audit Log Modal */}
       {selectedAuditLog && (
         <div style={styles.overlay}>
@@ -1054,37 +1080,30 @@ export default function AdminPanel() {
                   <th style={styles.th}>Created By</th>
                   <th style={styles.th}>Created At</th>
                   <th style={styles.th}>Message Count</th>
+                  <th style={styles.th}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {Array.isArray(privateChats) && privateChats.length === 0 ? (
-                  <tr><td colSpan="5" style={{...styles.td, textAlign: 'center'}}>No private chats found.</td></tr>
+                  <tr><td colSpan="6" style={{...styles.td, textAlign: 'center'}}>No private chats found.</td></tr>
                 ) : (
                   Array.isArray(privateChats) && privateChats.map(chat => {
                     const messagesInChat = Array.isArray(chatMessages) ? chatMessages.filter(m => m.channel === chat.id) : [];
                     return (
                       <React.Fragment key={chat.id}>
                         <tr style={styles.trBody}>
-                          <td style={styles.td}><strong>{chat.name || chat.id}</strong></td>
+                          <td style={styles.td}>
+                            <strong>{chat.name || chat.id}</strong>
+                            {chat.isSuspended && <span style={{marginLeft: '8px', color: '#ef4444', fontSize: '0.75rem', border: '1px solid #ef4444', padding: '2px 4px', borderRadius: '4px'}}>Suspended</span>}
+                          </td>
                           <td style={styles.td}>{chat.participants?.join(', ')}</td>
                           <td style={styles.td}>{chat.createdBy}</td>
                           <td style={styles.td}>{new Date(chat.createdAt).toLocaleString()}</td>
                           <td style={styles.td}>{messagesInChat.length} msgs</td>
+                          <td style={styles.td}>
+                            <button onClick={() => setPasswordPromptChatId(chat.id)} className="btn-secondary" style={{padding: '4px 8px', fontSize: '0.8rem'}}>Open Chat</button>
+                          </td>
                         </tr>
-                        {messagesInChat.length > 0 && (
-                          <tr style={styles.trBody}>
-                            <td colSpan="5" style={{ padding: '0 16px 16px 16px' }}>
-                              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto' }}>
-                                {messagesInChat.map(msg => (
-                                  <div key={msg.id} style={{ marginBottom: '8px', fontSize: '0.85rem' }}>
-                                    <strong style={{ color: '#3b82f6' }}>{msg.senderName}</strong> <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>{new Date(msg.timestamp).toLocaleString()}</span>
-                                    <div style={{ color: '#d1d5db', marginTop: '2px' }}>{msg.text}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
                       </React.Fragment>
                     );
                   })
@@ -1238,6 +1257,91 @@ export default function AdminPanel() {
                 </div>
               </div>
             </div>
+          </div>
+          </div>
+        </div>
+      )}
+
+      </div>
+
+      {/* Password Prompt Modal */}
+      {passwordPromptChatId && (
+        <div style={styles.overlay}>
+          <div className="glass-panel" style={{...styles.modal, width: '350px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
+              <h3 style={{color: 'var(--color-text-main)', fontSize: '1.2rem'}}>Admin Override</h3>
+              <button type="button" onClick={() => { setPasswordPromptChatId(null); setChatPasswordError(''); setChatPasswordInput(''); }} style={{background: 'transparent', border: 'none', color: 'var(--color-text-main)', cursor: 'pointer'}}><X size={20}/></button>
+            </div>
+            <form onSubmit={handleOversightAuth}>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Enter Admin Password</label>
+                <input type="password" value={chatPasswordInput} onChange={e => setChatPasswordInput(e.target.value)} className="input-field" autoFocus required />
+              </div>
+              {chatPasswordError && <p style={{color: '#ef4444', fontSize: '0.85rem', marginTop: '8px'}}>{chatPasswordError}</p>}
+              <button type="submit" className="btn-primary" style={{...styles.submitBtn, width: '100%', justifyContent: 'center', marginTop: '16px'}}>Unlock Chat</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Oversight Chat View */}
+      {activeOversightChatId && (
+        <div style={{...styles.overlay, zIndex: 10000}}>
+          <div className="glass-panel" style={{...styles.modal, width: '800px', height: '80vh', padding: 0, overflow: 'hidden'}}>
+            {(() => {
+              const activeChat = privateChats?.find(c => c.id === activeOversightChatId);
+              const msgs = chatMessages?.filter(m => m.channel === activeOversightChatId) || [];
+              if (!activeChat) return <div style={{padding: '24px'}}>Chat not found.</div>;
+              return (
+                <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                  {/* Header */}
+                  <div style={{padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div>
+                      <h3 style={{fontSize: '1.2rem', margin: 0, color: 'var(--color-text-main)'}}>{activeChat.name || activeChat.id} (Oversight)</h3>
+                      <div style={{fontSize: '0.85rem', color: '#9ca3af', marginTop: '4px'}}>Participants: {activeChat.participants?.join(', ')}</div>
+                    </div>
+                    <div style={{display: 'flex', gap: '8px'}}>
+                      <button onClick={() => toggleSuspendPrivateChat(activeChat.id)} className="btn-secondary" style={{padding: '6px 12px', fontSize: '0.85rem'}}>
+                        {activeChat.isSuspended ? 'Unsuspend' : 'Suspend Chat'}
+                      </button>
+                      <button onClick={() => { if(window.confirm('Delete this chat forever?')) { deletePrivateChat(activeChat.id); setActiveOversightChatId(null); } }} className="btn-danger" style={{padding: '6px 12px', fontSize: '0.85rem'}}>
+                        Delete Chat
+                      </button>
+                      <button onClick={() => setActiveOversightChatId(null)} style={{background: 'transparent', border: 'none', color: 'var(--color-text-main)', cursor: 'pointer', marginLeft: '8px'}}><X size={20}/></button>
+                    </div>
+                  </div>
+                  {/* Messages */}
+                  <div style={{flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                    {msgs.length === 0 ? (
+                      <p style={{color: '#9ca3af', fontStyle: 'italic', textAlign: 'center'}}>No messages.</p>
+                    ) : (
+                      msgs.map(msg => (
+                        <div key={msg.id} style={{display: 'flex', gap: '12px'}}>
+                          <div style={{width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold'}}>
+                            {msg.senderName.charAt(0)}
+                          </div>
+                          <div>
+                            <div>
+                              <strong style={{color: 'var(--color-text-main)'}}>{msg.senderName}</strong>
+                              <span style={{color: '#6b7280', fontSize: '0.75rem', marginLeft: '8px'}}>{new Date(msg.timestamp).toLocaleString()}</span>
+                            </div>
+                            <div style={{color: '#d1d5db', marginTop: '4px'}}>{msg.text}</div>
+                            {msg.attachmentUrl && <img src={msg.attachmentUrl} alt="Attachment" style={{maxWidth: '300px', borderRadius: '8px', marginTop: '8px'}} />}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {/* Input */}
+                  <div style={{padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.1)'}}>
+                    <form onSubmit={handleOversightSend} style={{display: 'flex', gap: '12px'}}>
+                      <input type="text" value={oversightMessageText} onChange={e => setOversightMessageText(e.target.value)} placeholder="Send message as Admin..." style={{background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px 16px', color: 'var(--color-text-main)', outline: 'none', flex: 1}} />
+                      <button type="submit" className="btn-primary" style={{padding: '0 20px', borderRadius: '8px', fontWeight: '600'}}>Send</button>
+                    </form>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

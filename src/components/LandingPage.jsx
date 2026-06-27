@@ -1,60 +1,89 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Plane, Users } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function LandingPage({ onSelectPortal }) {
+  const [selectedCard, setSelectedCard] = useState(null);
+
+  const handleSelect = (portal) => {
+    setSelectedCard(portal);
+    setTimeout(() => {
+      onSelectPortal(portal);
+    }, 700);
+  };
+
   return (
     <div style={styles.container}>
-      <motion.div 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={styles.heroSection}
-      >
-        <div style={styles.logoIconContainer}>
-          <img src="/logo.png" alt="Oxton Logo" style={styles.logoIcon} />
+      {/* Background layer */}
+      <div style={styles.background} />
+
+      <div style={styles.contentWrapper}>
+        <div style={styles.cardsContainer}>
+          {/* Passenger Card */}
+          <motion.button
+            layout
+            initial={{ opacity: 0, y: 50 }}
+            animate={
+              selectedCard === 'passenger' 
+                ? { scale: 50, zIndex: 100, opacity: 0 } 
+                : selectedCard 
+                  ? { opacity: 0, scale: 0.8 } 
+                  : { opacity: 1, y: 0, scale: 1 }
+            }
+            whileHover={selectedCard ? {} : { scale: 1.03 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            onClick={() => handleSelect('passenger')}
+            style={{...styles.card, background: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.5)'}}
+          >
+            <div style={styles.cardInner}>
+              <Users size={64} color="#60a5fa" style={styles.cardIcon} />
+              <div style={styles.textContainer}>
+                <h2 style={styles.cardTitle}>PASSENGER</h2>
+                <div style={styles.playButtonWrapper}>
+                  <div style={{...styles.playButton, background: '#60a5fa'}}>ENTER</div>
+                </div>
+              </div>
+            </div>
+          </motion.button>
+
+          {/* Staff Card */}
+          <motion.button
+            layout
+            initial={{ opacity: 0, y: 50 }}
+            animate={
+              selectedCard === 'staff' 
+                ? { scale: 50, zIndex: 100, opacity: 0 } 
+                : selectedCard 
+                  ? { opacity: 0, scale: 0.8 } 
+                  : { opacity: 1, y: 0, scale: 1 }
+            }
+            whileHover={selectedCard ? {} : { scale: 1.03 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: selectedCard ? 0 : 0.1 }}
+            onClick={() => handleSelect('staff')}
+            style={{...styles.card, background: 'rgba(139, 92, 246, 0.15)', borderColor: 'rgba(139, 92, 246, 0.5)'}}
+          >
+            <div style={styles.cardInner}>
+              <Plane size={64} color="#c084fc" style={styles.cardIcon} />
+              <div style={styles.textContainer}>
+                <h2 style={styles.cardTitle}>STAFF</h2>
+                <div style={styles.playButtonWrapper}>
+                  <div style={{...styles.playButton, background: '#c084fc'}}>LOGIN</div>
+                </div>
+              </div>
+            </div>
+          </motion.button>
         </div>
-        <h1 style={styles.brandTitle}>OXTON OPORTAL</h1>
-        <p style={styles.brandSubtitle}>Please select your destination to continue</p>
-      </motion.div>
 
-      <div style={styles.grid}>
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          onClick={() => onSelectPortal('passenger')}
-          className="glass-panel interactive-card"
-          style={styles.card}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: selectedCard ? 0 : 1 }}
+          transition={{ duration: 0.3 }}
+          style={styles.footer}
         >
-          <div style={{...styles.iconWrapper, background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', borderColor: 'rgba(59, 130, 246, 0.3)'}}>
-            <Users size={28} />
-          </div>
-          <h2 style={styles.cardTitle}>I am a Passenger</h2>
-          <p style={styles.cardDesc}>Access upcoming flights, read public announcements, submit support tickets, and apply for a staff position.</p>
-          <div style={{...styles.actionText, color: '#60a5fa'}}>
-            Enter Portal <span className="arrow">→</span>
-          </div>
-        </motion.button>
-
-        <motion.button
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          onClick={() => onSelectPortal('staff')}
-          className="glass-panel-glow interactive-card"
-          style={styles.card}
-        >
-          <div style={{...styles.iconWrapper, background: 'rgba(139, 92, 246, 0.15)', color: '#c084fc', borderColor: 'rgba(139, 92, 246, 0.3)'}}>
-            <Plane size={28} />
-          </div>
-          <h2 style={styles.cardTitle}>I am a Staff Member</h2>
-          <p style={styles.cardDesc}>Access the secure staff dashboard to manage operations, moderate the community, and review applications.</p>
-          <div style={{...styles.actionText, color: '#c084fc'}}>
-            Staff Login <span className="arrow">→</span>
-          </div>
-        </motion.button>
+          SELECT YOUR DESTINATION
+        </motion.div>
       </div>
-      
+
       <div style={styles.versionText}>V1.1</div>
     </div>
   );
@@ -62,105 +91,119 @@ export default function LandingPage({ onSelectPortal }) {
 
 const styles = {
   container: {
+    position: 'relative',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: '100vh',
-    padding: '20px',
+    height: '100vh',
+    width: '100vw',
+    overflow: 'hidden',
+    background: '#0f172a',
   },
-  heroSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    textAlign: 'center',
-    marginBottom: '48px',
+  background: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: 'radial-gradient(circle at center, #1e293b 0%, #020617 100%)',
+    zIndex: 0,
   },
-  logoIconContainer: {
-    width: '90px',
-    height: '90px',
-    borderRadius: '24px',
-    background: 'rgba(139, 92, 246, 0.1)',
-    border: '1px solid rgba(139, 92, 246, 0.2)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 0 30px rgba(139, 92, 246, 0.2)',
-    marginBottom: '20px',
-  },
-  logoIcon: {
-    width: '70px',
-    height: '70px',
-    objectFit: 'contain',
-    filter: 'drop-shadow(0 0 10px rgba(139, 92, 246, 0.5))',
-  },
-  brandTitle: {
-    fontSize: '2.5rem',
-    fontWeight: '900',
-    letterSpacing: '3px',
-    color: 'var(--color-text-main)',
-    textShadow: '0 0 15px rgba(255, 255, 255, 0.15)',
-    marginBottom: '8px',
-  },
-  brandSubtitle: {
-    fontSize: '1.1rem',
-    color: 'var(--color-text-muted)',
-    fontWeight: '500',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '24px',
-    width: '100%',
-    maxWidth: '800px',
+  contentWrapper: {
+    position: 'relative',
     zIndex: 10,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+    padding: '40px 20px',
+  },
+  cardsContainer: {
+    display: 'flex',
+    gap: '32px',
+    width: '100%',
+    maxWidth: '1200px',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+    marginBottom: '40px',
   },
   card: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    padding: '32px',
-    textAlign: 'left',
+    flex: 1,
+    maxWidth: '500px',
+    border: '4px solid',
+    borderRadius: '12px',
     cursor: 'pointer',
     position: 'relative',
-    minHeight: '260px',
-  },
-  iconWrapper: {
-    width: '60px',
-    height: '60px',
-    borderRadius: '16px',
+    overflow: 'hidden',
     display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+    padding: 0,
+    outline: 'none',
+  },
+  cardInner: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: '24px',
-    border: '1px solid',
+    padding: '40px',
+    position: 'relative',
+    zIndex: 2,
+  },
+  cardIcon: {
+    marginBottom: 'auto',
+    marginTop: 'auto',
+    filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.2))',
+  },
+  textContainer: {
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '20px',
   },
   cardTitle: {
+    fontSize: '4rem',
+    fontWeight: '900',
+    color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: '4px',
+    textAlign: 'center',
+    margin: 0,
+    textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+  },
+  playButtonWrapper: {
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+  },
+  playButton: {
+    padding: '16px 48px',
+    color: '#ffffff',
+    fontSize: '1.5rem',
+    fontWeight: '900',
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+    transition: 'transform 0.2s',
+  },
+  footer: {
     fontSize: '1.5rem',
     fontWeight: '800',
-    color: 'var(--color-text-main)',
-    marginBottom: '12px',
-  },
-  cardDesc: {
-    fontSize: '0.95rem',
-    color: 'var(--color-text-muted)',
-    lineHeight: '1.6',
-    flexGrow: 1,
-  },
-  actionText: {
-    marginTop: '24px',
-    fontWeight: '700',
-    fontSize: '1.05rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
+    color: '#ffffff',
+    letterSpacing: '3px',
+    textShadow: '0 2px 4px rgba(0,0,0,0.5)',
   },
   versionText: {
     position: 'absolute',
     bottom: '20px',
+    right: '20px',
     color: '#6b7280',
     fontSize: '0.85rem',
     fontWeight: '500',
     letterSpacing: '1px',
-  },
+    zIndex: 10,
+  }
 };

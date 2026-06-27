@@ -42,6 +42,12 @@ export default function StaffChat() {
     e.preventDefault();
     if (!inputText.trim() && !attachment) return;
     
+    const pchat = safePrivateChats.find(c => c.id === activeChannel);
+    if (pchat && pchat.isSuspended && !currentUser.isAdmin) {
+      alert("This chat is suspended by an administrator.");
+      return;
+    }
+    
     let replyData = null;
     if (replyingTo) {
       replyData = {
@@ -420,12 +426,12 @@ export default function StaffChat() {
                 type="text" 
                 value={inputText} 
                 onChange={e => setInputText(e.target.value)} 
-                placeholder={isUploading ? "Uploading attachment..." : `Message ${getChannelName()}`}
+                placeholder={isUploading ? "Uploading attachment..." : (safePrivateChats.find(c => c.id === activeChannel)?.isSuspended && !currentUser.isAdmin ? "Chat suspended..." : `Message ${getChannelName()}`)}
                 style={styles.input}
-                disabled={isUploading}
+                disabled={isUploading || (safePrivateChats.find(c => c.id === activeChannel)?.isSuspended && !currentUser.isAdmin)}
               />
             </div>
-            <button type="submit" className="btn-primary" style={styles.sendBtn} disabled={(!inputText.trim() && !attachment) || isUploading}>
+            <button type="submit" className="btn-primary" style={styles.sendBtn} disabled={(!inputText.trim() && !attachment) || isUploading || (safePrivateChats.find(c => c.id === activeChannel)?.isSuspended && !currentUser.isAdmin)}>
               <Send size={18} />
             </button>
           </form>

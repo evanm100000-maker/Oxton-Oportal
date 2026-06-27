@@ -488,6 +488,16 @@ export const AppProvider = ({ children }) => {
     prevDataRef.current.tickets = tickets;
   }, [tickets, currentUser]);
 
+  useEffect(() => {
+    if (currentUser?.isAdmin && auditLogs.length > 0) {
+      const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+      const hasOldLogs = auditLogs.some(log => new Date(log.timestamp).getTime() < threeDaysAgo);
+      if (hasOldLogs) {
+        setAuditLogs(current => current.filter(log => new Date(log.timestamp).getTime() >= threeDaysAgo));
+      }
+    }
+  }, [auditLogs, currentUser, setAuditLogs]);
+
   // Audit Log function
   const logAction = (type, description, details = {}) => {
     const newLog = {
@@ -1441,11 +1451,20 @@ useEffect(() => {
             participants: participantEmails,
             name: groupName,
             createdBy: currentUser.email,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            isSuspended: false
           };
           setPrivateChats(prev => [...prev, newChat]);
           logAction('create_private_chat', `Created a private chat`, { participants: participantEmails, name: groupName });
           return newChat.id;
+        },
+        deletePrivateChat: (chatId) => {
+          setPrivateChats(prev => prev.filter(c => c.id !== chatId));
+          logAction('delete_private_chat', `Deleted private chat`, { chatId });
+        },
+        toggleSuspendPrivateChat: (chatId) => {
+          setPrivateChats(prev => prev.map(c => c.id === chatId ? { ...c, isSuspended: !c.isSuspended } : c));
+          logAction('toggle_suspend_private_chat', `Toggled suspension for private chat`, { chatId });
         },
         applications,
         applicationConfig,
