@@ -11,7 +11,7 @@ export default function AllStaff() {
     staffNotes, 
     addStaffNote, 
     deleteStaffNote, 
-    awardSOTW,
+    awardMedal,
     infractions,
     loaRequests,
     reports
@@ -145,18 +145,31 @@ export default function AllStaff() {
                         <span style={{ color: '#b45309' }}>🥉 {selectedStaff.bronzeMedals || 0}</span>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => awardSOTW(selectedStaff.email)} 
-                      style={{
-                        ...styles.awardSotwBtn,
-                        opacity: selectedStaff.email === currentUser.email ? 0.5 : 1,
-                        cursor: selectedStaff.email === currentUser.email ? 'not-allowed' : 'pointer'
-                      }}
-                      disabled={selectedStaff.email === currentUser.email}
-                      title={selectedStaff.email === currentUser.email ? "You cannot award yourself Staff of the Week" : ""}
-                    >
-                      {selectedStaff.email === currentUser.email ? 'Cannot Award Self' : 'Award SOTW'}
-                    </button>
+                    { (currentUser.siteRole === 'Owner' || currentUser.email === 'evanm.100000@gmail.com') && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        <button 
+                          onClick={() => awardMedal(selectedStaff.email, 'gold')} 
+                          style={{...styles.awardSotwBtn, background: '#f59e0b', color: '#fff'}}
+                          disabled={selectedStaff.email === currentUser.email}
+                        >
+                          🥇 Gold
+                        </button>
+                        <button 
+                          onClick={() => awardMedal(selectedStaff.email, 'silver')} 
+                          style={{...styles.awardSotwBtn, background: '#9ca3af', color: '#fff'}}
+                          disabled={selectedStaff.email === currentUser.email}
+                        >
+                          🥈 Silver
+                        </button>
+                        <button 
+                          onClick={() => awardMedal(selectedStaff.email, 'bronze')} 
+                          style={{...styles.awardSotwBtn, background: '#b45309', color: '#fff'}}
+                          disabled={selectedStaff.email === currentUser.email}
+                        >
+                          🥉 Bronze
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div style={styles.notesSection}>

@@ -324,6 +324,7 @@ export const AppProvider = ({ children }) => {
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
   const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats, isLoggedIn, 50);
   const [informalSanctions, setInformalSanctions] = useFirebaseArray('informalSanctions', [], isLoggedIn, 50);
+  const [pointLogs, setPointLogs] = useFirebaseArray('pointLogs', [], isLoggedIn, 500);
   const [events, setEvents] = useFirebaseArray('events', initialEvents, true, 50);
   const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn, 50);
   const [applicationConfig, setApplicationConfig] = useFirebaseObject('applicationConfig', initialApplicationConfig);
@@ -331,6 +332,36 @@ export const AppProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
+  const [userNotifications, setUserNotifications] = useState([]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setUserNotifications([]);
+      return;
+    }
+    const db = getDatabase(firebaseApp);
+    const safeEmail = currentUser.email.replace(/\./g, ',');
+    const notifRef = query(ref(db, `userNotifications/${safeEmail}`), limitToLast(30));
+    
+    const unsub = onValue(notifRef, snap => {
+      const data = snap.val();
+      if (data) {
+        let arr = Object.keys(data).map(k => ({...data[k], _firebaseKey: k}));
+        arr.sort((a,b) => b.timestamp - a.timestamp);
+        setUserNotifications(arr);
+      } else {
+        setUserNotifications([]);
+      }
+    });
+    return unsub;
+  }, [currentUser]);
+
+  const clearUserNotifications = () => {
+    if (!currentUser) return;
+    const db = getDatabase(firebaseApp);
+    const safeEmail = currentUser.email.replace(/\./g, ',');
+    set(ref(db, `userNotifications/${safeEmail}`), null);
+  };
 
   const visibleChatMessages = useMemo(() => {
     if (!currentUser) return [];
@@ -388,10 +419,20 @@ export const AppProvider = ({ children }) => {
 
   const addNotification = (title, message, type = 'info') => {
     const id = makeId('notif');
-    setNotifications(prev => [...prev, { id, title, message, type, timestamp: Date.now() }]);
+    const newNotif = { id, title, message, type, timestamp: Date.now() };
+    
+    setNotifications(prev => [...prev, newNotif]);
     setTimeout(() => {
       removeNotification(id);
     }, 5000);
+    
+    if (currentUser) {
+       const db = getDatabase(firebaseApp);
+       const safeEmail = currentUser.email.replace(/\./g, ',');
+       const updates = {};
+       updates[id] = newNotif;
+       update(ref(db, `userNotifications/${safeEmail}`), updates).catch(err => console.error('Failed to save notification:', err));
+    }
   };
 
   const removeNotification = (id) => {
@@ -550,20 +591,7 @@ export const AppProvider = ({ children }) => {
   }, [applicationConfig, users, currentUser]);
 
   // Notifications Watchers
-  const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null, points: undefined });
-
-  useEffect(() => {
-    if (!currentUser) return;
-    const currentPoints = users.find(u => u.email === currentUser.email)?.points || 0;
-    if (prevDataRef.current.points !== undefined && prevDataRef.current.points !== currentPoints) {
-      if (currentPoints > prevDataRef.current.points) {
-         addNotification(`Points Earned!`, `You received ${currentPoints - prevDataRef.current.points} points.`, 'info');
-      } else {
-         addNotification(`Points Deducted`, `You lost ${prevDataRef.current.points - currentPoints} points.`, 'danger');
-      }
-    }
-    prevDataRef.current.points = currentPoints;
-  }, [users, currentUser]);
+  const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null });
 
   useEffect(() => {
     if (!currentUser) return;
@@ -622,17 +650,21 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     if (currentUser?.isAdmin && auditLogs.length > 0) {
       const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
-      const hasOldLogs = auditLogs.some(log => new Date(log.timestamp).getTime() < threeDaysAgo);
-      if (hasOldLogs) {
-        setAuditLogs(current => current.filter(log => new Date(log.timestamp).getTime() >= threeDaysAgo));
-      }
-    }
+}
   }, [auditLogs, currentUser, setAuditLogs]);
 
+  // Sync currentUser with users list
   useEffect(() => {
     if (currentUser && users && users.length > 0) {
       const dbUser = users.find(u => u.email === currentUser.email);
       if (dbUser && JSON.stringify(dbUser) !== JSON.stringify(currentUser)) {
+        if (currentUser.points !== undefined && dbUser.points !== currentUser.points) {
+            if (dbUser.points > currentUser.points) {
+                addNotification(`Points Earned!`, `You received ${dbUser.points - currentUser.points} points.`, 'info');
+            } else {
+                addNotification(`Points Deducted`, `You lost ${currentUser.points - dbUser.points} points.`, 'danger');
+            }
+        }
         setCurrentUser(dbUser);
       }
     }
@@ -650,6 +682,20 @@ export const AppProvider = ({ children }) => {
       timestamp: new Date().toISOString()
     };
     setAuditLogs(prev => [newLog, ...prev]);
+  };
+
+  const logPointsAction = (staffEmail, amountDelta, reason) => {
+    if (amountDelta === 0) return;
+    const adminEmail = currentUser?.email || 'System';
+    const newLog = {
+      id: makeId('ptlog'),
+      staffEmail,
+      amount: amountDelta,
+      reason,
+      adminEmail,
+      timestamp: new Date().toISOString()
+    };
+    setPointLogs(prev => [newLog, ...prev]);
   };
 
   // Auth Operations
@@ -726,6 +772,11 @@ export const AppProvider = ({ children }) => {
           points: (user.points || 0) + pointsToAdd 
         };
         setUsers(prev => prev.map(u => u.email === updatedUser.email ? updatedUser : u));
+        
+        if (pointsToAdd > 0) {
+          logPointsAction(user.email, pointsToAdd, 'Automated Streak/Bonus Reward');
+        }
+        
         setCurrentUser(updatedUser);
         resolve(updatedUser);
       }, 1200); 
@@ -856,6 +907,7 @@ export const AppProvider = ({ children }) => {
       }
       return u;
     }));
+    logPointsAction(email, amount, reason || 'Manual adjustment');
     logAction('points_added', `Added ${amount} points to ${email}`, { email, amount, reason });
   };
 
@@ -867,6 +919,7 @@ export const AppProvider = ({ children }) => {
 
     const suspendedUntil = new Date(Date.now() + hours * 3600000).toISOString();
     setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil, points: (u.points || 0) - 20 } : u));
+    logPointsAction(email, -20, 'Account Suspended');
     logAction('user_suspended', `Suspended ${email} for ${hours} hours. Reason: ${reason}`, { email, hours, reason, suspendedUntil });
     
     addInfraction({
@@ -892,6 +945,7 @@ export const AppProvider = ({ children }) => {
     };
     setInformalSanctions(prev => [newSanction, ...prev]);
     setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: (u.points || 0) - 2 } : u));
+    logPointsAction(staffEmail, -2, `Informal Sanction: ${reason}`);
     logAction('informal_sanction_added', `Issued informal sanction to ${staffEmail}`, { staffEmail, reason });
     return true;
   };
@@ -901,6 +955,7 @@ export const AppProvider = ({ children }) => {
     const isOnLoa = loaRequests.some(loa => loa.userEmail === staffEmail && loa.status === 'Approved');
     if (!isOnLoa) {
       setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: (u.points || 0) - 2 } : u));
+      logPointsAction(staffEmail, -2, 'Missed Flight');
       logAction('missed_flight_logged', `Logged missed flight for ${staffEmail}`, { staffEmail });
     }
   };
@@ -1113,10 +1168,12 @@ export const AppProvider = ({ children }) => {
       const copilotUser = users.find(u => u.robloxUsername === logToApprove.coPilot);
       
       if (pilotUser) {
-        setUsers(prev => prev.map(u => u.email === pilotUser.email ? { ...u, points: (u.points || 0) + 1 } : u));
+        setUsers(prev => prev.map(u => u.email === pilotUser.email ? { ...u, points: (u.points || 0) + 7 } : u));
+        logPointsAction(pilotUser.email, 7, `Flight Log Approved: ${logToApprove.flightCode}`);
       }
       if (copilotUser) {
-        setUsers(prev => prev.map(u => u.email === copilotUser.email ? { ...u, points: (u.points || 0) + 1 } : u));
+        setUsers(prev => prev.map(u => u.email === copilotUser.email ? { ...u, points: (u.points || 0) + 7 } : u));
+        logPointsAction(copilotUser.email, 7, `Flight Log Approved (Co-Pilot): ${logToApprove.flightCode}`);
       }
     }
   };
@@ -1204,6 +1261,7 @@ export const AppProvider = ({ children }) => {
     const rep = reports.find(r => r.id === reportId);
     if (rep && status === 'Actioned' && rep.status !== 'Actioned') {
        setUsers(prev => prev.map(u => u.email === rep.reporterEmail ? { ...u, points: (u.points || 0) + 2 } : u));
+       logPointsAction(rep.reporterEmail, 2, 'Report Actioned');
     }
     setReports(prev => prev.map(r => 
       r.id === reportId ? { ...r, status } : r
@@ -1244,22 +1302,24 @@ export const AppProvider = ({ children }) => {
       id: makeId('inf'),
       staffEmail,
       staffName: staffUser ? `${staffUser.firstName} ${staffUser.lastName}` : staffEmail,
-      type: infData.type,
+      type: infData.type || 'Warning',
       mainMessage,
       confidentialMessage: infData.confidentialMessage?.trim() || '',
-      adminEmail: currentUser?.email || 'System',
-      adminName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'System',
-      date: new Date().toISOString().split('T')[0]
+      issuedByEmail: currentUser.email,
+      issuedByName: `${currentUser.firstName} ${currentUser.lastName}`,
+      timestamp: new Date().toISOString()
     };
+    
     setInfractions(prev => [newInfraction, ...prev]);
     
     if (infData.type !== 'Suspension') {
       setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: (u.points || 0) - 10, lastInfractionDate: new Date().toISOString() } : u));
+      logPointsAction(staffEmail, -10, `Infraction: ${mainMessage}`);
     } else {
       setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, lastInfractionDate: new Date().toISOString() } : u));
     }
     
-    logAction('infraction_added', `Issued infraction to ${staffEmail}`, { staffEmail, type: infData.type });
+    logAction('infraction_added', `Issued ${infData.type || 'Warning'} to ${staffEmail}`, { staffEmail, mainMessage });
     return true;
   };
 
@@ -1307,8 +1367,6 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
       const newMessageRef = push(messagesRef);
       await set(newMessageRef, newMessage);
 
-      // LINE 1231 DELETED REMOVED FROM HERE 
-      // Your useEffect below will automatically handle showing it smoothly!
     } catch (error) {
       console.error("Error saving message to Firebase:", error);
     }
@@ -1561,17 +1619,18 @@ useEffect(() => {
     setStaffNotes(prev => prev.filter(n => n.id !== noteId));
   };
 
-  // --- Staff of the Week (SOTW) ---
-  const awardSOTW = (staffEmail) => {
-    if (staffEmail === currentUser.email) return; // Cannot award self
-    setUsers(prev => prev.map(u => 
-      u.email === staffEmail 
-        ? { ...u, sotwWins: (u.sotwWins || 0) + 1 } 
-        : u
-    ));
-    if (currentUser.email === staffEmail) {
-      setCurrentUser(prev => ({ ...prev, sotwWins: (prev.sotwWins || 0) + 1 }));
-    }
+  // --- Award Medals ---
+  const awardMedal = (staffEmail, medalType) => {
+    if (staffEmail === currentUser.email) return; 
+    setUsers(prev => prev.map(u => {
+      if (u.email === staffEmail) {
+        if (medalType === 'gold') return { ...u, goldMedals: (u.goldMedals || 0) + 1, sotwWins: (u.sotwWins || 0) + 1 };
+        if (medalType === 'silver') return { ...u, silverMedals: (u.silverMedals || 0) + 1 };
+        if (medalType === 'bronze') return { ...u, bronzeMedals: (u.bronzeMedals || 0) + 1 };
+      }
+      return u;
+    }));
+    logAction('medal_awarded', `Awarded ${medalType} medal to ${staffEmail}`, { staffEmail, medalType });
   };
 
   // --- Staff Applications Operations ---
@@ -1616,7 +1675,8 @@ useEffect(() => {
         tickets,
         staffNotes,
         onlineUsers,
-        siteVersion,
+        siteVersion, setSiteVersion,
+        pointLogs, setPointLogs,
         theme,
         warningConfig,
         maintenanceConfig,
@@ -1656,6 +1716,8 @@ useEffect(() => {
         notifications,
         addNotification,
         removeNotification,
+        userNotifications, 
+        clearUserNotifications,
         addDocument,
         deleteDocument,
         submitReport,
@@ -1672,7 +1734,7 @@ useEffect(() => {
         addTicketComment,
         addStaffNote,
         deleteStaffNote,
-        awardSOTW,
+        awardMedal,
         chatMessages: visibleChatMessages,
         addChatMessage,
         deleteChatMessage,

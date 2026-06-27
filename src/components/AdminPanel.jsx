@@ -54,7 +54,8 @@ export default function AdminPanel() {
     announcements = [],
     deleteAnnouncement,
     addInformalSanction,
-    logMissedFlight
+    logMissedFlight,
+    pointLogs
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
@@ -341,6 +342,9 @@ export default function AdminPanel() {
         </button>
         <button type="button" onClick={() => setActiveSubTab('audit')} style={getTabStyle(activeSubTab === 'audit')}>
           <Activity size={16} /> Audit Log
+        </button>
+        <button type="button" onClick={() => setActiveSubTab('pointLogs')} style={getTabStyle(activeSubTab === 'pointLogs')}>
+          <Award size={16} /> Point Logs
         </button>
       </div>
 
@@ -1010,6 +1014,47 @@ export default function AdminPanel() {
         </div>
       </div>
       
+      )}
+      
+      {/* Sub Tab: Point Logs */}
+      {activeSubTab === 'pointLogs' && (
+      <div id="section-pointlogs">
+        <div style={styles.panelSection}>
+          <div style={styles.sectionHeader}>
+            <h3 style={styles.panelTitle}><Award size={20} color="var(--color-primary)" /> Point Transaction Logs</h3>
+          </div>
+          <div style={styles.tableWrapper}>
+            <table style={styles.table}>
+              <thead>
+                <tr style={styles.trHead}>
+                  <th style={styles.th}>Date & Time</th>
+                  <th style={styles.th}>Staff Member</th>
+                  <th style={styles.th}>Amount</th>
+                  <th style={styles.th}>Reason</th>
+                  <th style={styles.th}>Issued By</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(!pointLogs || pointLogs.length === 0) ? (
+                  <tr><td colSpan="5" style={{...styles.td, textAlign: 'center', padding: '30px'}}>No point transactions found.</td></tr>
+                ) : pointLogs.map((log) => (
+                  <tr key={log.id} style={styles.trBody}>
+                    <td style={styles.td}>
+                      {new Date(log.timestamp).toLocaleString()}
+                    </td>
+                    <td style={styles.td}>{log.staffEmail}</td>
+                    <td style={{...styles.td, color: log.amount > 0 ? '#10b981' : '#ef4444', fontWeight: 'bold'}}>
+                      {log.amount > 0 ? `+${log.amount}` : log.amount}
+                    </td>
+                    <td style={styles.td}>{log.reason}</td>
+                    <td style={styles.td}>{log.adminEmail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
       )}
 
       {/* Audit Log Modal */}

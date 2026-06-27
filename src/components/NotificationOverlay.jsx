@@ -46,7 +46,7 @@ export default function NotificationOverlay() {
 const styles = {
   container: {
     position: 'fixed',
-    bottom: '24px',
+    top: '24px',
     right: '24px',
     zIndex: 9999,
     display: 'flex',

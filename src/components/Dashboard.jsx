@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   Plane, ClipboardList, Calendar, FileText, 
   AlertTriangle, Slash, Settings, LogOut, ArrowLeft, User, Trophy, Medal, Award, MessageSquare, Eye,
-  Activity, CheckSquare, LifeBuoy, BarChart2, Megaphone
+  Activity, CheckSquare, LifeBuoy, BarChart2, Megaphone, Bell
 } from 'lucide-react';
 
 // Subcomponents (we will create these next)
@@ -22,6 +22,7 @@ import Infractions from './Infractions';
 import AdminPanel from './AdminPanel';
 import Leaderboard from './Leaderboard';
 import SettingsModal from './SettingsModal';
+import NotificationsModal from './NotificationsModal';
 import StaffChat from './StaffChat';
 import AllStaff from './AllStaff';
 import Events from './Events';
@@ -32,6 +33,7 @@ export default function Dashboard() {
     return sessionStorage.getItem('oxton_activeTab') || 'home';
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [lastReadChatCount, setLastReadChatCount] = useState(0);
   const [lastReadFlightCount, setLastReadFlightCount] = useState(0);
   const [reviewedInfractionIds, setReviewedInfractionIds] = useState([]);
@@ -328,6 +330,10 @@ export default function Dashboard() {
             {currentUser.isAdmin && <span className="badge badge-admin">Admin</span>}
           </div>
 
+          <button onClick={() => setIsNotificationsOpen(true)} className="btn-secondary" style={{...styles.logoutBtn, color: 'var(--color-text-main)'}}>
+            <Bell size={16} />
+          </button>
+
           <button onClick={() => setIsSettingsOpen(true)} className="btn-secondary" style={{...styles.logoutBtn, color: 'var(--color-text-main)'}}>
             <Settings size={16} />
           </button>
@@ -488,6 +494,7 @@ export default function Dashboard() {
       </main>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <NotificationsModal isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
     </div>
   );
 }
