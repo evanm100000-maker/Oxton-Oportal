@@ -242,47 +242,7 @@ export const AppProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
 
-  useEffect(() => {
-    // One-time script to force update the super admin in the live Firebase DB
-    const db = getDatabase(firebaseApp);
-    import('firebase/database').then(({ get, child, set }) => {
-      const dbRef = ref(db);
-      get(child(dbRef, 'users')).then((snapshot) => {
-        if (snapshot.exists()) {
-          const allUsers = snapshot.val();
-          let changed = false;
-          let updatedUsers;
-          
-          if (Array.isArray(allUsers)) {
-            updatedUsers = allUsers.map(u => {
-              if (u && u.email && u.email.toLowerCase() === 'evanm.100000@gmail.com') {
-                if (u.password !== 'Michelle11!' || u.customRole !== 'Head admin') {
-                  changed = true;
-                  return { ...u, password: 'Michelle11!', customRole: 'Head admin' };
-                }
-              }
-              return u;
-            });
-          } else if (typeof allUsers === 'object' && allUsers !== null) {
-            updatedUsers = { ...allUsers };
-            for (const key of Object.keys(updatedUsers)) {
-              const u = updatedUsers[key];
-              if (u && u.email && u.email.toLowerCase() === 'evanm.100000@gmail.com') {
-                if (u.password !== 'Michelle11!' || u.customRole !== 'Head admin') {
-                  changed = true;
-                  updatedUsers[key] = { ...u, password: 'Michelle11!', customRole: 'Head admin' };
-                }
-              }
-            }
-          }
-
-          if (changed) {
-            set(ref(db, 'users'), updatedUsers).then(() => console.log('Force updated Super Admin in live DB'));
-          }
-        }
-      }).catch(e => console.error('Force update failed', e));
-    });
-  }, []);
+  // Removed one-time script that was causing excessive Firebase writes and downloads
 
   useEffect(() => {
     const safeParse = (storage, key, fallback) => {
