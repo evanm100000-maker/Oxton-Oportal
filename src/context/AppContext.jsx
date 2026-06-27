@@ -498,6 +498,15 @@ export const AppProvider = ({ children }) => {
     }
   }, [auditLogs, currentUser, setAuditLogs]);
 
+  useEffect(() => {
+    if (currentUser && users && users.length > 0) {
+      const dbUser = users.find(u => u.email === currentUser.email);
+      if (dbUser && JSON.stringify(dbUser) !== JSON.stringify(currentUser)) {
+        setCurrentUser(dbUser);
+      }
+    }
+  }, [users, currentUser]);
+
   // Audit Log function
   const logAction = (type, description, details = {}) => {
     const newLog = {

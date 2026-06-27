@@ -86,18 +86,18 @@ export default function PassengerPortal({ onBack }) {
                 <h2 style={styles.sectionTitle}>Upcoming Flights</h2>
               </div>
               <div>
-                {flights.filter(f => f.status === 'Scheduled').length === 0 ? (
+                {flights.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '32px 0', color: '#9ca3af' }}>No scheduled flights at this time.</div>
                 ) : (
-                  flights.filter(f => f.status === 'Scheduled').slice(0, 5).map(flight => (
+                  flights.slice(0, 5).map(flight => (
                     <div key={flight.id} style={styles.itemCard}>
                       <div>
-                        <div style={{ fontWeight: '600', color: '#fff' }}>{flight.destination}</div>
-                        <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{flight.hostName}</div>
+                        <div style={{ fontWeight: '600', color: '#fff' }}>Flight {flight.flightCode}</div>
+                        <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{flight.location}</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ color: '#60a5fa', fontWeight: '600' }}>{new Date(flight.departureTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{new Date(flight.departureTime).toLocaleDateString()}</div>
+                        <div style={{ color: '#60a5fa', fontWeight: '600' }}>{flight.time}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{flight.date}</div>
                       </div>
                     </div>
                   ))
