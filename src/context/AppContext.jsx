@@ -202,6 +202,8 @@ const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null)
           }
           if (Array.isArray(normalizedData)) {
             normalizedData = normalizedData.filter(item => item !== null && item !== undefined);
+          } else {
+            normalizedData = [];
           }
         }
         setLocalData(normalizedData);
@@ -323,11 +325,14 @@ export const AppProvider = ({ children }) => {
 
   const visibleChatMessages = React.useMemo(() => {
     if (!currentUser) return [];
-    return chatMessages.filter(m => {
+    const safeMessages = Array.isArray(chatMessages) ? chatMessages : [];
+    const safePrivateChats = Array.isArray(privateChats) ? privateChats : [];
+    
+    return safeMessages.filter(m => {
       if (m.channel === 'Staff Chat' || m.channel === 'Global') return true;
       if (m.channel === 'Security') return !!currentUser.isAdmin;
       
-      const pChat = privateChats.find(c => c.id === m.channel);
+      const pChat = safePrivateChats.find(c => c.id === m.channel);
       if (pChat) {
         if (currentUser.isAdmin) return true;
         return pChat.participants?.includes(currentUser.email);
@@ -494,7 +499,8 @@ export const AppProvider = ({ children }) => {
     if (prevDataRef.current.chatMessages && visibleChatMessages.length > prevDataRef.current.chatMessages.length) {
       const newMsg = visibleChatMessages.find(m => !prevDataRef.current.chatMessages.some(pm => pm.id === m.id));
       if (newMsg && newMsg.senderEmail !== currentUser.email) {
-        addNotification(`New message from ${newMsg.senderName}`, newMsg.text.length > 40 ? newMsg.text.substring(0, 40) + '...' : newMsg.text, 'info');
+        const text = newMsg.text || '';
+        addNotification(`New message from ${newMsg.senderName}`, text.length > 40 ? text.substring(0, 40) + '...' : text, 'info');
       }
     }
     prevDataRef.current.chatMessages = visibleChatMessages;
