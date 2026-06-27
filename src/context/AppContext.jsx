@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { db, storage, firebaseApp } from "../firebase"; 
-import { ref, onValue, set, runTransaction, push, get, remove, getDatabase, query, limitToLast } from "firebase/database";
+import { ref, onValue, set, runTransaction, push, get, remove, getDatabase, query, limitToLast, update, onDisconnect } from "firebase/database";
 
 const AppContext = createContext();
 
@@ -202,6 +202,7 @@ const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null)
           }
           if (Array.isArray(normalizedData)) {
             normalizedData = normalizedData.filter(item => item !== null && item !== undefined);
+            normalizedData.reverse(); // Ensure newest items are at the top
           } else {
             normalizedData = [];
           }
@@ -220,37 +221,35 @@ const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null)
       const nextArray = typeof updater === 'function' ? updater(currentArray) : updater;
       
       const db = getDatabase(firebaseApp);
-      import('firebase/database').then(({ update, ref }) => {
-        const updates = {};
+      const updates = {};
+      
+      // Find additions and modifications
+      nextArray.forEach(item => {
+        let fbKey = item._firebaseKey;
+        if (!fbKey) {
+          // New item! Use id, email, or a random string as the key
+          fbKey = item.id || (item.email ? item.email.replace(/\./g, ',') : Math.random().toString(36).substring(2, 10));
+          Object.defineProperty(item, '_firebaseKey', { value: fbKey, enumerable: false, writable: true });
+        }
         
-        // Find additions and modifications
-        nextArray.forEach(item => {
-          let fbKey = item._firebaseKey;
-          if (!fbKey) {
-            // New item! Use id, email, or a random string as the key
-            fbKey = item.id || (item.email ? item.email.replace(/\./g, ',') : Math.random().toString(36).substring(2, 10));
-            Object.defineProperty(item, '_firebaseKey', { value: fbKey, enumerable: false, writable: true });
-          }
-          
-          const currentItem = currentArray.find(i => i._firebaseKey === fbKey);
-          if (!currentItem || JSON.stringify(currentItem) !== JSON.stringify(item)) {
-            updates[fbKey] = item;
-          }
-        });
-        
-        // Find deletions
-        currentArray.forEach(item => {
-          const fbKey = item._firebaseKey;
-          const stillExists = nextArray.some(i => i._firebaseKey === fbKey);
-          if (!stillExists && fbKey) {
-            updates[fbKey] = null;
-          }
-        });
-        
-        if (Object.keys(updates).length > 0) {
-          update(ref(db, path), updates).catch(err => console.error('Firebase update error:', err));
+        const currentItem = currentArray.find(i => i._firebaseKey === fbKey);
+        if (!currentItem || JSON.stringify(currentItem) !== JSON.stringify(item)) {
+          updates[fbKey] = item;
         }
       });
+      
+      // Find deletions
+      currentArray.forEach(item => {
+        const fbKey = item._firebaseKey;
+        const stillExists = nextArray.some(i => i._firebaseKey === fbKey);
+        if (!stillExists && fbKey) {
+          updates[fbKey] = null;
+        }
+      });
+      
+      if (Object.keys(updates).length > 0) {
+        update(ref(db, path), updates).catch(err => console.error('Firebase update error:', err));
+      }
       
       return nextArray;
     });
@@ -280,9 +279,7 @@ const useFirebaseObject = (path, initialValue, enabled = true) => {
       const dataToUpdate = prev ? prev : initialValue;
       const nextData = typeof updater === 'function' ? updater(dataToUpdate) : updater;
       const db = getDatabase(firebaseApp);
-      import('firebase/database').then(({ set, ref }) => {
-        set(ref(db, path), nextData).catch(err => console.error('Firebase set error:', err));
-      });
+      set(ref(db, path), nextData).catch(err => console.error('Firebase set error:', err));
       return nextData;
     });
   };
@@ -467,12 +464,10 @@ export const AppProvider = ({ children }) => {
 
     const unsubConnected = onValue(connectedRef, (snap) => {
       if (snap.val() === true) {
-        import('firebase/database').then(({ onDisconnect, set }) => {
-           onDisconnectRef = onDisconnect(myPresenceRef);
-           onDisconnectRef.set(false).then(() => {
-             set(myPresenceRef, true);
-           });
-        });
+         onDisconnectRef = onDisconnect(myPresenceRef);
+         onDisconnectRef.set(false).then(() => {
+           set(myPresenceRef, true);
+         });
       }
     });
     return () => {
