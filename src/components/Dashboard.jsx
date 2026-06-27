@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { motion } from 'framer-motion';
 import { 
   Plane, ClipboardList, Calendar, FileText, 
-  AlertTriangle, Slash, Settings, LogOut, ArrowLeft, User, Trophy, MessageSquare, Eye,
+  AlertTriangle, Slash, Settings, LogOut, ArrowLeft, User, Trophy, Medal, Award, MessageSquare, Eye,
   Activity, CheckSquare, LifeBuoy, BarChart2, Megaphone
 } from 'lucide-react';
 
@@ -380,6 +380,15 @@ export default function Dashboard() {
               <p style={styles.greetingSub}>
                 Welcome back. Use the cards below to view, log, and request staff actions.
               </p>
+              
+              {(currentUser.goldMedals > 0 || currentUser.silverMedals > 0 || currentUser.bronzeMedals > 0) && (
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px', background: 'rgba(255,255,255,0.05)', padding: '10px 16px', borderRadius: '12px', width: 'fit-content', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', marginRight: '8px' }}>Star of the Week Medals:</div>
+                  {currentUser.goldMedals > 0 && <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}><Trophy size={16}/> {currentUser.goldMedals}</span>}
+                  {currentUser.silverMedals > 0 && <span style={{ color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}><Medal size={16}/> {currentUser.silverMedals}</span>}
+                  {currentUser.bronzeMedals > 0 && <span style={{ color: '#b45309', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}><Award size={16}/> {currentUser.bronzeMedals}</span>}
+                </div>
+              )}
             </motion.div>
 
             <motion.div 

@@ -55,7 +55,10 @@ export default function AllStaff() {
         {activeUsers.map(user => {
           const isOnline = user.email && onlineUsers[user.email.replace(/\./g, ',')];
           const badge = calculateBadge(user.email);
-          const sotwWins = user.sotwWins || 0;
+          const goldMedals = user.goldMedals || 0;
+          const silverMedals = user.silverMedals || 0;
+          const bronzeMedals = user.bronzeMedals || 0;
+          const hasMedals = goldMedals > 0 || silverMedals > 0 || bronzeMedals > 0;
           
           return (
             <div key={user.email} style={styles.card} className="glass-panel interactive-card">
@@ -85,8 +88,12 @@ export default function AllStaff() {
                     )}
                   </div>
                   <span style={styles.username}>@{user.robloxUsername}</span>
-                  {sotwWins > 0 && (
-                    <span style={styles.sotwWins}><Award size={12} /> SOTW Winner ({sotwWins}x)</span>
+                  {hasMedals && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                      {goldMedals > 0 && <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '2px' }}><Trophy size={12}/> {goldMedals}</span>}
+                      {silverMedals > 0 && <span style={{ color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '2px' }}><Medal size={12}/> {silverMedals}</span>}
+                      {bronzeMedals > 0 && <span style={{ color: '#b45309', display: 'flex', alignItems: 'center', gap: '2px' }}><Award size={12}/> {bronzeMedals}</span>}
+                    </div>
                   )}
                 </div>
               </div>
@@ -131,8 +138,12 @@ export default function AllStaff() {
                   <div style={styles.sotwAction}>
                     <div style={styles.sotwInfo}>
                       <Trophy size={20} color="#fbbf24" />
-                      <strong>Staff of the Week</strong>
-                      <span style={{color: '#9ca3af', fontSize: '0.9rem'}}>Current wins: {selectedStaff.sotwWins || 0}</span>
+                      <strong>Star of the Week Medals</strong>
+                      <div style={{color: '#9ca3af', fontSize: '0.9rem', display: 'flex', gap: '8px', marginTop: '4px'}}>
+                        <span style={{ color: '#f59e0b' }}>🥇 {selectedStaff.goldMedals || 0}</span>
+                        <span style={{ color: '#9ca3af' }}>🥈 {selectedStaff.silverMedals || 0}</span>
+                        <span style={{ color: '#b45309' }}>🥉 {selectedStaff.bronzeMedals || 0}</span>
+                      </div>
                     </div>
                     <button 
                       onClick={() => awardSOTW(selectedStaff.email)} 

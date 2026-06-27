@@ -109,6 +109,7 @@ const initialEvents = [];
 const initialApplications = [];
 const initialApplicationConfig = {
   isActive: true,
+  nextPointResetDate: null,
   questions: [
     { id: 'q1', text: 'Why do you want to join the staff team?', type: 'text' },
     { id: 'q2', text: 'Have you had prior experience?', type: 'multiple_choice', options: ['Yes', 'No'] }
@@ -496,6 +497,57 @@ export const AppProvider = ({ children }) => {
       document.body.classList.remove('light-mode');
     }
   }, [theme]);
+
+  // Weekly Points Reset Logic
+  useEffect(() => {
+    if (!currentUser || !users || !users.length || !applicationConfig) return;
+
+    const now = new Date();
+    
+    if (!applicationConfig.nextPointResetDate) {
+      const nextSunday = new Date();
+      nextSunday.setDate(nextSunday.getDate() + ((7 - nextSunday.getDay()) % 7 || 7));
+      nextSunday.setHours(0, 0, 0, 0);
+      setApplicationConfig({ ...applicationConfig, nextPointResetDate: nextSunday.toISOString() });
+      return;
+    }
+
+    const resetDate = new Date(applicationConfig.nextPointResetDate);
+    if (now >= resetDate) {
+      const nextSunday = new Date(resetDate);
+      nextSunday.setDate(nextSunday.getDate() + 7);
+      
+      const sortedUsers = [...users].filter(u => (u.points || 0) > 0).sort((a, b) => (b.points || 0) - (a.points || 0));
+      
+      if (sortedUsers.length > 0 && sortedUsers[0].points > 0) {
+        const newUsersList = users.map(u => {
+          let newUser = { ...u, points: 0 }; 
+          
+          const rank = sortedUsers.findIndex(su => su.email === u.email);
+          if (rank === 0) { newUser.sotwWins = (newUser.sotwWins || 0) + 1; newUser.goldMedals = (newUser.goldMedals || 0) + 1; }
+          else if (rank === 1) { newUser.silverMedals = (newUser.silverMedals || 0) + 1; }
+          else if (rank === 2) { newUser.bronzeMedals = (newUser.bronzeMedals || 0) + 1; }
+          
+          return newUser;
+        });
+        setUsers(newUsersList);
+        
+        const newAnnouncement = {
+          id: makeId('ann'),
+          title: 'Weekly Points Reset & Medals Awarded!',
+          content: `Congratulations to our top 3 staff this week!\n🥇 1st: ${sortedUsers[0] ? sortedUsers[0].firstName : 'N/A'}\n🥈 2nd: ${sortedUsers[1] ? sortedUsers[1].firstName : 'N/A'}\n🥉 3rd: ${sortedUsers[2] ? sortedUsers[2].firstName : 'N/A'}\n\nAll points have been reset for the new week.`,
+          author: 'System',
+          date: new Date().toISOString().split('T')[0],
+          isImportant: true
+        };
+        setAnnouncements(prev => [newAnnouncement, ...prev]);
+      } else {
+        setUsers(users.map(u => ({ ...u, points: 0 })));
+      }
+      
+      setApplicationConfig({ ...applicationConfig, nextPointResetDate: nextSunday.toISOString() });
+    }
+  }, [applicationConfig, users, currentUser]);
 
   // Notifications Watchers
   const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null, points: undefined });
