@@ -50,7 +50,9 @@ export default function AdminPanel() {
     addAnnouncement,
     setBypassAnnouncement,
     pageConfig,
-    updatePageConfig
+    updatePageConfig,
+    announcements = [],
+    deleteAnnouncement
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');

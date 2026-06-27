@@ -954,15 +954,22 @@ export const AppProvider = ({ children }) => {
       submitterName: `${currentUser.firstName} ${currentUser.lastName}`,
       timestamp: new Date().toISOString()
     };
+    
+    const db = getDatabase(firebaseApp);
+    const cleanLog = JSON.parse(JSON.stringify(newLog));
+    update(ref(db, `flightLogs`), { [cleanLog.id]: cleanLog }).catch(err => console.error('Failed to save flight log:', err));
+
     setFlightLogs(prev => [newLog, ...prev]);
     logAction('flight_log_submitted', `Submitted flight log for ${logData.flightCode}`, { flightCode: logData.flightCode });
   };
 
   const approveFlightLog = (logId) => {
     let logToApprove = null;
+    const db = getDatabase(firebaseApp);
     setFlightLogs(prev => prev.map(log => {
       if (log.id === logId) {
         logToApprove = log;
+        update(ref(db, `flightLogs/${logId}`), { status: 'Approved' }).catch(e => console.error(e));
         return { ...log, status: 'Approved' };
       }
       return log;
@@ -985,6 +992,8 @@ export const AppProvider = ({ children }) => {
   };
 
   const rejectFlightLog = (logId) => {
+    const db = getDatabase(firebaseApp);
+    update(ref(db, `flightLogs/${logId}`), { status: 'Rejected' }).catch(e => console.error(e));
     setFlightLogs(prev => prev.map(log => log.id === logId ? { ...log, status: 'Rejected' } : log));
     logAction('flight_log_rejected', `Rejected flight log ${logId}`);
   };
