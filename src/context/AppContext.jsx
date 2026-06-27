@@ -145,10 +145,14 @@ const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
 
 const makeId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
-const useFirebaseArray = (path, initialValue) => {
+const useFirebaseArray = (path, initialValue, enabled = true) => {
   const [localData, setLocalData] = useState(initialValue);
 
   useEffect(() => {
+    if (!enabled) {
+      setLocalData(initialValue);
+      return;
+    }
     const db = getDatabase(firebaseApp);
     const unsub = onValue(ref(db, path), snapshot => {
       const data = snapshot.val();
@@ -168,7 +172,7 @@ const useFirebaseArray = (path, initialValue) => {
       }
     });
     return unsub;
-  }, [path, initialValue]);
+  }, [path, initialValue, enabled]);
 
   const updateData = (updater) => {
     setLocalData(updater);
@@ -188,17 +192,21 @@ const useFirebaseArray = (path, initialValue) => {
   return [localData, updateData];
 };
 
-const useFirebaseObject = (path, initialValue) => {
+const useFirebaseObject = (path, initialValue, enabled = true) => {
   const [localData, setLocalData] = useState(initialValue);
   
   useEffect(() => {
+    if (!enabled) {
+      setLocalData(initialValue);
+      return;
+    }
     const db = getDatabase(firebaseApp);
     const unsub = onValue(ref(db, path), snapshot => {
       const data = snapshot.val();
       setLocalData(data ? data : initialValue);
     });
     return unsub;
-  }, [path, initialValue]);
+  }, [path, initialValue, enabled]);
 
   const updateData = (updater) => {
     setLocalData(updater);
@@ -213,30 +221,32 @@ const useFirebaseObject = (path, initialValue) => {
 };
 
 export const AppProvider = ({ children }) => {
-  const [users, setUsers] = useFirebaseArray('users', initialUsers);
-  const [flights, setFlights] = useFirebaseArray('flights', initialFlights);
-  const [flightLogs, setFlightLogs] = useFirebaseArray('flightLogs', initialFlightLogs);
-  const [loaRequests, setLoaRequests] = useFirebaseArray('loaRequests', initialLoaRequests);
-  const [documents, setDocuments] = useFirebaseArray('documents', initialDocuments);
-  const [reports, setReports] = useFirebaseArray('reports', initialReports);
-  const [infractions, setInfractions] = useFirebaseArray('infractions', initialInfractions);
-  const [tasks, setTasks] = useFirebaseArray('tasks', initialTasks);
-  const [tickets, setTickets] = useFirebaseArray('tickets', initialTickets);
-  const [staffNotes, setStaffNotes] = useFirebaseArray('staffNotes', initialStaffNotes);
   const [currentUser, setCurrentUser] = useState(null);
+  const isLoggedIn = !!currentUser;
+
+  const [users, setUsers] = useFirebaseArray('users', initialUsers);
+  const [flights, setFlights] = useFirebaseArray('flights', initialFlights, isLoggedIn);
+  const [flightLogs, setFlightLogs] = useFirebaseArray('flightLogs', initialFlightLogs, isLoggedIn);
+  const [loaRequests, setLoaRequests] = useFirebaseArray('loaRequests', initialLoaRequests, isLoggedIn);
+  const [documents, setDocuments] = useFirebaseArray('documents', initialDocuments, isLoggedIn);
+  const [reports, setReports] = useFirebaseArray('reports', initialReports, isLoggedIn);
+  const [infractions, setInfractions] = useFirebaseArray('infractions', initialInfractions, isLoggedIn);
+  const [tasks, setTasks] = useFirebaseArray('tasks', initialTasks, isLoggedIn);
+  const [tickets, setTickets] = useFirebaseArray('tickets', initialTickets, isLoggedIn);
+  const [staffNotes, setStaffNotes] = useFirebaseArray('staffNotes', initialStaffNotes, isLoggedIn);
 
   // New States
   const [theme, setTheme] = useState('dark');
   const [warningConfig, setWarningConfig] = useFirebaseObject('warningConfig', initialWarningConfig);
   const [maintenanceConfig, setMaintenanceConfig] = useFirebaseObject('maintenanceConfig', initialMaintenanceConfig);
-  const [auditLogs, setAuditLogs] = useFirebaseArray('auditLogs', EMPTY_ARRAY);
+  const [auditLogs, setAuditLogs] = useFirebaseArray('auditLogs', EMPTY_ARRAY, isLoggedIn);
   const [passwordResets, setPasswordResets] = useFirebaseArray('passwordResets', EMPTY_ARRAY);
-  const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', EMPTY_ARRAY);
-  const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements);
+  const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', EMPTY_ARRAY, isLoggedIn);
+  const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements, isLoggedIn);
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
-  const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats);
-  const [events, setEvents] = useFirebaseArray('events', initialEvents);
-  const [applications, setApplications] = useFirebaseArray('applications', initialApplications);
+  const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats, isLoggedIn);
+  const [events, setEvents] = useFirebaseArray('events', initialEvents, isLoggedIn);
+  const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn);
   const [applicationConfig, setApplicationConfig] = useFirebaseObject('applicationConfig', initialApplicationConfig);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
