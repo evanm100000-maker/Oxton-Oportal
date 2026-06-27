@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp, canTakeAction, getRankWeight } from '../context/AppContext';
 import { 
   UserCheck, Users, Plane, Calendar, 
   Plus, Check, X, ShieldAlert, Trash2, Settings, Activity, Key, Award, FileText, MessageSquare
@@ -68,6 +68,7 @@ export default function AdminPanel() {
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
   const [serverLink, setServerLink] = useState('');
+  const [host, setHost] = useState('');
 
   // Announcement states
   const [annType, setAnnType] = useState('Normal');
@@ -161,9 +162,9 @@ export default function AdminPanel() {
 
   const handleCreateFlight = (e) => {
     e.preventDefault();
-    if (!flightCode || !date || !time || !location || !serverLink) return;
-    addFlight({ flightCode, date, time, location, serverLink });
-    setFlightCode(''); setDate(''); setTime(''); setLocation(''); setServerLink('');
+    if (!flightCode || !date || !time || !location || !serverLink || !host) return;
+    addFlight({ flightCode, date, time, location, serverLink, host });
+    setFlightCode(''); setDate(''); setTime(''); setLocation(''); setServerLink(''); setHost('');
     displaySuccess(`Flight ${flightCode} successfully scheduled!`);
   };
 
@@ -529,14 +530,14 @@ export default function AdminPanel() {
                             }}
                             className="input-field"
                             style={{marginLeft: '10px', padding: '4px', fontSize: '0.85rem'}}
-                            disabled={!((currentUser?.siteRole === 'Admin' && (user.siteRole === 'Staff' || user.siteRole === 'Moderator')) || currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com')}
+                            disabled={!canTakeAction(currentUser, user)}
                           >
                             <option value="Staff">Staff</option>
                             <option value="Moderator">Moderator</option>
-                            {(currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com') && (
+                            {getRankWeight(currentUser) >= 60 && (
                               <option value="Admin">Admin</option>
                             )}
-                            {currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com' && (
+                            {getRankWeight(currentUser) >= 80 && (
                               <option value="Owner">Owner</option>
                             )}
                           </select>
@@ -605,17 +606,17 @@ export default function AdminPanel() {
                     </td>
                     <td style={styles.td}>
                       {isSuspended ? (
-                        <button type="button" disabled={user.email.toLowerCase() === 'evanm.100000@gmail.com' || (user.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com')} onClick={() => {unsuspendUser(user.email); displaySuccess('User unsuspended.');}} className="btn-success" style={{...styles.actionMiniBtn, opacity: (user.email.toLowerCase() === 'evanm.100000@gmail.com' || (user.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com')) ? 0.5 : 1}}>
+                        <button type="button" disabled={!canTakeAction(currentUser, user)} onClick={() => {unsuspendUser(user.email); displaySuccess('User unsuspended.');}} className="btn-success" style={{...styles.actionMiniBtn, opacity: (!canTakeAction(currentUser, user)) ? 0.5 : 1}}>
                           Unsuspend
                         </button>
                       ) : (
                         <div style={{display: 'flex', gap: '8px'}}>
-                          <button type="button" disabled={user.email.toLowerCase() === 'evanm.100000@gmail.com' || (user.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com')} onClick={() => setSuspendModalUser(user)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px', opacity: (user.email.toLowerCase() === 'evanm.100000@gmail.com' || (user.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com')) ? 0.5 : 1}}>Suspend User</button>
+                          <button type="button" disabled={!canTakeAction(currentUser, user)} onClick={() => setSuspendModalUser(user)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px', opacity: (!canTakeAction(currentUser, user)) ? 0.5 : 1}}>Suspend User</button>
                         </div>
                       )}
                     </td>
                     <td style={styles.td}>
-                      {user.email !== currentUser.email && (
+                      {user.email !== currentUser.email && canTakeAction(currentUser, user) && (
                         <button type="button" onClick={() => {removeUser(user.email); displaySuccess('Staff removed.');}} className="btn-danger" style={styles.actionMiniBtn}>
                           <Trash2 size={14} /> Remove
                         </button>
@@ -676,7 +677,18 @@ export default function AdminPanel() {
               <div style={styles.inputWrapper}><label style={styles.label}>Date *</label><input type="date" required value={date} onChange={e=>setDate(e.target.value)} className="input-field" /></div>
               <div style={styles.inputWrapper}><label style={styles.label}>Time (UTC) *</label><input type="time" required value={time} onChange={e=>setTime(e.target.value)} className="input-field" /></div>
             </div>
-            <div style={styles.inputWrapper}><label style={styles.label}>Roblox Server Direct Link *</label><input type="url" required value={serverLink} onChange={e=>setServerLink(e.target.value)} className="input-field" /></div>
+            <div style={styles.formRow}>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Host *</label>
+                <select required value={host} onChange={e=>setHost(e.target.value)} className="input-field">
+                  <option value="">Select Host...</option>
+                  {users.filter(u => u.approved).map(u => (
+                    <option key={u.email} value={u.email}>{u.firstName} {u.lastName} (@{u.robloxUsername})</option>
+                  ))}
+                </select>
+              </div>
+              <div style={styles.inputWrapper}><label style={styles.label}>Roblox Server Direct Link *</label><input type="url" required value={serverLink} onChange={e=>setServerLink(e.target.value)} className="input-field" /></div>
+            </div>
             <button type="submit" className="btn-primary" style={styles.submitBtn}><Plus size={16} /> Schedule Flight</button>
           </form>
         </div>

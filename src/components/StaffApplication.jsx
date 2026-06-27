@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 
 export default function StaffApplication({ onBack }) {
   const { applicationConfig, submitApplication } = useApp();
-  const [formData, setFormData] = useState({ applicantName: '', robloxUsername: '' });
+  const [formData, setFormData] = useState({ applicantName: '', robloxUsername: '', discordUsername: '', email: '' });
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
@@ -28,7 +28,7 @@ export default function StaffApplication({ onBack }) {
     e.preventDefault();
     
     // Ensure all required fields are filled
-    if (!formData.applicantName || !formData.robloxUsername) return;
+    if (!formData.applicantName || !formData.robloxUsername || !formData.discordUsername || !formData.email) return;
     
     const formattedAnswers = applicationConfig.questions.map(q => ({
       questionId: q.id,
@@ -39,6 +39,8 @@ export default function StaffApplication({ onBack }) {
     submitApplication({
       applicantName: formData.applicantName,
       robloxUsername: formData.robloxUsername,
+      discordUsername: formData.discordUsername,
+      email: formData.email,
       answers: formattedAnswers
     });
 
@@ -101,6 +103,28 @@ export default function StaffApplication({ onBack }) {
                   onChange={(e) => setFormData({...formData, robloxUsername: e.target.value})}
                   className="input-field"
                   placeholder="e.g. Builderman123"
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: '500', color: '#cbd5e1' }}>Discord Username</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.discordUsername}
+                  onChange={(e) => setFormData({...formData, discordUsername: e.target.value})}
+                  className="input-field"
+                  placeholder="e.g. pilot_john"
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: '500', color: '#cbd5e1' }}>Email Address</label>
+                <input 
+                  type="email" 
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="input-field"
+                  placeholder="e.g. john@example.com"
                 />
               </div>
             </div>

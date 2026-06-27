@@ -9,9 +9,12 @@ export default function FlightLogs() {
   const [successMsg, setSuccessMsg] = useState('');
 
   const [pilot, setPilot] = useState(currentUser.robloxUsername || '');
+  const [selectedFlightId, setSelectedFlightId] = useState('');
   const [notes, setNotes] = useState('');
   const [photoProof, setPhotoProof] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  const lockedFlights = flights.filter(f => f.locked);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -24,7 +27,10 @@ export default function FlightLogs() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!pilot.trim() || !photoProof) return;
+    if (!pilot.trim() || !photoProof || !selectedFlightId) return;
+
+    const flight = flights.find(f => f.id === selectedFlightId);
+    if (!flight) return;
 
     setIsUploading(true);
 
@@ -36,7 +42,8 @@ export default function FlightLogs() {
       }
 
       submitFlightLog({
-        flightCode: 'Flight Log',
+        flightId: flight.id,
+        flightCode: flight.flightCode,
         pilot: pilot.trim(),
         status: 'Completed',
         notes,
@@ -45,6 +52,7 @@ export default function FlightLogs() {
 
       // Reset Form
       setPilot(currentUser.robloxUsername || '');
+      setSelectedFlightId('');
       setNotes('');
       setPhotoProof(null);
       if (document.getElementById('photo-upload-input')) {
@@ -113,6 +121,23 @@ export default function FlightLogs() {
           <h3 style={styles.sectionTitle}>New Flight Operations Log</h3>
           
           <div style={styles.inputWrapper}>
+            <label style={styles.label}>Select Locked Flight *</label>
+            <select 
+              required 
+              value={selectedFlightId} 
+              onChange={(e) => setSelectedFlightId(e.target.value)} 
+              className="input-field"
+            >
+              <option value="">Select a flight...</option>
+              {lockedFlights.map(f => (
+                <option key={f.id} value={f.id}>
+                  {f.flightCode} - {f.date} {f.time} ({f.location})
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div style={styles.inputWrapper}>
             <label style={styles.label}>Roblox Username *</label>
             <div style={styles.iconInput}>
               <User size={16} style={styles.inputIcon} />
@@ -170,7 +195,105 @@ export default function FlightLogs() {
             </div>
           ) : (
             <div style={styles.logsList}>
-              {flightLogs.map((log) => (
+              {(() => {
+                const groupedLogs = {};
+                const unassignedLogs = [];
+
+                flightLogs.forEach(log => {
+                  if (log.flightId) {
+                    if (!groupedLogs[log.flightId]) groupedLogs[log.flightId] = [];
+                    groupedLogs[log.flightId].push(log);
+                  } else {
+                    unassignedLogs.push(log);
+                  }
+                });
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                    {Object.keys(groupedLogs).map(flightId => {
+                      const flight = flights.find(f => f.id === flightId);
+                      const group = groupedLogs[flightId];
+                      return (
+                        <div key={flightId} style={{ background: 'rgba(0,0,0,0.2)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                          {flight && (
+                            <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                              <h4 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '4px' }}>Flight: {flight.flightCode}</h4>
+                              <div style={{ display: 'flex', gap: '16px', fontSize: '0.9rem', color: '#9ca3af' }}>
+                                <span><Calendar size={12} style={{marginRight:'4px'}} />{flight.date}</span>
+                                <span><ClipboardList size={12} style={{marginRight:'4px'}} />{flight.time} UTC</span>
+                                {flight.host && <span><User size={12} style={{marginRight:'4px'}} />Host: {flight.host}</span>}
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {group.map(log => (
+                              <div key={log.id} style={styles.logCard} className="glass-panel">
+                                <div style={styles.logHeader}>
+                                  <div>
+                                    <span style={styles.logCode}>{log.flightCode}</span>
+                                    <span
+                                      className="badge"
+                                      style={{
+                                        marginLeft: '10px',
+                                        background: log.status === 'Completed' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                                        color: log.status === 'Completed' ? '#10b981' : '#ef4444',
+                                        border: log.status === 'Completed' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)'
+                                      }}
+                                    >
+                                      {log.status}
+                                    </span>
+                                  </div>
+                                  <span style={styles.logTime}>
+                                    <Calendar size={12} style={{ marginRight: '4px' }} />
+                                    {formatDate(log.timestamp)}
+                                  </span>
+                                </div>
+              
+                                <div style={styles.logRolesGrid}>
+                                  <div style={styles.roleBox}>
+                                    <span style={styles.roleLabel}>ROBLOX USERNAME</span>
+                                    <span style={styles.roleValue}>{log.pilot}</span>
+                                  </div>
+                                </div>
+              
+                                {log.photoProof && (
+                                  <div style={styles.logRolesGrid}>
+                                    <div style={styles.roleBox}>
+                                      <span style={styles.roleLabel}>PHOTO PROOF</span>
+                                      <div style={{ marginTop: '8px' }}>
+                                        <img src={log.photoProof} alt="Proof" style={{ maxHeight: '200px', borderRadius: '8px', objectFit: 'contain' }} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+              
+                                {log.notes && (
+                                  <div style={styles.logNotes}>
+                                    <Info size={14} color="#3b82f6" style={{ flexShrink: 0, marginTop: '2px' }} />
+                                    <p style={styles.notesText}>{log.notes}</p>
+                                  </div>
+                                )}
+              
+                                <div style={styles.logFooter}>
+                                  <span style={styles.submitterLabel}>
+                                    Logged by: <strong>{log.submitterName}</strong> ({log.submitterEmail})
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {unassignedLogs.length > 0 && (
+                      <div style={{ background: 'rgba(0,0,0,0.2)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                          <h4 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '4px' }}>Unassigned Logs</h4>
+                          <p style={{ fontSize: '0.9rem', color: '#9ca3af' }}>Logs submitted before flight grouping was enabled.</p>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          {unassignedLogs.map((log) => (
                 <div key={log.id} style={styles.logCard} className="glass-panel">
                   <div style={styles.logHeader}>
                     <div>
@@ -224,7 +347,13 @@ export default function FlightLogs() {
                     </span>
                   </div>
                 </div>
-              ))}
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>

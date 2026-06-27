@@ -170,6 +170,20 @@ const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
 
 const makeId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
+export const getRankWeight = (user) => {
+  if (!user) return 0;
+  if (user.email && user.email.toLowerCase() === 'evanm.100000@gmail.com') return 100;
+  if (user.siteRole === 'Owner') return 80;
+  if (user.siteRole === 'Admin') return 60;
+  if (user.siteRole === 'Moderator') return 40;
+  return 20;
+};
+
+export const canTakeAction = (issuer, target) => {
+  if (!issuer || !target) return false;
+  return getRankWeight(issuer) > getRankWeight(target);
+};
+
 const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null) => {
   const [localData, setLocalData] = useState(initialValue);
 
@@ -884,6 +898,9 @@ export const AppProvider = ({ children }) => {
   };
 
   const removeUser = (email) => {
+    const targetUser = users.find(u => u.email === email);
+    if (targetUser && !canTakeAction(currentUser, targetUser)) return;
+
     const safeEmail = escapeEmail(email);
     setUsers(prev => prev.filter(u => u.email !== email));
     setFlights(prev => prev.map(f => {
@@ -912,10 +929,8 @@ export const AppProvider = ({ children }) => {
   };
 
   const suspendUser = (email, hours, reason) => {
-    if (!currentUser.isAdmin) return;
-    if (email.toLowerCase() === 'evanm.100000@gmail.com') return; // Cannot suspend owner
     const targetUser = users.find(u => u.email === email);
-    if (targetUser?.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com') return; // Only owner can suspend admins
+    if (!canTakeAction(currentUser, targetUser)) return;
 
     const suspendedUntil = new Date(Date.now() + hours * 3600000).toISOString();
     setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil, points: (u.points || 0) - 20 } : u));
@@ -961,24 +976,20 @@ export const AppProvider = ({ children }) => {
   };
 
   const unsuspendUser = (email) => {
+    const targetUser = users.find(u => u.email === email);
+    if (!canTakeAction(currentUser, targetUser)) return;
     setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil: null } : u));
     logAction('user_unsuspended', `Unsuspended ${email}`, { email });
   };
 
   const changeSiteRole = (email, newRole) => {
-    // Determine current user's authority level
-    const isSuperAdmin = currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com';
-    const isOwner = isSuperAdmin || currentUser?.siteRole === 'Owner';
-    const isAdmin = currentUser?.siteRole === 'Admin';
-
-    if (!isOwner && !isAdmin) return; // Must be at least admin to change roles
-
-    // Enforce ranking limitations
-    if (isAdmin && !isOwner) {
-      if (newRole !== 'Staff' && newRole !== 'Moderator') return; // Admins can only grant up to Moderator
-    }
-    if (isOwner && !isSuperAdmin) {
-      if (newRole === 'Owner') return; // Only true superadmin can grant Owner
+    const targetUser = users.find(u => u.email === email);
+    if (!canTakeAction(currentUser, targetUser)) return;
+    
+    // Check if issuer has authority to grant the new role
+    const newRoleDummyUser = { siteRole: newRole };
+    if (!canTakeAction(currentUser, newRoleDummyUser) && getRankWeight(currentUser) <= getRankWeight(newRoleDummyUser)) {
+      return; 
     }
 
     // Apply role change
@@ -1037,6 +1048,8 @@ export const AppProvider = ({ children }) => {
       time: flightData.time,
       location: flightData.location,
       serverLink: flightData.serverLink,
+      host: flightData.host || '',
+      locked: false,
       allocatedStaff: []
     };
     setFlights(prev => [...prev, newFlight]);
@@ -1047,9 +1060,14 @@ export const AppProvider = ({ children }) => {
     setFlights(prev => prev.filter(f => f.id !== flightId));
   };
 
+  const toggleFlightLock = (flightId, locked) => {
+    setFlights(prev => prev.map(f => f.id === flightId ? { ...f, locked } : f));
+  };
+
   const toggleAllocation = (flightId, email) => {
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
+      if (f.locked) return f;
       const currentStaff = f.allocatedStaff || [];
       const isAllocated = currentStaff.includes(email);
       const newStaff = isAllocated
@@ -1063,6 +1081,7 @@ export const AppProvider = ({ children }) => {
     const safeEmail = escapeEmail(email);
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
+      if (f.locked) return f;
       const currentStatus = f.staffStatus || {};
       
       const migratedStatus = {};
@@ -1086,6 +1105,7 @@ export const AppProvider = ({ children }) => {
     const safeEmail = escapeEmail(email);
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
+      if (f.locked) return f;
       const currentStaff = f.allocatedStaff || [];
       const currentStatus = f.staffStatus || {};
       
@@ -1107,6 +1127,7 @@ export const AppProvider = ({ children }) => {
     const safeEmail = escapeEmail(email);
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
+      if (f.locked) return f;
       const currentStaff = f.allocatedStaff || [];
       const currentStatus = f.staffStatus || {};
       
@@ -1128,6 +1149,7 @@ export const AppProvider = ({ children }) => {
   const submitFlightLog = (logData) => {
     const newLog = {
       id: makeId('flight-log'),
+      flightId: logData.flightId,
       flightCode: logData.flightCode,
       pilot: logData.pilot,
       coPilot: logData.coPilot,
@@ -1292,11 +1314,8 @@ export const AppProvider = ({ children }) => {
     const staffUser = users.find(u => u.email === staffEmail);
     
     // Permission Checks
-    const isTargetAdminOrOwner = staffUser?.siteRole === 'Admin' || staffUser?.siteRole === 'Owner';
-    const isIssuerOwner = currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com';
-    
-    if (isTargetAdminOrOwner && !isIssuerOwner) {
-      return false; // Admins/Moderators cannot infract Admins/Owners
+    if (!canTakeAction(currentUser, staffUser)) {
+      return false; 
     }
     const newInfraction = {
       id: makeId('inf'),
@@ -1324,16 +1343,14 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteInfraction = (infId) => {
-    const isIssuerOwner = currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com';
-    if (!isIssuerOwner) return; // Only Owners can remove warnings
+    if (getRankWeight(currentUser) < 80) return; // Only Owners+ can remove warnings
 
     setInfractions(prev => prev.filter(i => i.id !== infId));
     logAction('infraction_deleted', `Removed infraction ${infId}`, { infId });
   };
 
   const deleteInformalSanction = (sancId) => {
-    const isIssuerOwner = currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com';
-    if (!isIssuerOwner) return; 
+    if (getRankWeight(currentUser) < 80) return; // Only Owners+ can remove sanctions
 
     const sanction = informalSanctions.find(s => s.id === sancId);
     if (!sanction) return;
@@ -1676,6 +1693,8 @@ useEffect(() => {
       id: makeId('app'),
       applicantName: appData.applicantName,
       robloxUsername: appData.robloxUsername,
+      discordUsername: appData.discordUsername || '',
+      email: appData.email || '',
       answers: appData.answers,
       status: 'Pending',
       timestamp: new Date().toISOString()
@@ -1740,6 +1759,7 @@ useEffect(() => {
         publishUpdate,
         addFlight,
         removeFlight,
+        toggleFlightLock,
         toggleAllocation,
         setAllocationStatus,
         allocateStaffDirectly,

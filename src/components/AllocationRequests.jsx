@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plane, Calendar, Clock, MapPin, ExternalLink, Users, UserPlus, UserMinus, Trash2 } from 'lucide-react';
+import { Plane, Calendar, Clock, MapPin, ExternalLink, Users, UserPlus, UserMinus, Trash2, Lock, Unlock } from 'lucide-react';
+import { getRankWeight } from '../context/AppContext';
 
 const escapeEmail = (email) => email ? email.replace(/\./g, ',') : '';
 const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
@@ -14,7 +15,8 @@ export default function AllocationRequests() {
     deallocateStaffDirectly,
     removeFlight,
     users,
-    activeUsers
+    activeUsers,
+    toggleFlightLock
   } = useApp();
 
   const [directAssignEmail, setDirectAssignEmail] = useState({});
@@ -102,18 +104,36 @@ export default function AllocationRequests() {
                     <span style={styles.locationBadge}>
                       <MapPin size={12} /> {flight.location}
                     </span>
+                    {flight.locked && (
+                      <span style={{...styles.locationBadge, background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)'}}>
+                        <Lock size={12} /> Locked
+                      </span>
+                    )}
                   </div>
-                  {currentUser.isAdmin && (
-                    <button
-                      type="button"
-                      onClick={() => removeFlight(flight.id)}
-                      className="btn-danger"
-                      style={styles.deleteBtn}
-                      title="Cancel Flight"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+                  <div style={{display: 'flex', gap: '8px'}}>
+                    {getRankWeight(currentUser) >= 60 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleFlightLock(flight.id, !flight.locked)}
+                        className={flight.locked ? "btn-secondary" : "btn-primary"}
+                        style={{...styles.deleteBtn, background: flight.locked ? 'rgba(255,255,255,0.1)' : 'rgba(239, 68, 68, 0.15)', color: flight.locked ? '#fff' : '#ef4444', borderColor: flight.locked ? 'rgba(255,255,255,0.2)' : 'rgba(239, 68, 68, 0.3)'}}
+                        title={flight.locked ? "Unlock Allocation" : "Lock Allocation"}
+                      >
+                        {flight.locked ? <Unlock size={16} /> : <Lock size={16} />}
+                      </button>
+                    )}
+                    {currentUser.isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => removeFlight(flight.id)}
+                        className="btn-danger"
+                        style={styles.deleteBtn}
+                        title="Cancel Flight"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div style={styles.detailsSection}>
@@ -153,7 +173,7 @@ export default function AllocationRequests() {
                               {attending.map((email) => (
                                 <div key={`att-${email}`} style={styles.crewBadge}>
                                   <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}</span>
-                                  {currentUser.isAdmin && (
+                                  {currentUser.isAdmin && !flight.locked && (
                                     <button
                                       type="button"
                                       onClick={() => deallocateStaffDirectly(flight.id, email)}
@@ -191,7 +211,7 @@ export default function AllocationRequests() {
 
                 <div style={styles.actionContainer}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1.3 }}>
-                    <div style={styles.statusButtonsContainer}>
+                    <div style={{...styles.statusButtonsContainer, opacity: flight.locked ? 0.5 : 1, pointerEvents: flight.locked ? 'none' : 'auto'}}>
                       <button
                         type="button"
                         onClick={() => setSelectedStatuses(prev => ({ ...prev, [flight.id]: 'Attending' }))}
@@ -231,7 +251,7 @@ export default function AllocationRequests() {
                     </div>
                     <button
                       type="button"
-                      disabled={!hasChanged}
+                      disabled={!hasChanged || flight.locked}
                       onClick={() => {
                         setAllocationStatus(flight.id, currentUser.email, currentSelected);
                         setSelectedStatuses(prev => {
@@ -264,7 +284,7 @@ export default function AllocationRequests() {
                   </a>
                 </div>
 
-                {currentUser.isAdmin && (
+                {currentUser.isAdmin && !flight.locked && (
                   <div style={styles.adminAssignPanel}>
                     <label style={styles.adminLabel}>Directly Assign Staff:</label>
                     <div style={styles.assignRow}>
