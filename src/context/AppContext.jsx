@@ -1331,6 +1331,43 @@ export const AppProvider = ({ children }) => {
     logAction('infraction_deleted', `Removed infraction ${infId}`, { infId });
   };
 
+  const deleteInformalSanction = (sancId) => {
+    const isIssuerOwner = currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com';
+    if (!isIssuerOwner) return; 
+
+    const sanction = informalSanctions.find(s => s.id === sancId);
+    if (!sanction) return;
+
+    setInformalSanctions(prev => prev.filter(s => s.id !== sancId));
+
+    // Check if points should be returned (same week)
+    let shouldReturnPoints = false;
+    if (applicationConfig && applicationConfig.nextPointResetDate) {
+      const nextReset = new Date(applicationConfig.nextPointResetDate);
+      const lastReset = new Date(nextReset);
+      lastReset.setDate(lastReset.getDate() - 7);
+      const sancDate = new Date(sanction.timestamp);
+      if (sancDate >= lastReset) {
+        shouldReturnPoints = true;
+      }
+    } else {
+      // Fallback: within last 7 days
+      const sancDate = new Date(sanction.timestamp);
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      if (sancDate >= sevenDaysAgo) {
+        shouldReturnPoints = true;
+      }
+    }
+
+    if (shouldReturnPoints) {
+      setUsers(prev => prev.map(u => u.email === sanction.staffEmail ? { ...u, points: (u.points || 0) + 2 } : u));
+      logPointsAction(sanction.staffEmail, 2, 'Informal Sanction Cancelled');
+    }
+
+    logAction('informal_sanction_deleted', `Removed informal sanction ${sancId}`, { sancId });
+  };
+
   const appealInfraction = (infId, appealText) => {
     setInfractions(prev => prev.map(inf => {
       if (inf.id !== infId) return inf;
@@ -1785,6 +1822,7 @@ useEffect(() => {
         applicationConfig,
         informalSanctions,
         addInformalSanction,
+        deleteInformalSanction,
         logMissedFlight,
         events,
         addEvent,

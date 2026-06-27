@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { ShieldAlert, History, Lock, Trash2, ShieldCheck } from 'lucide-react';
 
 export default function Infractions() {
-  const { infractions, deleteInfraction, appealInfraction, informalSanctions = [], currentUser } = useApp();
+  const { infractions, deleteInfraction, appealInfraction, informalSanctions = [], deleteInformalSanction, currentUser } = useApp();
   const [activeTab, setActiveTab] = useState('my');
   const [appealingId, setAppealingId] = useState(null);
   const [appealText, setAppealText] = useState('');
@@ -187,6 +187,20 @@ export default function Infractions() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <span style={styles.infDate}>{new Date(sanc.timestamp).toLocaleDateString()}</span>
+                      {(currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com') && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to remove this informal sanction?')) {
+                              deleteInformalSanction(sanc.id);
+                            }
+                          }}
+                          className="btn-danger"
+                          style={styles.deleteBtn}
+                          title="Remove Informal Sanction"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div style={styles.messageBox}>

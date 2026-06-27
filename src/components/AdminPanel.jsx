@@ -204,16 +204,26 @@ export default function AdminPanel() {
     e.preventDefault();
     if (!infStaffEmail || !infMainMessage.trim()) return;
 
-    const wasLogged = addInfraction({
-      staffEmail: infStaffEmail,
-      type: infType,
-      mainMessage: infMainMessage,
-      confidentialMessage: infConfidentialMessage
-    });
-
-    if (!wasLogged) {
-      alert('The infraction could not be logged. Please check the staff member and message.');
-      return;
+    if (infType === 'Informal Sanction') {
+      const wasLogged = addInformalSanction({
+        staffEmail: infStaffEmail,
+        reason: infMainMessage
+      });
+      if (!wasLogged) {
+        alert('The informal sanction could not be logged. Please check the staff member and message.');
+        return;
+      }
+    } else {
+      const wasLogged = addInfraction({
+        staffEmail: infStaffEmail,
+        type: infType,
+        mainMessage: infMainMessage,
+        confidentialMessage: infConfidentialMessage
+      });
+      if (!wasLogged) {
+        alert('The consequence could not be logged. Please check the staff member and message.');
+        return;
+      }
     }
 
     setInfStaffEmail('');
@@ -577,15 +587,6 @@ export default function AdminPanel() {
                           }
                         }} className="btn-secondary" style={{...styles.actionMiniBtn, width: '100%'}}>
                           Missed Flight
-                        </button>
-                        <button type="button" onClick={() => {
-                          const reason = window.prompt(`Enter reason for Informal Sanction for ${user.firstName}:`);
-                          if (reason) {
-                            addInformalSanction({ staffEmail: user.email, reason });
-                            displaySuccess('Informal Sanction added.');
-                          }
-                        }} className="btn-secondary" style={{...styles.actionMiniBtn, width: '100%', borderColor: 'var(--color-warning)', color: 'var(--color-warning)'}}>
-                          Informal Sanction
                         </button>
                       </div>
                     </td>
@@ -1122,6 +1123,7 @@ export default function AdminPanel() {
                 <label style={styles.label}>Action Level</label>
                 <select value={infType} onChange={e => setInfType(e.target.value)} className="input-field">
                   <option value="Warning">Official Warning</option>
+                  <option value="Informal Sanction">Informal Sanction</option>
                   <option value="Strike 1">Strike 1</option>
                   <option value="Strike 2">Strike 2</option>
                   <option value="Suspension">Suspension</option>
