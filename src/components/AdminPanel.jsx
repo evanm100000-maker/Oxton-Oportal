@@ -956,7 +956,7 @@ export default function AdminPanel() {
           </div>
         </div>
       </div>
-      </div>
+      
       )}
 
       {/* Audit Log Modal */}
