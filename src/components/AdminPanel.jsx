@@ -1127,7 +1127,7 @@ export default function AdminPanel() {
                   {approvedUsers.filter(user => user.email !== currentUser.email && (!user.isAdmin || currentUser.email === superAdminEmail)).map(user => (
                     <option key={user.email} value={user.email}>
                       {user.firstName} {user.lastName} (@{user.robloxUsername})
-                      {user.suspendedUntil ? ' - Suspended' : ''}
+                      {(user.suspendedUntil && new Date(user.suspendedUntil).getTime() > Date.now()) ? ' - Suspended' : ''}
                     </option>
                   ))}
                 </select>
