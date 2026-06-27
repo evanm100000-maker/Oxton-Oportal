@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { db, storage, firebaseApp } from "../firebase"; 
 import { ref, onValue, set, runTransaction, push, get, remove, getDatabase, query, limitToLast } from "firebase/database";
 
@@ -323,7 +323,7 @@ export const AppProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
 
-  const visibleChatMessages = React.useMemo(() => {
+  const visibleChatMessages = useMemo(() => {
     if (!currentUser) return [];
     const safeMessages = Array.isArray(chatMessages) ? chatMessages : [];
     const safePrivateChats = Array.isArray(privateChats) ? privateChats : [];
