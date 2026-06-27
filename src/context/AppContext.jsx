@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { db, storage, firebaseApp } from "../firebase"; 
-import { ref, onValue, set, runTransaction, push, get, remove, getDatabase } from "firebase/database";
+import { ref, onValue, set, runTransaction, push, get, remove, getDatabase, query, limitToLast } from "firebase/database";
 
 const AppContext = createContext();
 
@@ -113,6 +113,26 @@ const initialApplicationConfig = {
 
 const EMPTY_ARRAY = [];
 
+const initialPageConfig = {
+  staffChat: true,
+  announcements: true,
+  tickets: true,
+  allocation: true,
+  tasks: true,
+  reports: true,
+  documents: true,
+  loa: true,
+  analytics: true,
+  performance: true,
+  leaderboard: true,
+  adminPanel: true,
+  passengerPortal: true,
+  events: true,
+  logs: true,
+  infractions: true,
+  allStaff: true
+};
+
 const STORAGE_KEYS = {
   users: 'oxton_users',
   flights: 'oxton_flights',
@@ -145,7 +165,7 @@ const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
 
 const makeId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
-const useFirebaseArray = (path, initialValue, enabled = true) => {
+const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null) => {
   const [localData, setLocalData] = useState(initialValue);
 
   useEffect(() => {
@@ -154,7 +174,8 @@ const useFirebaseArray = (path, initialValue, enabled = true) => {
       return;
     }
     const db = getDatabase(firebaseApp);
-    const unsub = onValue(ref(db, path), snapshot => {
+    const dbRef = limitCount ? query(ref(db, path), limitToLast(limitCount)) : ref(db, path);
+    const unsub = onValue(dbRef, snapshot => {
       const data = snapshot.val();
       if (data) {
         let normalizedData = data;
@@ -225,29 +246,30 @@ export const AppProvider = ({ children }) => {
   const isLoggedIn = !!currentUser;
 
   const [users, setUsers] = useFirebaseArray('users', initialUsers);
-  const [flights, setFlights] = useFirebaseArray('flights', initialFlights, isLoggedIn);
-  const [flightLogs, setFlightLogs] = useFirebaseArray('flightLogs', initialFlightLogs, isLoggedIn);
-  const [loaRequests, setLoaRequests] = useFirebaseArray('loaRequests', initialLoaRequests, isLoggedIn);
-  const [documents, setDocuments] = useFirebaseArray('documents', initialDocuments, isLoggedIn);
-  const [reports, setReports] = useFirebaseArray('reports', initialReports, isLoggedIn);
-  const [infractions, setInfractions] = useFirebaseArray('infractions', initialInfractions, isLoggedIn);
-  const [tasks, setTasks] = useFirebaseArray('tasks', initialTasks, isLoggedIn);
-  const [tickets, setTickets] = useFirebaseArray('tickets', initialTickets, isLoggedIn);
-  const [staffNotes, setStaffNotes] = useFirebaseArray('staffNotes', initialStaffNotes, isLoggedIn);
+  const [flights, setFlights] = useFirebaseArray('flights', initialFlights, isLoggedIn, 100);
+  const [flightLogs, setFlightLogs] = useFirebaseArray('flightLogs', initialFlightLogs, isLoggedIn, 100);
+  const [loaRequests, setLoaRequests] = useFirebaseArray('loaRequests', initialLoaRequests, isLoggedIn, 50);
+  const [documents, setDocuments] = useFirebaseArray('documents', initialDocuments, isLoggedIn, 50);
+  const [reports, setReports] = useFirebaseArray('reports', initialReports, isLoggedIn, 50);
+  const [infractions, setInfractions] = useFirebaseArray('infractions', initialInfractions, isLoggedIn, 50);
+  const [tasks, setTasks] = useFirebaseArray('tasks', initialTasks, isLoggedIn, 50);
+  const [tickets, setTickets] = useFirebaseArray('tickets', initialTickets, isLoggedIn, 50);
+  const [staffNotes, setStaffNotes] = useFirebaseArray('staffNotes', initialStaffNotes, isLoggedIn, 50);
 
   // New States
   const [theme, setTheme] = useState('dark');
   const [warningConfig, setWarningConfig] = useFirebaseObject('warningConfig', initialWarningConfig);
   const [maintenanceConfig, setMaintenanceConfig] = useFirebaseObject('maintenanceConfig', initialMaintenanceConfig);
-  const [auditLogs, setAuditLogs] = useFirebaseArray('auditLogs', EMPTY_ARRAY, isLoggedIn);
+  const [auditLogs, setAuditLogs] = useFirebaseArray('auditLogs', EMPTY_ARRAY, isLoggedIn, 200);
   const [passwordResets, setPasswordResets] = useFirebaseArray('passwordResets', EMPTY_ARRAY);
-  const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', EMPTY_ARRAY, isLoggedIn);
-  const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements, isLoggedIn);
+  const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', EMPTY_ARRAY, isLoggedIn, 200);
+  const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements, isLoggedIn, 50);
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
-  const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats, isLoggedIn);
-  const [events, setEvents] = useFirebaseArray('events', initialEvents, isLoggedIn);
-  const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn);
+  const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats, isLoggedIn, 50);
+  const [events, setEvents] = useFirebaseArray('events', initialEvents, isLoggedIn, 50);
+  const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn, 50);
   const [applicationConfig, setApplicationConfig] = useFirebaseObject('applicationConfig', initialApplicationConfig);
+  const [pageConfig, setPageConfig] = useFirebaseObject('pageConfig', initialPageConfig);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
@@ -1457,6 +1479,11 @@ useEffect(() => {
         updateApplicationConfig,
         updateApplicationStatus,
         superAdminEmail: SUPER_ADMIN_EMAIL,
+        pageConfig,
+        updatePageConfig: (key, value) => {
+          setPageConfig(prev => ({ ...prev, [key]: value }));
+          logAction('page_config_updated', `Updated page config: ${key} to ${value}`);
+        },
       }}
     >
       {children}

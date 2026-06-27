@@ -48,9 +48,10 @@ export default function AdminPanel() {
     events,
     addEvent,
     deleteEvent,
-    announcements,
     addAnnouncement,
-    setBypassAnnouncement
+    setBypassAnnouncement,
+    pageConfig,
+    updatePageConfig
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
@@ -335,9 +336,9 @@ export default function AdminPanel() {
         <button type="button" onClick={() => setActiveSubTab('applications')} style={getTabStyle(activeSubTab === 'applications')}>
           <FileText size={16} /> Applications ({pendingApplications.length})
         </button>
-        {isSuperAdmin && (<button type="button" onClick={() => setActiveSubTab('audit')} style={getTabStyle(activeSubTab === 'audit')}>
+        <button type="button" onClick={() => setActiveSubTab('audit')} style={getTabStyle(activeSubTab === 'audit')}>
           <Activity size={16} /> Audit Log
-        </button>)}
+        </button>
       </div>
 
       <div style={styles.mainContent}>
@@ -907,6 +908,28 @@ export default function AdminPanel() {
               </div>
             </div>
 
+            <div style={{ padding: '20px', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)', marginTop: '8px' }}>
+              <h4 style={{ color: '#60a5fa', marginBottom: '8px' }}>Page Access Toggles</h4>
+              <p style={{fontSize: '0.85rem', color: '#94a3b8', marginBottom: '20px'}}>Enable or disable specific pages. Disabled pages will show a "Temporarily unavailable" screen.</p>
+              
+              <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px'}}>
+                {Object.keys(pageConfig || {}).map(key => (
+                  <div key={key} style={{display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)'}}>
+                    <input 
+                      type="checkbox" 
+                      id={`toggle-${key}`}
+                      checked={pageConfig[key]}
+                      onChange={(e) => updatePageConfig(key, e.target.checked)}
+                      style={{width: '18px', height: '18px'}}
+                    />
+                    <label htmlFor={`toggle-${key}`} style={{fontSize: '0.9rem', color: 'var(--color-text-main)', textTransform: 'capitalize', cursor: 'pointer', flex: 1}}>
+                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <button type="submit" className="btn-primary" style={styles.submitBtn}>Save System Status Settings</button>
           </form>
         </div>
@@ -1338,17 +1361,18 @@ export default function AdminPanel() {
 }
 
 const getTabStyle = (isActive) => ({
-  display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px',
-  borderRadius: '8px', border: 'none', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer',
-  background: isActive ? '#2563eb' : 'transparent',
-  color: isActive ? 'var(--color-text-main)' : '#9ca3af',
+  display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 20px',
+  borderRadius: '12px', border: '1px solid ' + (isActive ? 'rgba(59, 130, 246, 0.5)' : 'transparent'),
+  fontSize: '0.9rem', fontWeight: isActive ? '700' : '500', cursor: 'pointer',
+  background: isActive ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+  color: isActive ? '#60a5fa' : '#94a3b8',
   transition: 'all 0.2s ease',
   whiteSpace: 'nowrap'
 });
 
 const styles = {
   layoutContainer: { display: 'flex', gap: '32px', alignItems: 'flex-start', paddingBottom: '40px' },
-  sidebar: { width: '220px', position: 'sticky', top: '24px', display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, height: 'max-content', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto' },
+  sidebar: { width: '260px', position: 'sticky', top: '24px', display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0, height: 'max-content', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto', background: 'rgba(30, 41, 59, 0.5)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' },
   mainContent: { flex: 1, display: 'flex', flexDirection: 'column', gap: '64px', minWidth: 0, paddingBottom: '30vh' },
   subTabContainer: { display: 'flex', gap: '8px', flexWrap: 'wrap', background: 'rgba(0,0,0,0.15)', padding: '6px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)', overflowX: 'auto' },
   successAlert: { background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '12px 16px', fontSize: '0.9rem', color: '#a7f3d0' },

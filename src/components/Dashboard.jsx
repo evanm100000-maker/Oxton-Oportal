@@ -27,13 +27,12 @@ import AllStaff from './AllStaff';
 import Events from './Events';
 
 export default function Dashboard() {
-  const { currentUser, logout, chatMessages, infractions } = useApp();
+  const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail } = useApp();
   const [activeTab, setActiveTab] = useState(() => {
     return sessionStorage.getItem('oxton_activeTab') || 'home';
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [lastReadChatCount, setLastReadChatCount] = useState(0);
-  const { flights } = useApp();
   const [lastReadFlightCount, setLastReadFlightCount] = useState(0);
   const [reviewedInfractionIds, setReviewedInfractionIds] = useState([]);
 
@@ -269,10 +268,28 @@ export default function Dashboard() {
 
   const renderActiveComponent = () => {
     if (activeTab === 'admin') {
+      if (pageConfig && !pageConfig.adminPanel && currentUser?.email !== superAdminEmail) {
+        return (
+          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', textAlign: 'center'}}>
+            <Slash size={48} color="#ef4444" style={{marginBottom: '20px'}} />
+            <h2 style={{color: '#fff', fontSize: '1.5rem', marginBottom: '10px'}}>Temporarily Unavailable</h2>
+            <p style={{color: '#94a3b8'}}>This page has been temporarily disabled by the administration.</p>
+          </div>
+        );
+      }
       return <AdminPanel />;
     }
     const item = navItems.find(i => i.id === activeTab);
     if (item) {
+      if (pageConfig && pageConfig[item.id] === false) {
+        return (
+          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', textAlign: 'center'}}>
+            <Slash size={48} color="#ef4444" style={{marginBottom: '20px'}} />
+            <h2 style={{color: '#fff', fontSize: '1.5rem', marginBottom: '10px'}}>Temporarily Unavailable</h2>
+            <p style={{color: '#94a3b8'}}>This page has been temporarily disabled by the administration.</p>
+          </div>
+        );
+      }
       const Component = item.component;
       return <Component />;
     }

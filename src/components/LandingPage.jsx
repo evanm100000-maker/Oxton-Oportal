@@ -1,47 +1,76 @@
 import React, { useState } from 'react';
-import { Plane, Users } from 'lucide-react';
+import { Plane, Users, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useApp } from '../context/AppContext';
 
 export default function LandingPage({ onSelectPortal }) {
   const [selectedCard, setSelectedCard] = useState(null);
+  const { pageConfig } = useApp();
 
   const handleSelect = (portal) => {
+    if (portal === 'passenger' && pageConfig && !pageConfig.passengerPortal) {
+      return; // disabled
+    }
     setSelectedCard(portal);
     setTimeout(() => {
       onSelectPortal(portal);
     }, 700);
   };
 
+  const passengerDisabled = pageConfig && !pageConfig.passengerPortal;
+
   return (
     <div style={styles.container}>
       {/* Background layer */}
       <div style={styles.background} />
+      <div style={styles.gridOverlay} />
 
       <div style={styles.contentWrapper}>
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: selectedCard ? 0 : 1, y: selectedCard ? -30 : 0 }}
+          transition={{ duration: 0.4 }}
+          style={styles.header}
+        >
+          <div style={styles.logoContainer}>
+            <img src="/logo.png" alt="Oxton Logo" style={styles.logoIcon} />
+          </div>
+          <h1 style={styles.title}>OXTON</h1>
+          <p style={styles.subtitle}>Select your portal</p>
+        </motion.div>
+
         <div style={styles.cardsContainer}>
           {/* Passenger Card */}
           <motion.button
             layout
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={
               selectedCard === 'passenger' 
-                ? { scale: 1.1, opacity: 0, y: -20, zIndex: 100 } 
+                ? { scale: 1.05, opacity: 0, y: -20, zIndex: 100 } 
                 : selectedCard 
-                  ? { opacity: 0, scale: 0.95, y: 20 } 
-                  : { opacity: 1, y: 0, scale: 1 }
+                  ? { opacity: 0, scale: 0.95, y: 10 } 
+                  : { opacity: passengerDisabled ? 0.5 : 1, y: 0, scale: 1 }
             }
-            whileHover={selectedCard ? {} : { scale: 1.03 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            whileHover={selectedCard || passengerDisabled ? {} : { scale: 1.02, y: -5 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
             onClick={() => handleSelect('passenger')}
-            style={{...styles.card, background: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.5)'}}
+            style={{
+              ...styles.card, 
+              background: passengerDisabled ? 'rgba(30, 41, 59, 0.4)' : 'rgba(59, 130, 246, 0.08)', 
+              borderColor: passengerDisabled ? 'rgba(255,255,255,0.05)' : 'rgba(59, 130, 246, 0.3)',
+              cursor: passengerDisabled ? 'not-allowed' : 'pointer'
+            }}
+            disabled={passengerDisabled}
           >
             <div style={styles.cardInner}>
-              <Users size={64} color="#60a5fa" style={styles.cardIcon} />
+              <div style={{...styles.iconWrapper, background: passengerDisabled ? 'rgba(255,255,255,0.05)' : 'rgba(59, 130, 246, 0.15)'}}>
+                {passengerDisabled ? <Lock size={32} color="#94a3b8" /> : <Users size={32} color="#60a5fa" />}
+              </div>
               <div style={styles.textContainer}>
-                <h2 style={styles.cardTitle}>PASSENGER</h2>
-                <div style={styles.playButtonWrapper}>
-                  <div style={{...styles.playButton, background: '#60a5fa'}}>ENTER</div>
-                </div>
+                <h2 style={{...styles.cardTitle, color: passengerDisabled ? '#94a3b8' : '#ffffff'}}>Passenger</h2>
+                <p style={styles.cardDesc}>
+                  {passengerDisabled ? 'Temporarily Unavailable' : 'Access your boarding passes and flights'}
+                </p>
               </div>
             </div>
           </motion.button>
@@ -49,39 +78,34 @@ export default function LandingPage({ onSelectPortal }) {
           {/* Staff Card */}
           <motion.button
             layout
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={
               selectedCard === 'staff' 
-                ? { scale: 1.1, opacity: 0, y: -20, zIndex: 100 } 
+                ? { scale: 1.05, opacity: 0, y: -20, zIndex: 100 } 
                 : selectedCard 
-                  ? { opacity: 0, scale: 0.95, y: 20 } 
+                  ? { opacity: 0, scale: 0.95, y: 10 } 
                   : { opacity: 1, y: 0, scale: 1 }
             }
-            whileHover={selectedCard ? {} : { scale: 1.03 }}
-            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            whileHover={selectedCard ? {} : { scale: 1.02, y: -5 }}
+            transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }}
             onClick={() => handleSelect('staff')}
-            style={{...styles.card, background: 'rgba(139, 92, 246, 0.15)', borderColor: 'rgba(139, 92, 246, 0.5)'}}
+            style={{
+              ...styles.card, 
+              background: 'rgba(139, 92, 246, 0.08)', 
+              borderColor: 'rgba(139, 92, 246, 0.3)'
+            }}
           >
             <div style={styles.cardInner}>
-              <Plane size={64} color="#c084fc" style={styles.cardIcon} />
+              <div style={{...styles.iconWrapper, background: 'rgba(139, 92, 246, 0.15)'}}>
+                <Plane size={32} color="#c084fc" />
+              </div>
               <div style={styles.textContainer}>
-                <h2 style={styles.cardTitle}>STAFF</h2>
-                <div style={styles.playButtonWrapper}>
-                  <div style={{...styles.playButton, background: '#c084fc'}}>LOGIN</div>
-                </div>
+                <h2 style={styles.cardTitle}>Staff Portal</h2>
+                <p style={styles.cardDesc}>Manage flights, tickets, and administration</p>
               </div>
             </div>
           </motion.button>
         </div>
-
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: selectedCard ? 0 : 1 }}
-          transition={{ duration: 0.3 }}
-          style={styles.footer}
-        >
-          SELECT YOUR DESTINATION
-        </motion.div>
       </div>
 
       <div style={styles.versionText}>V1.1</div>
@@ -96,16 +120,25 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100vh',
+    minHeight: '100vh',
     width: '100vw',
     overflow: 'hidden',
-    background: '#0f172a',
+    background: '#020617',
+    fontFamily: "'Inter', sans-serif",
   },
   background: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
     background: 'radial-gradient(circle at center, #1e293b 0%, #020617 100%)',
     zIndex: 0,
+  },
+  gridOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundImage: `linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)`,
+    backgroundSize: '30px 30px',
+    zIndex: 1,
+    opacity: 0.5
   },
   contentWrapper: {
     position: 'relative',
@@ -114,94 +147,106 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     width: '100%',
-    height: '100%',
+    maxWidth: '900px',
     padding: '40px 20px',
   },
-  cardsContainer: {
+  header: {
     display: 'flex',
-    gap: '32px',
-    width: '100%',
-    maxWidth: '1200px',
-    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    marginBottom: '60px',
+  },
+  logoContainer: {
+    width: '70px',
+    height: '70px',
+    borderRadius: '20px',
+    background: 'rgba(255,255,255,0.03)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    display: 'flex',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'stretch',
-    marginBottom: '40px',
+    marginBottom: '20px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+    backdropFilter: 'blur(10px)',
+  },
+  logoIcon: {
+    width: '45px',
+    height: '45px',
+    objectFit: 'contain',
+  },
+  title: {
+    fontSize: '2rem',
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: '6px',
+    margin: '0 0 8px 0',
+  },
+  subtitle: {
+    fontSize: '0.95rem',
+    color: '#94a3b8',
+    margin: 0,
+    letterSpacing: '1px',
+    fontWeight: '400',
+  },
+  cardsContainer: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '24px',
+    width: '100%',
   },
   card: {
-    flex: 1,
-    maxWidth: '500px',
-    border: '4px solid',
-    borderRadius: '12px',
-    cursor: 'pointer',
+    border: '1px solid',
+    borderRadius: '16px',
     position: 'relative',
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+    boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
     padding: 0,
     outline: 'none',
+    backdropFilter: 'blur(10px)',
   },
   cardInner: {
-    flex: 1,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: '40px',
-    position: 'relative',
-    zIndex: 2,
+    padding: '40px 24px',
+    textAlign: 'center',
   },
-  cardIcon: {
-    marginBottom: 'auto',
-    marginTop: 'auto',
-    filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.2))',
+  iconWrapper: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '24px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
   },
   textContainer: {
-    width: '100%',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: '20px',
+    gap: '8px',
   },
   cardTitle: {
-    fontSize: '4rem',
-    fontWeight: '900',
+    fontSize: '1.4rem',
+    fontWeight: '600',
     color: '#ffffff',
-    textTransform: 'uppercase',
-    letterSpacing: '4px',
-    textAlign: 'center',
     margin: 0,
-    textShadow: '0 4px 12px rgba(0,0,0,0.5)',
+    letterSpacing: '0.5px',
   },
-  playButtonWrapper: {
-    width: '100%',
-    display: 'flex',
-    justifyContent: 'center',
-  },
-  playButton: {
-    padding: '16px 48px',
-    color: '#ffffff',
-    fontSize: '1.5rem',
-    fontWeight: '900',
-    letterSpacing: '2px',
-    textTransform: 'uppercase',
-    clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
-    transition: 'transform 0.2s',
-  },
-  footer: {
-    fontSize: '1.5rem',
-    fontWeight: '800',
-    color: '#ffffff',
-    letterSpacing: '3px',
-    textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+  cardDesc: {
+    fontSize: '0.9rem',
+    color: '#94a3b8',
+    margin: 0,
+    lineHeight: '1.5',
   },
   versionText: {
     position: 'absolute',
-    bottom: '20px',
-    right: '20px',
-    color: '#6b7280',
-    fontSize: '0.85rem',
+    bottom: '24px',
+    color: '#475569',
+    fontSize: '0.8rem',
     fontWeight: '500',
     letterSpacing: '1px',
     zIndex: 10,
