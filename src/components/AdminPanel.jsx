@@ -289,22 +289,8 @@ export default function AdminPanel() {
 
 
   useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const id = entry.target.id.replace('section-', '');
-          setActiveSubTab(id);
-        }
-      });
-    }, { rootMargin: '-20% 0px -70% 0px' });
-
-    ['approvals', 'roles', 'staff', 'infractions', 'flights', 'flight_logs', 'loas', 'passwords', 'status', 'audit'].forEach(tab => {
-      const el = document.getElementById('section-' + tab);
-      if (el) observer.observe(el);
-    });
-
-    return () => observer.disconnect();
-  }, []);
+    window.scrollTo(0, 0);
+  }, [activeSubTab]);
 
   return (
     <div className="admin-layout" style={styles.layoutContainer}>

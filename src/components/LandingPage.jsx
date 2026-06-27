@@ -25,13 +25,13 @@ export default function LandingPage({ onSelectPortal }) {
             initial={{ opacity: 0, y: 50 }}
             animate={
               selectedCard === 'passenger' 
-                ? { scale: 50, zIndex: 100, opacity: 0 } 
+                ? { scale: 1.1, opacity: 0, y: -20, zIndex: 100 } 
                 : selectedCard 
-                  ? { opacity: 0, scale: 0.8 } 
+                  ? { opacity: 0, scale: 0.95, y: 20 } 
                   : { opacity: 1, y: 0, scale: 1 }
             }
             whileHover={selectedCard ? {} : { scale: 1.03 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
             onClick={() => handleSelect('passenger')}
             style={{...styles.card, background: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.5)'}}
           >
@@ -52,13 +52,13 @@ export default function LandingPage({ onSelectPortal }) {
             initial={{ opacity: 0, y: 50 }}
             animate={
               selectedCard === 'staff' 
-                ? { scale: 50, zIndex: 100, opacity: 0 } 
+                ? { scale: 1.1, opacity: 0, y: -20, zIndex: 100 } 
                 : selectedCard 
-                  ? { opacity: 0, scale: 0.8 } 
+                  ? { opacity: 0, scale: 0.95, y: 20 } 
                   : { opacity: 1, y: 0, scale: 1 }
             }
             whileHover={selectedCard ? {} : { scale: 1.03 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: selectedCard ? 0 : 0.1 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
             onClick={() => handleSelect('staff')}
             style={{...styles.card, background: 'rgba(139, 92, 246, 0.15)', borderColor: 'rgba(139, 92, 246, 0.5)'}}
           >

@@ -77,6 +77,7 @@ export default function Dashboard() {
 
   React.useEffect(() => {
     sessionStorage.setItem('oxton_activeTab', activeTab);
+    window.scrollTo(0, 0);
   }, [activeTab]);
 
   const safeChatMessages = Array.isArray(chatMessages) ? chatMessages : [];

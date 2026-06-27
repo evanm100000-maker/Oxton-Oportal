@@ -13,6 +13,7 @@ export default function PassengerPortal({ onBack }) {
   
   React.useEffect(() => {
     sessionStorage.setItem('oxton_passengerTab', activeTab);
+    window.scrollTo(0, 0);
   }, [activeTab]);
 
   const [ticketForm, setTicketForm] = useState({ title: '', description: '', robloxUsername: '' });
@@ -90,15 +91,27 @@ export default function PassengerPortal({ onBack }) {
                   <div style={{ textAlign: 'center', padding: '32px 0', color: '#9ca3af' }}>No scheduled flights at this time.</div>
                 ) : (
                   flights.slice(0, 5).map(flight => (
-                    <div key={flight.id} style={styles.itemCard}>
-                      <div>
-                        <div style={{ fontWeight: '600', color: '#fff' }}>Flight {flight.flightCode}</div>
-                        <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{flight.location}</div>
+                    <div key={flight.id} style={{...styles.itemCard, display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
+                        <div>
+                          <div style={{ fontWeight: '600', color: '#fff' }}>Flight {flight.flightCode}</div>
+                          <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{flight.location}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ color: '#60a5fa', fontWeight: '600' }}>{flight.time}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{flight.date}</div>
+                        </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ color: '#60a5fa', fontWeight: '600' }}>{flight.time}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{flight.date}</div>
-                      </div>
+                      {flight.serverLink && (
+                        <button 
+                          onClick={() => window.open(flight.serverLink, '_blank')} 
+                          className="btn-primary" 
+                          style={{width: '100%', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px'}}
+                        >
+                          <Plane size={14} />
+                          Join Flight Server
+                        </button>
+                      )}
                     </div>
                   ))
                 )}
