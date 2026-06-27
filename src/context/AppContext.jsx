@@ -1148,7 +1148,7 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
 
     try {
       // 1. Save directly to Firebase
-      const messagesRef = ref(db, 'chats');
+      const messagesRef = ref(db, 'chatMessages');
       const newMessageRef = push(messagesRef);
       await set(newMessageRef, newMessage);
 
@@ -1165,13 +1165,13 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
 
     try {
       // 2. Delete from database
-      const chatRef = ref(db, 'chats');
+      const chatRef = ref(db, 'chatMessages');
       const snapshot = await get(chatRef);
       if (snapshot.exists()) {
         const data = snapshot.val();
         const firebaseKey = Object.keys(data).find(key => data[key].id === msgId);
         if (firebaseKey) {
-          await remove(ref(db, `chats/${firebaseKey}`));
+          await remove(ref(db, `chatMessages/${firebaseKey}`));
         }
       }
     } catch (error) {
@@ -1210,14 +1210,14 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
 
     try {
       // 2. Sync changes securely to Firebase using a transaction
-      const chatRef = ref(db, 'chats');
+      const chatRef = ref(db, 'chatMessages');
       const snapshot = await get(chatRef);
       if (snapshot.exists()) {
         const data = snapshot.val();
         const firebaseKey = Object.keys(data).find(key => data[key].id === msgId);
         
         if (firebaseKey) {
-          const reactionRef = ref(db, `chats/${firebaseKey}/reactions`);
+          const reactionRef = ref(db, `chatMessages/${firebaseKey}/reactions`);
           await runTransaction(reactionRef, (currentReactions) => {
             const reactions = currentReactions || [];
             const userEmail = currentUser.email;
@@ -1252,7 +1252,7 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
 useEffect(() => {
     if (!db) return;
 
-    const chatRef = ref(db, 'chats');
+    const chatRef = ref(db, 'chatMessages');
     
     // Establishing a strict, single real-time listener instance
     const unsubscribe = onValue(chatRef, (snapshot) => {
