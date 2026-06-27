@@ -248,7 +248,12 @@ const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null)
       });
       
       if (Object.keys(updates).length > 0) {
-        update(ref(db, path), updates).catch(err => console.error('Firebase update error:', err));
+        try {
+          const cleanUpdates = JSON.parse(JSON.stringify(updates));
+          update(ref(db, path), cleanUpdates).catch(err => console.error('Firebase update error:', err));
+        } catch (e) {
+          console.error('Failed to sync updates to Firebase synchronously', e);
+        }
       }
       
       return nextArray;
@@ -279,7 +284,12 @@ const useFirebaseObject = (path, initialValue, enabled = true) => {
       const dataToUpdate = prev ? prev : initialValue;
       const nextData = typeof updater === 'function' ? updater(dataToUpdate) : updater;
       const db = getDatabase(firebaseApp);
-      set(ref(db, path), nextData).catch(err => console.error('Firebase set error:', err));
+      try {
+        const cleanData = JSON.parse(JSON.stringify(nextData));
+        set(ref(db, path), cleanData).catch(err => console.error('Firebase set error:', err));
+      } catch (e) {
+        console.error('Failed to sync to Firebase synchronously', e);
+      }
       return nextData;
     });
   };
