@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { AlertTriangle, Send, MessageSquare, Shield, Clock, ExternalLink, RefreshCw, Upload } from 'lucide-react';
-import { storage } from "../firebase";
-import { ref as storageRef, uploadString, getDownloadURL } from "firebase/storage";
+import { compressImage } from '../utils/compressImage';
 
 export default function Reports() {
   const { reports, submitReport, addReportComment, updateReportStatus, currentUser } = useApp();
@@ -52,9 +51,7 @@ export default function Reports() {
           reader.readAsDataURL(evidenceFile);
         });
 
-        const fileRef = storageRef(storage, `reports/${Date.now()}-${Math.random().toString(36).substring(2,8)}`);
-        await uploadString(fileRef, dataUrl, 'data_url');
-        finalEvidenceUrl = await getDownloadURL(fileRef);
+        finalEvidenceUrl = await compressImage(dataUrl, 800, 0.6);
       }
 
       submitReport({

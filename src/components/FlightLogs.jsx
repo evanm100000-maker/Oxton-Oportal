@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { ClipboardList, PlusCircle, History, User, Users, Clipboard, Info, Calendar } from 'lucide-react';
-import { storage } from '../firebase';
-import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
+import { compressImage } from '../utils/compressImage';
 
 export default function FlightLogs() {
   const { flightLogs, submitFlightLog, flights, currentUser } = useApp();
@@ -32,9 +31,8 @@ export default function FlightLogs() {
     try {
       let finalPhotoProof = photoProof;
       if (photoProof.startsWith('data:image')) {
-        const fileRef = storageRef(storage, `flightLogs/${Date.now()}-${Math.random().toString(36).substring(2,8)}`);
-        await uploadString(fileRef, photoProof, 'data_url');
-        finalPhotoProof = await getDownloadURL(fileRef);
+        // Compress image to avoid massive payloads
+        finalPhotoProof = await compressImage(photoProof, 800, 0.6);
       }
 
       submitFlightLog({

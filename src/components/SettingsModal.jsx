@@ -3,8 +3,7 @@ import { useApp } from '../context/AppContext';
 import { X, Moon, Sun, Save, User, Image as ImageIcon, Upload } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../utils/cropImage';
-import { storage } from "../firebase";
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { compressImage } from '../utils/compressImage';
 
 export default function SettingsModal({ isOpen, onClose }) {
   const { currentUser, updateUserProfile, theme, toggleTheme } = useApp();
@@ -58,9 +57,13 @@ export default function SettingsModal({ isOpen, onClose }) {
       if (imageSrc && croppedAreaPixels) {
         const croppedImageBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
         
-        const fileRef = storageRef(storage, `profiles/${currentUser.email.replace(/[^a-zA-Z0-9]/g, '_')}-${Date.now()}`);
-        await uploadBytes(fileRef, croppedImageBlob);
-        finalProfileUrl = await getDownloadURL(fileRef);
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(croppedImageBlob);
+        });
+
+        finalProfileUrl = await compressImage(dataUrl, 800, 0.6);
       }
 
       updateUserProfile(email, firstName, lastName, finalProfileUrl, robloxUsername);
