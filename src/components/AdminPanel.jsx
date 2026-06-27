@@ -54,6 +54,8 @@ export default function AdminPanel() {
     announcements = [],
     deleteAnnouncement,
     addInformalSanction,
+    informalSanctions = [],
+    deleteInformalSanction,
     logMissedFlight,
     pointLogs
   } = useApp();
@@ -292,10 +294,18 @@ export default function AdminPanel() {
   const pendingPasswords = passwordResets.filter(r => r.status === 'Pending');
   const pendingApplications = applications.filter(a => a.status === 'Pending');
 
-  const groupedInfractions = Object.values(infractions.reduce((acc, inf) => {
-    if (!acc[inf.staffEmail]) acc[inf.staffEmail] = { name: inf.staffName, email: inf.staffEmail, items: [], suspensions: 0, regular: 0 };
+  const groupedInfractions = Object.values([...infractions, ...informalSanctions].reduce((acc, inf) => {
+    if (!acc[inf.staffEmail]) acc[inf.staffEmail] = { 
+      name: inf.staffName || (() => { const u = users.find(u => u.email === inf.staffEmail); return u ? `${u.firstName} ${u.lastName}` : inf.staffEmail; })(), 
+      email: inf.staffEmail, 
+      items: [], 
+      suspensions: 0, 
+      regular: 0,
+      informal: 0
+    };
     acc[inf.staffEmail].items.push(inf);
     if (inf.type === 'Suspension') acc[inf.staffEmail].suspensions++;
+    else if (!inf.type && inf.reason) acc[inf.staffEmail].informal++;
     else acc[inf.staffEmail].regular++;
     return acc;
   }, {}));
@@ -429,6 +439,7 @@ export default function AdminPanel() {
                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                       <span style={{ color: '#f87171', fontSize: '0.9rem' }}>{group.regular} Infractions</span>
                       <span style={{ color: '#fb923c', fontSize: '0.9rem' }}>{group.suspensions} Suspensions</span>
+                      <span style={{ color: '#eab308', fontSize: '0.9rem' }}>{group.informal} Informal Sanctions</span>
                     </div>
                   </div>
                   
@@ -445,11 +456,13 @@ export default function AdminPanel() {
                             </tr>
                           </thead>
                           <tbody>
-                            {group.items.map(inf => (
+                            {group.items.map(inf => {
+                              const isInformal = !inf.type && inf.reason;
+                              return (
                               <tr key={inf.id} style={styles.trBody}>
-                                <td style={styles.td}><span style={styles.infractionBadge}>{inf.type}</span></td>
+                                <td style={styles.td}><span style={{...styles.infractionBadge, background: isInformal ? 'rgba(234, 179, 8, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: isInformal ? '#eab308' : '#ef4444'}}>{isInformal ? 'Informal Sanction' : inf.type}</span></td>
                                 <td style={styles.td}>
-                                  <div style={{ marginBottom: '8px' }}>{inf.mainMessage}</div>
+                                  <div style={{ marginBottom: '8px' }}>{isInformal ? inf.reason : inf.mainMessage}</div>
                                   {inf.appeal && (
                                     <div style={{ padding: '8px', background: 'rgba(59, 130, 246, 0.1)', borderLeft: '3px solid #3b82f6', borderRadius: '4px', marginBottom: '8px' }}>
                                       <span style={{ color: '#60a5fa', fontSize: '0.8rem', fontWeight: 'bold' }}>STAFF APPEAL:</span>
@@ -458,14 +471,14 @@ export default function AdminPanel() {
                                   )}
                                   {inf.confidentialMessage && <div style={styles.confidentialNote}>Admin note: {inf.confidentialMessage}</div>}
                                 </td>
-                                <td style={styles.td}>{inf.adminName}<br />{inf.date}</td>
+                                <td style={styles.td}>{isInformal ? inf.issuedByName : inf.adminName}<br />{isInformal ? new Date(inf.timestamp).toLocaleDateString() : inf.date}</td>
                                 <td style={styles.td}>
-                                  <button type="button" onClick={() => deleteInfraction(inf.id)} className="btn-danger" style={styles.actionMiniBtn}>
+                                  <button type="button" onClick={() => isInformal ? deleteInformalSanction(inf.id) : deleteInfraction(inf.id)} className="btn-danger" style={styles.actionMiniBtn}>
                                     <Trash2 size={14} /> Remove
                                   </button>
                                 </td>
                               </tr>
-                            ))}
+                            )})}
                           </tbody>
                         </table>
                       </div>
