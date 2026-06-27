@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Trophy, Medal, Award, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trophy, Medal, Award, User, ChevronDown, ChevronUp, Info, TrendingUp, TrendingDown } from 'lucide-react';
 
 export default function Leaderboard() {
   const { activeUsers } = useApp();
@@ -103,6 +103,45 @@ export default function Leaderboard() {
             )}
           </button>
         )}
+      </div>
+
+      <div style={{...styles.card, marginTop: '32px', padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'}} className="glass-panel">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--color-text-main)' }}>
+          <Info size={20} color="var(--color-primary)" />
+          <h3 style={{ margin: 0, fontSize: '1.1rem' }}>How Points Work</h3>
+        </div>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', color: '#10b981' }}>
+              <TrendingUp size={16} />
+              <h4 style={{ margin: 0 }}>Earning Points</h4>
+            </div>
+            <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--color-text-muted)', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <li><strong>+7</strong> for an approved flight log</li>
+              <li><strong>+5</strong> for logging in 3 days in a row</li>
+              <li><strong>+10</strong> for 5 days without an infraction</li>
+              <li><strong>+2</strong> for your report being actioned</li>
+            </ul>
+          </div>
+          
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', color: '#ef4444' }}>
+              <TrendingDown size={16} />
+              <h4 style={{ margin: 0 }}>Losing Points</h4>
+            </div>
+            <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--color-text-muted)', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <li><strong>-2</strong> missing a flight (while not on LOA)</li>
+              <li><strong>-2</strong> Informal Sanction</li>
+              <li><strong>-10</strong> Formal Infraction</li>
+              <li><strong>-20</strong> Suspension</li>
+            </ul>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.05)', color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
+          <em>Note: You can earn additional points from admins.</em>
+        </div>
       </div>
     </div>
   );
