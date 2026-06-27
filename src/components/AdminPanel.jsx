@@ -546,12 +546,12 @@ export default function AdminPanel() {
                     </td>
                     <td style={styles.td}>
                       {isSuspended ? (
-                        <button type="button" disabled={user.isAdmin && currentUser.email !== superAdminEmail} onClick={() => {unsuspendUser(user.email); displaySuccess('User unsuspended.');}} className="btn-success" style={{...styles.actionMiniBtn, opacity: user.isAdmin && currentUser.email !== superAdminEmail ? 0.5 : 1}}>
+                        <button type="button" disabled={user.email.toLowerCase() === 'evanm.100000@gmail.com' || (user.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com')} onClick={() => {unsuspendUser(user.email); displaySuccess('User unsuspended.');}} className="btn-success" style={{...styles.actionMiniBtn, opacity: (user.email.toLowerCase() === 'evanm.100000@gmail.com' || (user.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com')) ? 0.5 : 1}}>
                           Unsuspend
                         </button>
                       ) : (
                         <div style={{display: 'flex', gap: '8px'}}>
-                          <button type="button" disabled={user.isAdmin && currentUser.email !== superAdminEmail} onClick={() => setSuspendModalUser(user)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px', opacity: user.isAdmin && currentUser.email !== superAdminEmail ? 0.5 : 1}}>Suspend User</button>
+                          <button type="button" disabled={user.email.toLowerCase() === 'evanm.100000@gmail.com' || (user.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com')} onClick={() => setSuspendModalUser(user)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px', opacity: (user.email.toLowerCase() === 'evanm.100000@gmail.com' || (user.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com')) ? 0.5 : 1}}>Suspend User</button>
                         </div>
                       )}
                     </td>

@@ -249,19 +249,14 @@ export default function Dashboard() {
 
   const itemVariants = {
     hidden: { 
-      y: 24,
-      scale: 0.98,
+      y: 20,
       opacity: 0,
     },
     show: { 
       y: 0, 
-      scale: 1,
       opacity: 1,
       transition: { 
-        type: 'spring',
-        stiffness: 210,
-        damping: 24,
-        mass: 0.8
+        duration: 0.2
       }
     }
   };
@@ -387,8 +382,8 @@ export default function Dashboard() {
               </p>
             </motion.div>
 
-            {/* Grid container with physics-based slam animations */}
             <motion.div 
+              key={`dashboard-card-grid-${activeTab}`}
               variants={containerVariants}
               initial="hidden"
               animate="show"

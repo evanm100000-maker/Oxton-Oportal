@@ -134,8 +134,17 @@ export default function AllStaff() {
                       <strong>Staff of the Week</strong>
                       <span style={{color: '#9ca3af', fontSize: '0.9rem'}}>Current wins: {selectedStaff.sotwWins || 0}</span>
                     </div>
-                    <button onClick={() => awardSOTW(selectedStaff.email)} style={styles.awardSotwBtn}>
-                      Award SOTW
+                    <button 
+                      onClick={() => awardSOTW(selectedStaff.email)} 
+                      style={{
+                        ...styles.awardSotwBtn,
+                        opacity: selectedStaff.email === currentUser.email ? 0.5 : 1,
+                        cursor: selectedStaff.email === currentUser.email ? 'not-allowed' : 'pointer'
+                      }}
+                      disabled={selectedStaff.email === currentUser.email}
+                      title={selectedStaff.email === currentUser.email ? "You cannot award yourself Staff of the Week" : ""}
+                    >
+                      {selectedStaff.email === currentUser.email ? 'Cannot Award Self' : 'Award SOTW'}
                     </button>
                   </div>
 

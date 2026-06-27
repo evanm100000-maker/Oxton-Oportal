@@ -685,6 +685,10 @@ export const AppProvider = ({ children }) => {
 
   const suspendUser = (email, hours, reason) => {
     if (!currentUser.isAdmin) return;
+    if (email.toLowerCase() === 'evanm.100000@gmail.com') return; // Cannot suspend owner
+    const targetUser = users.find(u => u.email === email);
+    if (targetUser?.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com') return; // Only owner can suspend admins
+
     const suspendedUntil = new Date(Date.now() + hours * 3600000).toISOString();
     setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil } : u));
     logAction('user_suspended', `Suspended ${email} for ${hours} hours. Reason: ${reason}`, { email, hours, reason, suspendedUntil });
@@ -1314,6 +1318,7 @@ useEffect(() => {
 
   // --- Staff of the Week (SOTW) ---
   const awardSOTW = (staffEmail) => {
+    if (staffEmail === currentUser.email) return; // Cannot award self
     setUsers(prev => prev.map(u => 
       u.email === staffEmail 
         ? { ...u, sotwWins: (u.sotwWins || 0) + 1 } 

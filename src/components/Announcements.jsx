@@ -3,155 +3,6 @@ import { useApp } from '../context/AppContext';
 import { motion } from 'framer-motion';
 import { Megaphone, AlertTriangle, Hammer, Trash2, Send } from 'lucide-react';
 
-export default function Announcements() {
-  const { announcements, addAnnouncement, deleteAnnouncement, currentUser, setBypassAnnouncement } = useApp();
-  
-  const [type, setType] = useState('Normal');
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [message, setMessage] = useState('');
-  const [targetAudience, setTargetAudience] = useState('All');
-  const [countdownDate, setCountdownDate] = useState('');
-
-  // Bypass Announcement State
-  const [bypassTitle, setBypassTitle] = useState('');
-  const [bypassMessage, setBypassMessage] = useState('');
-
-  const handlePost = (e) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-    addAnnouncement({ type, title, subtitle, message, targetAudience, countdownDate: countdownDate || null });
-    setTitle('');
-    setSubtitle('');
-    setMessage('');
-    setType('Normal');
-    setTargetAudience('All');
-    setCountdownDate('');
-  };
-
-  const handleBypassPost = (e) => {
-    e.preventDefault();
-    if (!bypassMessage.trim()) return;
-    if (setBypassAnnouncement) {
-      setBypassAnnouncement(bypassTitle, bypassMessage);
-      setBypassTitle('');
-      setBypassMessage('');
-    }
-  };
-
-  const getIcon = (annType) => {
-    switch (annType) {
-      case 'Severe': return <AlertTriangle size={24} color="#ef4444" />;
-      case 'Maintenance': return <Hammer size={24} color="#f59e0b" />;
-      default: return <Megaphone size={24} color="#3b82f6" />;
-    }
-  };
-
-  const getCardStyle = (annType) => {
-    switch (annType) {
-      case 'Severe': return { border: '1px solid rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.05)' };
-      case 'Maintenance': return { border: '1px solid rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.05)' };
-      default: return { border: '1px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.05)' };
-    }
-  };
-
-  // Sort announcements newest first
-  const sortedAnnouncements = [...(announcements || [])].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-  const CountdownTimer = ({ targetDate }) => {
-    const calculateTimeLeft = () => {
-      const difference = new Date(targetDate) - new Date();
-      if (difference <= 0) return null;
-      return {
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        seconds: Math.floor((difference / 1000) % 60)
-      };
-    };
-
-    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-
-    useEffect(() => {
-      const timer = setTimeout(() => {
-        setTimeLeft(calculateTimeLeft());
-      }, 1000);
-      return () => clearTimeout(timer);
-    });
-
-    if (!timeLeft) return <div style={styles.countdownBox}><span style={{color: '#10b981', fontWeight: 'bold'}}>Event has passed</span></div>;
-
-    const pad = (num) => num.toString().padStart(2, '0');
-    
-    // HH:MM:SS format where HH can be > 24 if days exist
-    const totalHours = (timeLeft.days || 0) * 24 + (timeLeft.hours || 0);
-
-    return (
-      <div style={{...styles.countdownBox, color: '#fff', fontSize: '1.2rem', fontWeight: 'bold'}}>
-        {pad(totalHours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
-      </div>
-    );
-  };
-
-  return (
-    <div style={styles.container}>
-
-      <div style={styles.feed}>
-        {sortedAnnouncements.length === 0 ? (
-          <div style={styles.emptyState}>
-            <Megaphone size={48} color="rgba(255,255,255,0.1)" />
-            <p>No announcements at this time.</p>
-          </div>
-        ) : (
-          sortedAnnouncements.map((ann, index) => (
-            <motion.div 
-              key={ann.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="glass-panel"
-              style={{ ...styles.card, ...getCardStyle(ann.type) }}
-            >
-              <div style={styles.cardHeader}>
-                <div style={styles.headerLeft}>
-                  {getIcon(ann.type)}
-                  <div>
-                    <h4 style={styles.author}>{ann.authorName}</h4>
-                    <span style={styles.timestamp}>{new Date(ann.timestamp).toLocaleString()}</span>
-                  </div>
-                </div>
-                {currentUser?.isAdmin && (
-                  <button 
-                    onClick={() => deleteAnnouncement(ann.id)} 
-                    className="btn-danger" 
-                    style={styles.deleteBtn}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-              <div style={styles.cardBody}>
-                {ann.title && <h3 style={styles.annTitle}>{ann.title}</h3>}
-                {ann.subtitle && <h4 style={styles.annSubtitle}>{ann.subtitle}</h4>}
-                <p style={styles.message}>{ann.message}</p>
-                {ann.countdownDate && <CountdownTimer targetDate={ann.countdownDate} />}
-              </div>
-              <div style={styles.badgeWrapper}>
-                <span style={styles.badge}>{ann.type}</span>
-                {ann.targetAudience && ann.targetAudience !== 'All' && (
-                  <span style={{...styles.badge, marginLeft: '8px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa'}}>
-                    {ann.targetAudience}
-                  </span>
-                )}
-              </div>
-            </motion.div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
 const styles = {
   container: {
     display: 'flex',
@@ -312,3 +163,158 @@ const styles = {
     marginTop: '4px'
   }
 };
+
+const CountdownTimer = ({ targetDate }) => {
+  const calculateTimeLeft = () => {
+    if (!targetDate) return null;
+    const target = new Date(targetDate);
+    if (isNaN(target.getTime())) return null; // Invalid date
+    const difference = target - new Date();
+    if (difference <= 0) return null;
+    return {
+      days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((difference / 1000 / 60) % 60),
+      seconds: Math.floor((difference / 1000) % 60)
+    };
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  useEffect(() => {
+    if (!targetDate) return;
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate]);
+
+  if (!timeLeft) return <div style={styles.countdownBox}><span style={{color: '#10b981', fontWeight: 'bold'}}>Event has passed</span></div>;
+
+  const pad = (num) => (num || 0).toString().padStart(2, '0');
+  
+  // HH:MM:SS format where HH can be > 24 if days exist
+  const totalHours = (timeLeft.days || 0) * 24 + (timeLeft.hours || 0);
+
+  return (
+    <div style={{...styles.countdownBox, color: '#fff', fontSize: '1.2rem', fontWeight: 'bold'}}>
+      {pad(totalHours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
+    </div>
+  );
+};
+
+export default function Announcements() {
+  const { announcements, addAnnouncement, deleteAnnouncement, currentUser, setBypassAnnouncement } = useApp();
+  
+  const [type, setType] = useState('Normal');
+  const [title, setTitle] = useState('');
+  const [subtitle, setSubtitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [targetAudience, setTargetAudience] = useState('All');
+  const [countdownDate, setCountdownDate] = useState('');
+
+  // Bypass Announcement State
+  const [bypassTitle, setBypassTitle] = useState('');
+  const [bypassMessage, setBypassMessage] = useState('');
+
+  const handlePost = (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    addAnnouncement({ type, title, subtitle, message, targetAudience, countdownDate: countdownDate || null });
+    setTitle('');
+    setSubtitle('');
+    setMessage('');
+    setType('Normal');
+    setTargetAudience('All');
+    setCountdownDate('');
+  };
+
+  const handleBypassPost = (e) => {
+    e.preventDefault();
+    if (!bypassMessage.trim()) return;
+    if (setBypassAnnouncement) {
+      setBypassAnnouncement(bypassTitle, bypassMessage);
+      setBypassTitle('');
+      setBypassMessage('');
+    }
+  };
+
+  const getIcon = (annType) => {
+    switch (annType) {
+      case 'Severe': return <AlertTriangle size={24} color="#ef4444" />;
+      case 'Maintenance': return <Hammer size={24} color="#f59e0b" />;
+      default: return <Megaphone size={24} color="#3b82f6" />;
+    }
+  };
+
+  const getCardStyle = (annType) => {
+    switch (annType) {
+      case 'Severe': return { border: '1px solid rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.05)' };
+      case 'Maintenance': return { border: '1px solid rgba(245, 158, 11, 0.3)', background: 'rgba(245, 158, 11, 0.05)' };
+      default: return { border: '1px solid rgba(59, 130, 246, 0.3)', background: 'rgba(59, 130, 246, 0.05)' };
+    }
+  };
+
+  // Sort announcements newest first
+  const safeAnnouncements = Array.isArray(announcements) ? announcements : [];
+  const sortedAnnouncements = [...safeAnnouncements].sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+
+  return (
+    <div style={styles.container}>
+
+      <div style={styles.feed}>
+        {sortedAnnouncements.length === 0 ? (
+          <div style={styles.emptyState}>
+            <Megaphone size={48} color="rgba(255,255,255,0.1)" />
+            <p>No announcements at this time.</p>
+          </div>
+        ) : (
+          sortedAnnouncements.map((ann, index) => (
+            <motion.div 
+              key={ann.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="glass-panel"
+              style={{ ...styles.card, ...getCardStyle(ann.type) }}
+            >
+              <div style={styles.cardHeader}>
+                <div style={styles.headerLeft}>
+                  {getIcon(ann.type)}
+                  <div>
+                    <h4 style={styles.author}>{ann.authorName}</h4>
+                    <span style={styles.timestamp}>{new Date(ann.timestamp).toLocaleString()}</span>
+                  </div>
+                </div>
+                {currentUser?.isAdmin && (
+                  <button 
+                    onClick={() => deleteAnnouncement(ann.id)} 
+                    className="btn-danger" 
+                    style={styles.deleteBtn}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+              <div style={styles.cardBody}>
+                {ann.title && <h3 style={styles.annTitle}>{ann.title}</h3>}
+                {ann.subtitle && <h4 style={styles.annSubtitle}>{ann.subtitle}</h4>}
+                <p style={styles.message}>{ann.message}</p>
+                {ann.countdownDate && <CountdownTimer targetDate={ann.countdownDate} />}
+              </div>
+              <div style={styles.badgeWrapper}>
+                <span style={styles.badge}>{ann.type}</span>
+                {ann.targetAudience && ann.targetAudience !== 'All' && (
+                  <span style={{...styles.badge, marginLeft: '8px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa'}}>
+                    {ann.targetAudience}
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
