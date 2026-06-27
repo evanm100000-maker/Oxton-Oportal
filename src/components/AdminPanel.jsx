@@ -331,7 +331,7 @@ export default function AdminPanel() {
           <UserCheck size={16} /> Staff Actions
         </button>
         <button type="button" onClick={() => setActiveSubTab('infractions')} style={getTabStyle(activeSubTab === 'infractions')}>
-          <ShieldAlert size={16} /> Consequences ({infractions.length})
+          <ShieldAlert size={16} /> Consequences
         </button>
         <button type="button" onClick={() => setActiveSubTab('flights')} style={getTabStyle(activeSubTab === 'flights')}>
           <Plane size={16} /> Schedule
