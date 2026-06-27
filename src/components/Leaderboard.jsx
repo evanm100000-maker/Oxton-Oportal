@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Trophy, Medal, Award, User } from 'lucide-react';
+import { Trophy, Medal, Award, User, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function Leaderboard() {
   const { activeUsers } = useApp();
+  const [showAll, setShowAll] = useState(false);
 
   // Sort users by points, descending. Filter out users with 0 points if desired, 
   // but let's show everyone who has points or just sort everyone.
   const sortedUsers = [...activeUsers]
     .sort((a, b) => (b.points || 0) - (a.points || 0));
+
+  const displayedUsers = showAll ? sortedUsers : sortedUsers.slice(0, 10);
 
   return (
     <div style={styles.container}>
@@ -21,7 +24,7 @@ export default function Leaderboard() {
       </div>
 
       <div style={styles.list}>
-        {sortedUsers.map((user, index) => {
+        {displayedUsers.map((user, index) => {
           const isTop3 = index < 3;
           const points = user.points || 0;
           
@@ -85,6 +88,20 @@ export default function Leaderboard() {
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
             No staff data available yet.
           </div>
+        )}
+
+        {sortedUsers.length > 10 && (
+          <button 
+            onClick={() => setShowAll(!showAll)} 
+            className="btn-secondary" 
+            style={{ margin: '16px auto', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            {showAll ? (
+              <><ChevronUp size={16} /> Show Less</>
+            ) : (
+              <><ChevronDown size={16} /> View All Staff</>
+            )}
+          </button>
         )}
       </div>
     </div>

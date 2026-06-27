@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { ShieldAlert, History, Lock, Trash2, ShieldCheck } from 'lucide-react';
 
 export default function Infractions() {
-  const { infractions, deleteInfraction, appealInfraction, currentUser } = useApp();
+  const { infractions, deleteInfraction, appealInfraction, informalSanctions = [], currentUser } = useApp();
   const [activeTab, setActiveTab] = useState('my');
   const [appealingId, setAppealingId] = useState(null);
   const [appealText, setAppealText] = useState('');
@@ -18,6 +18,8 @@ export default function Infractions() {
   const myLogs = infractions.filter(inf => inf.staffEmail === currentUser.email);
   const mySuspensions = myLogs.filter(inf => inf.type === 'Suspension');
   const myRegularInfractions = myLogs.filter(inf => inf.type !== 'Suspension');
+  
+  const myInformalSanctions = informalSanctions.filter(sanc => sanc.staffEmail === currentUser.email);
 
   return (
     <div style={styles.container}>
@@ -71,15 +73,38 @@ export default function Infractions() {
                 <h4 style={{ color: '#9ca3af', margin: 0, fontSize: '0.9rem', textTransform: 'uppercase' }}>Total Suspensions</h4>
                 <p style={{ fontSize: '2.5rem', color: '#fb923c', fontWeight: 'bold', margin: '10px 0' }}>{mySuspensions.length}</p>
              </div>
+             <div className="glass-panel" style={{ flex: 1, minWidth: '150px', padding: '20px', textAlign: 'center', borderRadius: '12px', border: '1px solid rgba(234, 179, 8, 0.2)' }}>
+                <h4 style={{ color: '#9ca3af', margin: 0, fontSize: '0.9rem', textTransform: 'uppercase' }}>Informal Sanctions</h4>
+                <p style={{ fontSize: '2.5rem', color: '#eab308', fontWeight: 'bold', margin: '10px 0' }}>{myInformalSanctions.length}</p>
+             </div>
           </div>
 
-          {myLogs.length === 0 ? (
+          {myLogs.length === 0 && myInformalSanctions.length === 0 ? (
             <div style={styles.emptyState}>
               <ShieldCheck size={48} color="rgba(16, 185, 129, 0.15)" />
               <p style={{ ...styles.emptyText, color: '#10b981' }}>Your record is clean! No consequences logged.</p>
             </div>
           ) : (
             <div style={styles.list}>
+              {myInformalSanctions.map(sanc => (
+                <div key={sanc.id} style={styles.infractionCard} className="glass-panel">
+                  <div style={styles.cardHeader}>
+                    <div style={styles.typeBadgeContainer}>
+                      <span style={{
+                        ...styles.infractionType, 
+                        background: 'rgba(234, 179, 8, 0.15)',
+                        color: '#eab308',
+                        border: '1px solid rgba(234, 179, 8, 0.3)'
+                      }}>Informal Sanction</span>
+                    </div>
+                    <span style={styles.infDate}>{new Date(sanc.timestamp).toLocaleDateString()}</span>
+                  </div>
+                  <div style={styles.messageBox}>
+                    <h5 style={styles.boxLabel}>Reason / Details:</h5>
+                    <p style={styles.messageText}>{sanc.reason}</p>
+                  </div>
+                </div>
+              ))}
               {myLogs.map(inf => (
                 <div key={inf.id} style={styles.infractionCard} className="glass-panel">
                   <div style={styles.cardHeader}>
@@ -138,13 +163,41 @@ export default function Infractions() {
       {/* Admin View: All Infractions */}
       {(currentUser.isAdmin || currentUser.siteRole === 'Moderator') && activeTab === 'all' && (
         <div style={styles.listContainer}>
-          {infractions.length === 0 ? (
+          {infractions.length === 0 && informalSanctions.length === 0 ? (
             <div style={styles.emptyState}>
               <ShieldAlert size={48} color="rgba(255,255,255,0.15)" />
               <p style={styles.emptyText}>No consequences logged in the system.</p>
             </div>
           ) : (
             <div style={styles.list}>
+              {informalSanctions.map(sanc => (
+                <div key={sanc.id} style={styles.infractionCard} className="glass-panel">
+                  <div style={styles.cardHeader}>
+                    <div style={styles.typeBadgeContainer}>
+                      <span style={styles.targetStaff}>{sanc.staffEmail}</span>
+                      <span style={{
+                        ...styles.infractionType,
+                        background: 'rgba(234, 179, 8, 0.12)',
+                        color: '#eab308',
+                        border: '1px solid rgba(234, 179, 8, 0.25)',
+                        marginLeft: '12px'
+                      }}>
+                        Informal Sanction
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={styles.infDate}>{new Date(sanc.timestamp).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <div style={styles.messageBox}>
+                    <h5 style={styles.boxLabel}>Reason / Details:</h5>
+                    <p style={styles.messageText}>{sanc.reason}</p>
+                  </div>
+                  <div style={styles.cardFooter}>
+                    <span>Logged by Admin: <strong>{sanc.issuedByName}</strong></span>
+                  </div>
+                </div>
+              ))}
               {infractions.map(inf => (
                 <div key={inf.id} style={styles.infractionCard} className="glass-panel">
                   <div style={styles.cardHeader}>

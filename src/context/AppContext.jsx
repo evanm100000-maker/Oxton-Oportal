@@ -322,6 +322,7 @@ export const AppProvider = ({ children }) => {
   const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements, true, 50);
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
   const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats, isLoggedIn, 50);
+  const [informalSanctions, setInformalSanctions] = useFirebaseArray('informalSanctions', [], isLoggedIn, 50);
   const [events, setEvents] = useFirebaseArray('events', initialEvents, true, 50);
   const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn, 50);
   const [applicationConfig, setApplicationConfig] = useFirebaseObject('applicationConfig', initialApplicationConfig);
@@ -497,7 +498,20 @@ export const AppProvider = ({ children }) => {
   }, [theme]);
 
   // Notifications Watchers
-  const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null });
+  const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null, points: undefined });
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const currentPoints = users.find(u => u.email === currentUser.email)?.points || 0;
+    if (prevDataRef.current.points !== undefined && prevDataRef.current.points !== currentPoints) {
+      if (currentPoints > prevDataRef.current.points) {
+         addNotification(`Points Earned!`, `You received ${currentPoints - prevDataRef.current.points} points.`, 'info');
+      } else {
+         addNotification(`Points Deducted`, `You lost ${prevDataRef.current.points - currentPoints} points.`, 'danger');
+      }
+    }
+    prevDataRef.current.points = currentPoints;
+  }, [users, currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -615,14 +629,50 @@ export const AppProvider = ({ children }) => {
           }
         }
         
-        // Track login activity
+        // Track login activity and streaks
         const now = new Date().toISOString();
         const loginHistory = user.loginHistory || [];
         loginHistory.push(now);
         // keep only the last 30 logins for sanity
         if (loginHistory.length > 30) loginHistory.shift();
 
-        const updatedUser = { ...user, loginHistory };
+        const todayStr = new Date().toDateString();
+        const lastLoginStr = user.lastLoginDate ? new Date(user.lastLoginDate).toDateString() : null;
+        let newStreak = user.loginStreak || 0;
+        let pointsToAdd = 0;
+        
+        if (todayStr !== lastLoginStr) {
+           const yesterday = new Date();
+           yesterday.setDate(yesterday.getDate() - 1);
+           if (lastLoginStr === yesterday.toDateString()) {
+              newStreak += 1;
+           } else {
+              newStreak = 1;
+           }
+           if (newStreak > 0 && newStreak % 3 === 0) {
+              pointsToAdd += 5;
+           }
+        }
+        
+        let last5DayBonusDate = user.last5DayBonusDate;
+        const lastInf = user.lastInfractionDate ? new Date(user.lastInfractionDate) : new Date(user.createdAt || now);
+        const lastBonus = user.last5DayBonusDate ? new Date(user.last5DayBonusDate) : lastInf;
+        const daysSinceLastBonus = Math.floor((new Date(now) - lastBonus) / (1000 * 60 * 60 * 24));
+        const daysSinceLastInf = Math.floor((new Date(now) - lastInf) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceLastBonus >= 5 && daysSinceLastInf >= 5) {
+          pointsToAdd += 10;
+          last5DayBonusDate = now;
+        }
+
+        const updatedUser = { 
+          ...user, 
+          loginHistory, 
+          lastLoginDate: now, 
+          loginStreak: newStreak, 
+          last5DayBonusDate,
+          points: (user.points || 0) + pointsToAdd 
+        };
         setUsers(prev => prev.map(u => u.email === updatedUser.email ? updatedUser : u));
         setCurrentUser(updatedUser);
         resolve(updatedUser);
@@ -764,7 +814,7 @@ export const AppProvider = ({ children }) => {
     if (targetUser?.isAdmin && currentUser.email.toLowerCase() !== 'evanm.100000@gmail.com') return; // Only owner can suspend admins
 
     const suspendedUntil = new Date(Date.now() + hours * 3600000).toISOString();
-    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil } : u));
+    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil, points: (u.points || 0) - 20 } : u));
     logAction('user_suspended', `Suspended ${email} for ${hours} hours. Reason: ${reason}`, { email, hours, reason, suspendedUntil });
     
     addInfraction({
@@ -773,6 +823,34 @@ export const AppProvider = ({ children }) => {
       mainMessage: `Suspended for ${hours} hours. Reason: ${reason}`,
       confidentialMessage: `Expires ${new Date(suspendedUntil).toLocaleString()}`
     });
+  };
+
+  const addInformalSanction = (sanctionData) => {
+    const staffEmail = sanctionData.staffEmail?.trim();
+    const reason = sanctionData.reason?.trim();
+    if (!staffEmail || !reason) return false;
+
+    const newSanction = {
+      id: makeId('isanc'),
+      staffEmail,
+      reason,
+      issuedByEmail: currentUser.email,
+      issuedByName: `${currentUser.firstName} ${currentUser.lastName}`,
+      timestamp: new Date().toISOString()
+    };
+    setInformalSanctions(prev => [newSanction, ...prev]);
+    setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: (u.points || 0) - 2 } : u));
+    logAction('informal_sanction_added', `Issued informal sanction to ${staffEmail}`, { staffEmail, reason });
+    return true;
+  };
+
+  const logMissedFlight = (staffEmail) => {
+    if (!staffEmail) return;
+    const isOnLoa = loaRequests.some(loa => loa.userEmail === staffEmail && loa.status === 'Approved');
+    if (!isOnLoa) {
+      setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: (u.points || 0) - 2 } : u));
+      logAction('missed_flight_logged', `Logged missed flight for ${staffEmail}`, { staffEmail });
+    }
   };
 
   const unsuspendUser = (email) => {
@@ -1071,8 +1149,12 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateReportStatus = (reportId, status) => {
-    setReports(prev => prev.map(rep => 
-      rep.id === reportId ? { ...rep, status } : rep
+    const rep = reports.find(r => r.id === reportId);
+    if (rep && status === 'Actioned' && rep.status !== 'Actioned') {
+       setUsers(prev => prev.map(u => u.email === rep.reporterEmail ? { ...u, points: (u.points || 0) + 2 } : u));
+    }
+    setReports(prev => prev.map(r => 
+      r.id === reportId ? { ...r, status } : r
     ));
   };
 
@@ -1118,6 +1200,13 @@ export const AppProvider = ({ children }) => {
       date: new Date().toISOString().split('T')[0]
     };
     setInfractions(prev => [newInfraction, ...prev]);
+    
+    if (infData.type !== 'Suspension') {
+      setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: (u.points || 0) - 10, lastInfractionDate: new Date().toISOString() } : u));
+    } else {
+      setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, lastInfractionDate: new Date().toISOString() } : u));
+    }
+    
     logAction('infraction_added', `Issued infraction to ${staffEmail}`, { staffEmail, type: infData.type });
     return true;
   };
@@ -1580,6 +1669,9 @@ useEffect(() => {
         },
         applications,
         applicationConfig,
+        informalSanctions,
+        addInformalSanction,
+        logMissedFlight,
         events,
         addEvent,
         deleteEvent,

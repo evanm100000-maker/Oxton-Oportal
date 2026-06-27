@@ -52,7 +52,9 @@ export default function AdminPanel() {
     pageConfig,
     updatePageConfig,
     announcements = [],
-    deleteAnnouncement
+    deleteAnnouncement,
+    addInformalSanction,
+    logMissedFlight
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
@@ -540,6 +542,7 @@ export default function AdminPanel() {
                   <th style={styles.th}>Staff Member</th>
                   <th style={styles.th}>Points</th>
                   <th style={styles.th}>Add Points</th>
+                  <th style={styles.th}>Penalties</th>
                   <th style={styles.th}>Suspension</th>
                   <th style={styles.th}>Remove Staff</th>
                 </tr>
@@ -559,6 +562,27 @@ export default function AdminPanel() {
                         <input type="number" placeholder="Amt" value={pointsAmounts[user.email] || ''} onChange={e => setPointsAmounts({...pointsAmounts, [user.email]: e.target.value})} className="input-field" style={{width: '70px', padding: '6px'}} />
                         <input type="text" placeholder="Reason" value={pointsReasons[user.email] || ''} onChange={e => setPointsReasons({...pointsReasons, [user.email]: e.target.value})} className="input-field" style={{width: '120px', padding: '6px'}} />
                         <button type="button" onClick={() => handleAddPoints(user.email)} className="btn-primary" style={{padding: '6px 10px', borderRadius: '6px'}}><Plus size={14}/></button>
+                      </div>
+                    </td>
+                    <td style={styles.td}>
+                      <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
+                        <button type="button" onClick={() => {
+                          if (window.confirm(`Log Missed Flight for ${user.firstName}?`)) {
+                            logMissedFlight(user.email);
+                            displaySuccess('Missed flight logged.');
+                          }
+                        }} className="btn-secondary" style={{...styles.actionMiniBtn, width: '100%'}}>
+                          Missed Flight
+                        </button>
+                        <button type="button" onClick={() => {
+                          const reason = window.prompt(`Enter reason for Informal Sanction for ${user.firstName}:`);
+                          if (reason) {
+                            addInformalSanction({ staffEmail: user.email, reason });
+                            displaySuccess('Informal Sanction added.');
+                          }
+                        }} className="btn-secondary" style={{...styles.actionMiniBtn, width: '100%', borderColor: 'var(--color-warning)', color: 'var(--color-warning)'}}>
+                          Informal Sanction
+                        </button>
                       </div>
                     </td>
                     <td style={styles.td}>
