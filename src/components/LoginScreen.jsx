@@ -11,6 +11,17 @@ export default function LoginScreen({ onBack }) {
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  // Captcha state
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+  const [captchaNum1, setCaptchaNum1] = useState(Math.floor(Math.random() * 10) + 1);
+  const [captchaNum2, setCaptchaNum2] = useState(Math.floor(Math.random() * 10) + 1);
+
+  const regenerateCaptcha = () => {
+    setCaptchaNum1(Math.floor(Math.random() * 10) + 1);
+    setCaptchaNum2(Math.floor(Math.random() * 10) + 1);
+    setCaptchaAnswer('');
+  };
+
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +34,13 @@ export default function LoginScreen({ onBack }) {
     setError('');
     setSuccess('');
     setLoading(true);
+
+    if (parseInt(captchaAnswer, 10) !== captchaNum1 + captchaNum2) {
+      setError('Incorrect security question answer. Please try again.');
+      regenerateCaptcha();
+      setLoading(false);
+      return;
+    }
 
     try {
       if (isForgotPassword) {
@@ -215,6 +233,22 @@ export default function LoginScreen({ onBack }) {
               </div>
             </div>
           )}
+
+          <div style={styles.inputWrapper}>
+            <label style={styles.label}>Security Question: What is {captchaNum1} + {captchaNum2}?</label>
+            <div style={styles.inputInnerWrapper}>
+              <ShieldAlert size={16} style={styles.inputIcon} />
+              <input
+                type="number"
+                required
+                value={captchaAnswer}
+                onChange={(e) => setCaptchaAnswer(e.target.value)}
+                placeholder="Enter answer"
+                className="input-field"
+                style={{ paddingLeft: '38px' }}
+              />
+            </div>
+          </div>
 
           <button
             type="submit"

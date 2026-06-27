@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { ClipboardList, PlusCircle, History, User, Users, Clipboard, Info, Calendar } from 'lucide-react';
+import { storage } from '../firebase';
+import { ref as storageRef, uploadString, getDownloadURL } from 'firebase/storage';
 
 export default function FlightLogs() {
   const { flightLogs, submitFlightLog, flights, currentUser } = useApp();
@@ -10,6 +12,7 @@ export default function FlightLogs() {
   const [pilot, setPilot] = useState(currentUser.robloxUsername || '');
   const [notes, setNotes] = useState('');
   const [photoProof, setPhotoProof] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -20,28 +23,44 @@ export default function FlightLogs() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!pilot.trim() || !photoProof) return;
 
-    submitFlightLog({
-      flightCode: 'Flight Log',
-      pilot: pilot.trim(),
-      status: 'Completed',
-      notes,
-      photoProof
-    });
+    setIsUploading(true);
 
-    // Reset Form
-    setPilot(currentUser.robloxUsername || '');
-    setNotes('');
-    setPhotoProof(null);
-    if (document.getElementById('photo-upload-input')) {
-      document.getElementById('photo-upload-input').value = '';
+    try {
+      let finalPhotoProof = photoProof;
+      if (photoProof.startsWith('data:image')) {
+        const fileRef = storageRef(storage, `flightLogs/${Date.now()}-${Math.random().toString(36).substring(2,8)}`);
+        await uploadString(fileRef, photoProof, 'data_url');
+        finalPhotoProof = await getDownloadURL(fileRef);
+      }
+
+      submitFlightLog({
+        flightCode: 'Flight Log',
+        pilot: pilot.trim(),
+        status: 'Completed',
+        notes,
+        photoProof: finalPhotoProof
+      });
+
+      // Reset Form
+      setPilot(currentUser.robloxUsername || '');
+      setNotes('');
+      setPhotoProof(null);
+      if (document.getElementById('photo-upload-input')) {
+        document.getElementById('photo-upload-input').value = '';
+      }
+      setSuccessMsg('Flight log submitted successfully!');
+      setActiveTab('history');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (error) {
+      console.error('Error uploading photo proof:', error);
+      alert('Failed to upload photo proof. Please try again.');
+    } finally {
+      setIsUploading(false);
     }
-    setSuccessMsg('Flight log submitted successfully!');
-    setActiveTab('history');
-    setTimeout(() => setSuccessMsg(''), 4000);
   };
 
   const formatDate = (isoStr) => {
@@ -139,9 +158,9 @@ export default function FlightLogs() {
             />
           </div>
 
-          <button type="submit" className="btn-primary" style={styles.submitBtn}>
+          <button type="submit" disabled={isUploading} className="btn-primary" style={{...styles.submitBtn, opacity: isUploading ? 0.7 : 1}}>
             <ClipboardList size={18} />
-            <span>Submit Flight Log Entry</span>
+            <span>{isUploading ? 'Uploading...' : 'Submit Flight Log Entry'}</span>
           </button>
         </form>
       ) : (

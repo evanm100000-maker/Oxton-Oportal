@@ -631,7 +631,7 @@ const styles = {
   },
   cardGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+    gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '24px',
     transformStyle: 'preserve-3d',
   },
