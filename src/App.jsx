@@ -36,6 +36,15 @@ function MainApp() {
     if (!bypassMaint) {
       return <MaintenanceScreen onBypass={() => setBypassMaint(true)} allowBypass={true} />;
     }
+    return (
+      <>
+        <WarningBanner />
+        <UpdateBanner />
+        <LoaBanner />
+        <LoginScreen onBack={() => setBypassMaint(false)} />
+        <NotificationOverlay />
+      </>
+    );
   }
 
   // Check suspension

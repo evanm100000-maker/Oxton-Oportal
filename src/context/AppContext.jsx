@@ -250,7 +250,7 @@ export const AppProvider = ({ children }) => {
   const isLoggedIn = !!currentUser;
 
   const [users, setUsers] = useFirebaseArray('users', initialUsers);
-  const [flights, setFlights] = useFirebaseArray('flights', initialFlights, isLoggedIn, 100);
+  const [flights, setFlights] = useFirebaseArray('flights', initialFlights, true, 100);
   const [flightLogs, setFlightLogs] = useFirebaseArray('flightLogs', initialFlightLogs, isLoggedIn, 100);
   const [loaRequests, setLoaRequests] = useFirebaseArray('loaRequests', initialLoaRequests, isLoggedIn, 50);
   const [documents, setDocuments] = useFirebaseArray('documents', initialDocuments, isLoggedIn, 50);
@@ -267,10 +267,10 @@ export const AppProvider = ({ children }) => {
   const [auditLogs, setAuditLogs] = useFirebaseArray('auditLogs', EMPTY_ARRAY, isLoggedIn, 200);
   const [passwordResets, setPasswordResets] = useFirebaseArray('passwordResets', EMPTY_ARRAY);
   const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', EMPTY_ARRAY, isLoggedIn, 200);
-  const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements, isLoggedIn, 50);
+  const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements, true, 50);
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
   const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats, isLoggedIn, 50);
-  const [events, setEvents] = useFirebaseArray('events', initialEvents, isLoggedIn, 50);
+  const [events, setEvents] = useFirebaseArray('events', initialEvents, true, 50);
   const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn, 50);
   const [applicationConfig, setApplicationConfig] = useFirebaseObject('applicationConfig', initialApplicationConfig);
   const [pageConfig, setPageConfig] = useFirebaseObject('pageConfig', initialPageConfig);

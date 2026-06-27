@@ -199,6 +199,16 @@ export default function PassengerPortal({ onBack }) {
                       <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Clock size={14} /> {new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </div>
+                      {event.serverLink && (
+                        <button 
+                          onClick={() => window.open(event.serverLink, '_blank')} 
+                          className="btn-primary" 
+                          style={{marginTop: '12px', width: 'fit-content', padding: '8px 16px', borderRadius: '6px', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px'}}
+                        >
+                          <Calendar size={14} />
+                          Join Event Server
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))
