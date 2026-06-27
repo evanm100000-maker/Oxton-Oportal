@@ -111,6 +111,8 @@ const initialApplicationConfig = {
   ]
 };
 
+const EMPTY_ARRAY = [];
+
 const STORAGE_KEYS = {
   users: 'oxton_users',
   flights: 'oxton_flights',
@@ -227,9 +229,9 @@ export const AppProvider = ({ children }) => {
   const [theme, setTheme] = useState('dark');
   const [warningConfig, setWarningConfig] = useFirebaseObject('warningConfig', initialWarningConfig);
   const [maintenanceConfig, setMaintenanceConfig] = useFirebaseObject('maintenanceConfig', initialMaintenanceConfig);
-  const [auditLogs, setAuditLogs] = useFirebaseArray('auditLogs', []);
-  const [passwordResets, setPasswordResets] = useFirebaseArray('passwordResets', []);
-  const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', []);
+  const [auditLogs, setAuditLogs] = useFirebaseArray('auditLogs', EMPTY_ARRAY);
+  const [passwordResets, setPasswordResets] = useFirebaseArray('passwordResets', EMPTY_ARRAY);
+  const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', EMPTY_ARRAY);
   const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements);
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
   const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats);

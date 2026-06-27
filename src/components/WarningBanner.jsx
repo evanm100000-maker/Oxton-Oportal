@@ -10,12 +10,16 @@ export default function WarningBanner() {
     if (!warningConfig?.countdownEnabled || !warningConfig?.countdownTarget) return;
 
     const calculateTimeLeft = () => {
-      const difference = new Date(warningConfig.countdownTarget) - new Date();
+      const targetString = warningConfig.countdownTarget.includes('+') || warningConfig.countdownTarget.includes('Z') 
+           ? warningConfig.countdownTarget 
+           : `${warningConfig.countdownTarget}+01:00`;
+      const difference = new Date(targetString) - new Date();
       if (difference <= 0) {
-        return { minutes: 0, seconds: 0, isExpired: true };
+        return { hours: 0, minutes: 0, seconds: 0, isExpired: true };
       }
       return {
-        minutes: Math.floor((difference / 1000 / 60)),
+        hours: Math.floor(difference / (1000 * 60 * 60)),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
         seconds: Math.floor((difference / 1000) % 60),
         isExpired: false
       };
@@ -65,7 +69,7 @@ export default function WarningBanner() {
               borderRadius: '12px',
               alignSelf: 'flex-start'
             }}>
-              {String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+              {String(timeLeft.hours || 0).padStart(2, '0')}:{String(timeLeft.minutes || 0).padStart(2, '0')}:{String(timeLeft.seconds || 0).padStart(2, '0')}
             </div>
           )}
         </div>

@@ -1,25 +1,25 @@
 import { initializeApp } from "firebase/app";
+import { getDatabase } from "firebase/database";
+import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
-import { getDatabase } from "firebase/database"; 
-import { getStorage } from "firebase/storage"; 
 
-// Fully verified and corrected Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBrQ3vLhIUfTzxzJ5gFDMFIkct9ZoBTB8w",
-  authDomain: "oxton-database-1.firebaseapp.com",
-  databaseURL: "https://oxton-database-1-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "oxton-database-1",
-  storageBucket: "oxton-database-1.firebasestorage.app",
-  messagingSenderId: "1067871820561",
-  appId: "1:1067871820561:web:618b0559ba94c1fce88ab0",
-  measurementId: "G-H7781ZR4M3"
+  apiKey: "AIzaSyDdX5ULboyxYhUGWYVOt0k_C_RlLqhMDH4",
+  authDomain: "oportal-ea3b8.firebaseapp.com",
+  databaseURL: "https://oportal-ea3b8-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "oportal-ea3b8",
+  storageBucket: "oportal-ea3b8.firebasestorage.app",
+  messagingSenderId: "434126091402",
+  appId: "1:434126091402:web:c0bc93917c9e771ce7a973",
+  measurementId: "G-BKBQV3QJZZ"
 };
 
-// Initialize services cleanly
 const firebaseApp = initializeApp(firebaseConfig);
-const analytics = getAnalytics(firebaseApp);
 const db = getDatabase(firebaseApp);
 const storage = getStorage(firebaseApp);
+let analytics = null;
+if (typeof window !== 'undefined') {
+  analytics = getAnalytics(firebaseApp);
+}
 
-// Export everything required by your context and components
-export { firebaseApp, analytics, db, storage };
+export { firebaseApp, db, storage, analytics };

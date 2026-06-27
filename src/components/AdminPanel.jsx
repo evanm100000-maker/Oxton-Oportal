@@ -727,7 +727,7 @@ export default function AdminPanel() {
                   <label style={styles.label}>Countdown Target (Optional)</label>
                   <input type="datetime-local" value={annCountdownDate} onChange={e=>setAnnCountdownDate(e.target.value)} className="input-field" />
                 </div>
-                <button type="submit" className="btn-primary" style={styles.postBtn}>Post Announcement</button>
+                <button type="submit" className="btn-primary" style={styles.submitBtn}>Post Announcement</button>
               </form>
             </div>
 
@@ -742,7 +742,7 @@ export default function AdminPanel() {
                   <label style={styles.label}>Alert Message</label>
                   <textarea value={bypassMessage} onChange={e=>setBypassMessage(e.target.value)} className="input-field" rows="2" required />
                 </div>
-                <button type="submit" className="btn-danger" style={styles.postBtn}>Trigger Screen Takeover</button>
+                <button type="submit" className="btn-danger" style={styles.submitBtn}>Trigger Screen Takeover</button>
               </form>
             </div>
             
@@ -781,7 +781,7 @@ export default function AdminPanel() {
                 <label style={styles.label}>Event Date & Time</label>
                 <input type="datetime-local" value={eventDate} onChange={e=>setEventDate(e.target.value)} className="input-field" required />
               </div>
-              <button type="submit" className="btn-primary" style={styles.postBtn}>Schedule Event</button>
+              <button type="submit" className="btn-primary" style={styles.submitBtn}>Schedule Event</button>
             </form>
           </div>
           <div style={{ marginTop: '24px' }}>
@@ -874,7 +874,7 @@ export default function AdminPanel() {
               </div>
               {warnCountdownEnabled && (
                 <div style={styles.inputWrapper}>
-                  <label style={styles.label}>Countdown Target Date/Time</label>
+                  <label style={styles.label}>Countdown Target Date/Time (BST)</label>
                   <input type="datetime-local" value={warnCountdownTarget} onChange={e=>setWarnCountdownTarget(e.target.value)} className="input-field" disabled={!warnActive} />
                 </div>
               )}
@@ -1224,7 +1224,7 @@ export default function AdminPanel() {
                         id: 'q_' + Date.now().toString(36),
                         text: newQuestionText,
                         type: newQuestionType,
-                        options: newQuestionType === 'multiple_choice' ? newQuestionOptions.split(',').map(s => s.trim()).filter(Boolean) : undefined
+                        ...(newQuestionType === 'multiple_choice' ? { options: newQuestionOptions.split(',').map(s => s.trim()).filter(Boolean) } : {})
                       };
                       updateApplicationConfig({ ...applicationConfig, questions: [...(applicationConfig?.questions || []), newQuestion] });
                       setNewQuestionText('');
@@ -1295,5 +1295,7 @@ const styles = {
   loaActionButtons: { display: 'flex', gap: '10px' },
   loaActionBtn: { padding: '8px 16px', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' },
   overlay: { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  modal: { padding: '24px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }
+  modal: { padding: '24px', display: 'flex', flexDirection: 'column', maxHeight: '90vh' },
+  composeBox: { padding: '24px', borderRadius: '12px' },
+  composeTitle: { fontSize: '1.25rem', fontWeight: '700', color: 'var(--color-text-main)', marginBottom: '16px' }
 };
