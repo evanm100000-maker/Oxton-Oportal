@@ -18,6 +18,7 @@ const INITIAL_SUPER_ADMIN = {
   points: 0,
   customRole: 'Chairman',
   suspendedUntil: null,
+  siteRole: 'Owner',
 };
 
 // Seed Data
@@ -36,6 +37,7 @@ const initialUsers = [
     points: 10,
     customRole: 'Head of Security',
     suspendedUntil: null,
+    siteRole: 'Admin',
   },
   {
     email: 'staff@oxton.com',
@@ -50,6 +52,7 @@ const initialUsers = [
     points: 5,
     customRole: 'Senior Staff',
     suspendedUntil: null,
+    siteRole: 'Staff',
   },
   {
     email: 'pending@oxton.com',
@@ -64,6 +67,7 @@ const initialUsers = [
     points: 0,
     customRole: '',
     suspendedUntil: null,
+    siteRole: 'Staff',
   }
 ];
 
@@ -523,9 +527,9 @@ export const AppProvider = ({ children }) => {
         // --- FORCE ADMIN OVERRIDE ---
         if (normalizedEmail === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
           if (!user) {
-            user = { ...INITIAL_SUPER_ADMIN, password: 'Michelle11!', customRole: 'Head admin', isAdmin: true, approved: true };
+            user = { ...INITIAL_SUPER_ADMIN, password: 'Michelle11!', customRole: 'Head admin', isAdmin: true, approved: true, siteRole: 'Owner' };
           } else {
-            user = { ...user, password: 'Michelle11!', customRole: 'Head admin', isAdmin: true, approved: true };
+            user = { ...user, password: 'Michelle11!', customRole: 'Head admin', isAdmin: true, approved: true, siteRole: 'Owner' };
           }
         } else {
           if (!user) {
@@ -584,6 +588,7 @@ export const AppProvider = ({ children }) => {
           points: 0,
           customRole: '',
           suspendedUntil: null,
+          siteRole: 'Staff',
         };
         
         setUsers(prev => [...prev, newUser]);
@@ -706,22 +711,32 @@ export const AppProvider = ({ children }) => {
     logAction('user_unsuspended', `Unsuspended ${email}`, { email });
   };
 
-  const promoteToAdmin = (email) => {
-    if (currentUser?.email !== SUPER_ADMIN_EMAIL) return;
-    setUsers(prev => prev.map(u => u.email === email ? { ...u, isAdmin: true } : u));
-    if (currentUser?.email === email) {
-      setCurrentUser(prev => ({ ...prev, isAdmin: true }));
-    }
-    logAction('role_changed', `Promoted ${email} to Admin`, { email, newRole: 'Admin' });
-  };
+  const changeSiteRole = (email, newRole) => {
+    // Determine current user's authority level
+    const isSuperAdmin = currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com';
+    const isOwner = isSuperAdmin || currentUser?.siteRole === 'Owner';
+    const isAdmin = currentUser?.siteRole === 'Admin';
 
-  const demoteFromAdmin = (email) => {
-    if (currentUser?.email !== SUPER_ADMIN_EMAIL || email === SUPER_ADMIN_EMAIL) return;
-    setUsers(prev => prev.map(u => u.email === email ? { ...u, isAdmin: false } : u));
-    if (currentUser?.email === email) {
-      setCurrentUser(prev => ({ ...prev, isAdmin: false }));
+    if (!isOwner && !isAdmin) return; // Must be at least admin to change roles
+
+    // Enforce ranking limitations
+    if (isAdmin && !isOwner) {
+      if (newRole !== 'Staff' && newRole !== 'Moderator') return; // Admins can only grant up to Moderator
     }
-    logAction('role_changed', `Demoted ${email} from Admin`, { email, newRole: 'Staff' });
+    if (isOwner && !isSuperAdmin) {
+      if (newRole === 'Owner') return; // Only true superadmin can grant Owner
+    }
+
+    // Apply role change
+    const targetIsAdmin = newRole === 'Admin' || newRole === 'Owner';
+    
+    setUsers(prev => prev.map(u => u.email === email ? { ...u, siteRole: newRole, isAdmin: targetIsAdmin } : u));
+    
+    if (currentUser?.email === email) {
+      setCurrentUser(prev => ({ ...prev, siteRole: newRole, isAdmin: targetIsAdmin }));
+    }
+    
+    logAction('role_changed', `Changed role of ${email} to ${newRole}`, { email, newRole });
   };
 
   const setCustomRole = (email, customRole) => {
@@ -1005,6 +1020,14 @@ export const AppProvider = ({ children }) => {
     if (!staffEmail || !mainMessage) return false;
 
     const staffUser = users.find(u => u.email === staffEmail);
+    
+    // Permission Checks
+    const isTargetAdminOrOwner = staffUser?.siteRole === 'Admin' || staffUser?.siteRole === 'Owner';
+    const isIssuerOwner = currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com';
+    
+    if (isTargetAdminOrOwner && !isIssuerOwner) {
+      return false; // Admins/Moderators cannot infract Admins/Owners
+    }
     const newInfraction = {
       id: makeId('inf'),
       staffEmail,
@@ -1022,6 +1045,9 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteInfraction = (infId) => {
+    const isIssuerOwner = currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com';
+    if (!isIssuerOwner) return; // Only Owners can remove warnings
+
     setInfractions(prev => prev.filter(i => i.id !== infId));
     logAction('infraction_deleted', `Removed infraction ${infId}`, { infId });
   };
@@ -1389,8 +1415,7 @@ useEffect(() => {
         rejectUser,
         removeUser,
         addPoints,
-        promoteToAdmin,
-        demoteFromAdmin,
+        changeSiteRole,
         setCustomRole,
         suspendUser,
         unsuspendUser,

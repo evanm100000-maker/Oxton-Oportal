@@ -379,7 +379,7 @@ export default function StaffChat() {
                       <Flag size={14} />
                     </button>
                   )}
-                  {(msg.senderEmail === currentUser.email || currentUser.isAdmin) && (
+                  {(msg.senderEmail === currentUser.email || currentUser.isAdmin || currentUser.siteRole === 'Moderator') && (
                     <button style={{...styles.actionBtn, color: '#ef4444'}} onClick={() => {
                       if(window.confirm('Delete this message?')) deleteChatMessage(msg.id);
                     }} title="Delete">

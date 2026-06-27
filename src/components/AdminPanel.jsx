@@ -14,8 +14,7 @@ export default function AdminPanel() {
     rejectUser, 
     removeUser,
     addPoints,
-    promoteToAdmin, 
-    demoteFromAdmin,
+    changeSiteRole,
     setCustomRole,
     suspendUser,
     unsuspendUser,
@@ -467,8 +466,8 @@ export default function AdminPanel() {
 <div id="section-roles">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Staff Role Management</h3>
-          {!isSuperAdmin && (
-            <div style={styles.securityAlert}><ShieldAlert size={18} /><span>RESTRICTED ACTION: Only the primary super admin can modify account roles.</span></div>
+          {!(currentUser?.siteRole === 'Admin' || currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com') && (
+            <div style={styles.securityAlert}><ShieldAlert size={18} /><span>RESTRICTED ACTION: You do not have permission to modify account roles.</span></div>
           )}
           <div style={styles.tableWrapper}>
             <table style={styles.table}>
@@ -486,14 +485,30 @@ export default function AdminPanel() {
                     <tr key={user.email} style={styles.trBody}>
                       <td style={styles.td}><strong>{user.firstName} {user.lastName}</strong><br/>{user.email}</td>
                       <td style={styles.td}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          {user.isAdmin ? <span className="badge badge-admin">Admin</span> : <span className="badge">Staff</span>}
-                          {!isUserSuperAdmin && (user.isAdmin ? (
-                            <button type="button" disabled={!isSuperAdmin} onClick={() => {demoteFromAdmin(user.email); displaySuccess('Role updated');}} className="btn-danger" style={styles.roleBtn}>Demote</button>
-                          ) : (
-                            <button type="button" disabled={!isSuperAdmin} onClick={() => {promoteToAdmin(user.email); displaySuccess('Role updated');}} className="btn-success" style={styles.roleBtn}>Promote</button>
-                          ))}
-                        </div>
+                          {user.siteRole === 'Owner' ? <span className="badge badge-admin" style={{background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.5)'}}>Owner</span> : 
+                           user.siteRole === 'Admin' ? <span className="badge badge-admin">Admin</span> : 
+                           user.siteRole === 'Moderator' ? <span className="badge badge-admin" style={{background: 'rgba(52, 211, 153, 0.2)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.5)'}}>Moderator</span> : 
+                           <span className="badge">Staff</span>}
+                          
+                          <select 
+                            value={user.siteRole || 'Staff'} 
+                            onChange={(e) => {
+                              changeSiteRole(user.email, e.target.value); 
+                              displaySuccess('Role updated');
+                            }}
+                            className="input-field"
+                            style={{marginLeft: '10px', padding: '4px', fontSize: '0.85rem'}}
+                            disabled={!((currentUser?.siteRole === 'Admin' && (user.siteRole === 'Staff' || user.siteRole === 'Moderator')) || currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com')}
+                          >
+                            <option value="Staff">Staff</option>
+                            <option value="Moderator">Moderator</option>
+                            {(currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com') && (
+                              <option value="Admin">Admin</option>
+                            )}
+                            {currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com' && (
+                              <option value="Owner">Owner</option>
+                            )}
+                          </select>
                       </td>
                       <td style={styles.td}>
                         <div style={{display: 'flex', gap: '8px'}}>

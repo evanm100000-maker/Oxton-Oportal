@@ -21,7 +21,7 @@ export default function Infractions() {
 
   return (
     <div style={styles.container}>
-      {currentUser.isAdmin && (
+      {(currentUser.isAdmin || currentUser.siteRole === 'Moderator') && (
         <div style={styles.tabHeader}>
           <button
             onClick={() => setActiveTab('my')}
@@ -53,7 +53,7 @@ export default function Infractions() {
       )}
 
       {/* Staff View: My Infractions */}
-      {(!currentUser.isAdmin || activeTab === 'my') && (
+      {(!currentUser.isAdmin && currentUser.siteRole !== 'Moderator' || activeTab === 'my') && (
         <div style={styles.listContainer}>
           <div style={styles.sectionNotice} className="glass-panel">
             <ShieldCheck size={18} color="#10b981" />
@@ -136,7 +136,7 @@ export default function Infractions() {
       )}
 
       {/* Admin View: All Infractions */}
-      {currentUser.isAdmin && activeTab === 'all' && (
+      {(currentUser.isAdmin || currentUser.siteRole === 'Moderator') && activeTab === 'all' && (
         <div style={styles.listContainer}>
           {infractions.length === 0 ? (
             <div style={styles.emptyState}>
@@ -163,14 +163,16 @@ export default function Infractions() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <span style={styles.infDate}>{inf.date}</span>
-                      <button
-                        onClick={() => handleDelete(inf.id)}
-                        className="btn-danger"
-                        style={styles.deleteBtn}
-                        title="Remove Consequence"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {(currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com') && (
+                        <button
+                          onClick={() => handleDelete(inf.id)}
+                          className="btn-danger"
+                          style={styles.deleteBtn}
+                          title="Remove Consequence"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
 

@@ -20,7 +20,7 @@ export default function SupportTickets() {
   }, [expandedTicket, tickets]);
 
   const myTickets = tickets.filter(t => t.authorEmail === currentUser.email);
-  const ticketsToDisplay = currentUser.isAdmin ? tickets : myTickets;
+  const ticketsToDisplay = (currentUser.isAdmin || currentUser.siteRole === 'Moderator') ? tickets : myTickets;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -52,23 +52,23 @@ export default function SupportTickets() {
       <div style={styles.header}>
         <div style={styles.headerText}>
           <h3 style={styles.title}>Support Tickets</h3>
-          <p style={styles.subtitle}>{currentUser.isAdmin ? 'Manage staff support requests and inquiries.' : 'Open a ticket for private support from admins.'}</p>
+          <p style={styles.subtitle}>{(currentUser.isAdmin || currentUser.siteRole === 'Moderator') ? 'Manage staff support requests and inquiries.' : 'Open a ticket for private support from admins.'}</p>
         </div>
-        {!currentUser.isAdmin && (
+        {(!currentUser.isAdmin && currentUser.siteRole !== 'Moderator') && (
           <button style={styles.newButton} onClick={() => setShowForm(!showForm)}>
             <Plus size={18} /> {showForm ? 'Cancel' : 'New Ticket'}
           </button>
         )}
       </div>
 
-      {!currentUser.isAdmin && (
+      {(!currentUser.isAdmin && currentUser.siteRole !== 'Moderator') && (
         <div style={{...styles.sectionNotice, background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '12px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', color: '#93c5fd', fontSize: '0.9rem', marginBottom: '16px'}}>
           <ShieldAlert size={18} />
           <span><strong>Privacy Notice:</strong> Tickets you create here are strictly confidential. Only you and Administrators can view your tickets. No other staff member can see this.</span>
         </div>
       )}
 
-      {showForm && !currentUser.isAdmin && (
+      {showForm && (!currentUser.isAdmin && currentUser.siteRole !== 'Moderator') && (
         <form onSubmit={handleSubmit} className="glass-panel" style={styles.form}>
           <h4 style={styles.formTitle}>Create Support Ticket</h4>
           <div style={styles.formGroup}>
@@ -165,7 +165,7 @@ export default function SupportTickets() {
                       )}
                     </div>
 
-                    {currentUser.isAdmin && (
+                    {(currentUser.isAdmin || currentUser.siteRole === 'Moderator') && (
                       <div style={styles.adminActions}>
                         <strong style={styles.actionLabel}>Admin Actions:</strong>
                         <div style={styles.actionButtons}>
