@@ -640,23 +640,92 @@ export default function AdminPanel() {
             <div style={styles.emptyGrid}><FileText size={36} color="rgba(255,255,255,0.15)" /><p style={styles.emptyText}>No pending logs.</p></div>
           ) : (
              <div style={styles.loaList}>
-               {pendingFlightLogs.map(log => (
-                 <div key={log.id} style={styles.loaCard} className="glass-panel">
-                   <div style={styles.loaCardHeader}>
-                     <div><h4 style={{color: 'var(--color-text-main)'}}>{log.flightCode}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>Pilot: {log.pilot} | CoPilot: {log.coPilot}</span></div>
-                     <span style={styles.loaDateText}>{new Date(log.timestamp).toLocaleDateString()}</span>
+               {(() => {
+                 const groupedPending = {};
+                 const unassignedPending = [];
+                 pendingFlightLogs.forEach(log => {
+                   if (log.flightId) {
+                     if (!groupedPending[log.flightId]) groupedPending[log.flightId] = [];
+                     groupedPending[log.flightId].push(log);
+                   } else {
+                     unassignedPending.push(log);
+                   }
+                 });
+
+                 return (
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                     {Object.keys(groupedPending).map(flightId => {
+                       const group = groupedPending[flightId];
+                       const flightCode = group[0]?.flightCode || 'Unknown Flight';
+                       return (
+                         <div key={flightId} style={{ background: 'rgba(0,0,0,0.2)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                           <h4 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                             Flight: {flightCode}
+                           </h4>
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                             {group.map(log => (
+                               <div key={log.id} style={styles.loaCard} className="glass-panel">
+                                 <div style={styles.loaCardHeader}>
+                                   <div><h4 style={{color: 'var(--color-text-main)'}}>{log.flightCode}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>Pilot: {log.pilot} {log.coPilot ? `| CoPilot: ${log.coPilot}` : ''}</span></div>
+                                   <span style={styles.loaDateText}>{new Date(log.timestamp).toLocaleDateString()}</span>
+                                 </div>
+                                 {log.photoProof && (
+                                   <div style={{ marginTop: '12px', marginBottom: '12px' }}>
+                                     <span style={{ fontSize: '0.8rem', color: '#9ca3af', display: 'block', marginBottom: '8px' }}>Photo Proof:</span>
+                                     <img src={log.photoProof} alt="Proof" style={{ maxHeight: '200px', borderRadius: '8px', objectFit: 'contain' }} />
+                                   </div>
+                                 )}
+                                 <div style={styles.loaReasonBox}>
+                                   <span style={styles.loaReasonLabel}>Notes & Details:</span>
+                                   <p style={styles.loaReasonText}>{log.notes || 'None'}</p>
+                                   <p style={{fontSize: '0.85rem', color: '#9ca3af', marginTop: '4px'}}>Logged by: {log.submitterName}</p>
+                                 </div>
+                                 <div style={styles.loaActionButtons}>
+                                   <button type="button" onClick={() => {approveFlightLog(log.id); displaySuccess('Log approved and points added.');}} className="btn-success" style={styles.loaActionBtn}><Check size={14}/> Approve</button>
+                                   <button type="button" onClick={() => {rejectFlightLog(log.id); displaySuccess('Log rejected.');}} className="btn-danger" style={styles.loaActionBtn}><X size={14}/> Reject</button>
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         </div>
+                       );
+                     })}
+                     
+                     {unassignedPending.length > 0 && (
+                       <div style={{ background: 'rgba(0,0,0,0.2)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                         <h4 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                           Unassigned Logs
+                         </h4>
+                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                           {unassignedPending.map(log => (
+                             <div key={log.id} style={styles.loaCard} className="glass-panel">
+                               <div style={styles.loaCardHeader}>
+                                 <div><h4 style={{color: 'var(--color-text-main)'}}>{log.flightCode}</h4><span style={{color:'#9ca3af', fontSize:'0.8rem'}}>Pilot: {log.pilot} {log.coPilot ? `| CoPilot: ${log.coPilot}` : ''}</span></div>
+                                 <span style={styles.loaDateText}>{new Date(log.timestamp).toLocaleDateString()}</span>
+                               </div>
+                               {log.photoProof && (
+                                 <div style={{ marginTop: '12px', marginBottom: '12px' }}>
+                                   <span style={{ fontSize: '0.8rem', color: '#9ca3af', display: 'block', marginBottom: '8px' }}>Photo Proof:</span>
+                                   <img src={log.photoProof} alt="Proof" style={{ maxHeight: '200px', borderRadius: '8px', objectFit: 'contain' }} />
+                                 </div>
+                               )}
+                               <div style={styles.loaReasonBox}>
+                                 <span style={styles.loaReasonLabel}>Notes & Details:</span>
+                                 <p style={styles.loaReasonText}>{log.notes || 'None'}</p>
+                                 <p style={{fontSize: '0.85rem', color: '#9ca3af', marginTop: '4px'}}>Logged by: {log.submitterName}</p>
+                               </div>
+                               <div style={styles.loaActionButtons}>
+                                 <button type="button" onClick={() => {approveFlightLog(log.id); displaySuccess('Log approved and points added.');}} className="btn-success" style={styles.loaActionBtn}><Check size={14}/> Approve</button>
+                                 <button type="button" onClick={() => {rejectFlightLog(log.id); displaySuccess('Log rejected.');}} className="btn-danger" style={styles.loaActionBtn}><X size={14}/> Reject</button>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
                    </div>
-                   <div style={styles.loaReasonBox}>
-                     <span style={styles.loaReasonLabel}>Notes & Details:</span>
-                     <p style={styles.loaReasonText}>{log.notes}</p>
-                     <p style={{fontSize: '0.85rem', color: '#9ca3af', marginTop: '4px'}}>Passengers: {log.passengers} | Submitted by: {log.submitterName}</p>
-                   </div>
-                   <div style={styles.loaActionButtons}>
-                     <button type="button" onClick={() => {approveFlightLog(log.id); displaySuccess('Log approved and points added.');}} className="btn-success" style={styles.loaActionBtn}><Check size={14}/> Approve</button>
-                     <button type="button" onClick={() => {rejectFlightLog(log.id); displaySuccess('Log rejected.');}} className="btn-danger" style={styles.loaActionBtn}><X size={14}/> Reject</button>
-                   </div>
-                 </div>
-               ))}
+                 );
+               })()}
              </div>
           )}
         </div>

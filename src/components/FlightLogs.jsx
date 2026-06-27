@@ -235,9 +235,9 @@ export default function FlightLogs() {
                                       className="badge"
                                       style={{
                                         marginLeft: '10px',
-                                        background: log.status === 'Completed' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                                        color: log.status === 'Completed' ? '#10b981' : '#ef4444',
-                                        border: log.status === 'Completed' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)'
+                                        background: (log.status === 'Completed' || log.status === 'Approved') ? 'rgba(16,185,129,0.15)' : (log.status === 'Pending' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)'),
+                                        color: (log.status === 'Completed' || log.status === 'Approved') ? '#10b981' : (log.status === 'Pending' ? '#f59e0b' : '#ef4444'),
+                                        border: (log.status === 'Completed' || log.status === 'Approved') ? '1px solid rgba(16,185,129,0.3)' : (log.status === 'Pending' ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(239,68,68,0.3)')
                                       }}
                                     >
                                       {log.status}
@@ -302,9 +302,9 @@ export default function FlightLogs() {
                         className="badge"
                         style={{
                           marginLeft: '10px',
-                          background: log.status === 'Completed' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                          color: log.status === 'Completed' ? '#10b981' : '#ef4444',
-                          border: log.status === 'Completed' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)'
+                          background: (log.status === 'Completed' || log.status === 'Approved') ? 'rgba(16,185,129,0.15)' : (log.status === 'Pending' ? 'rgba(245,158,11,0.15)' : 'rgba(239,68,68,0.15)'),
+                          color: (log.status === 'Completed' || log.status === 'Approved') ? '#10b981' : (log.status === 'Pending' ? '#f59e0b' : '#ef4444'),
+                          border: (log.status === 'Completed' || log.status === 'Approved') ? '1px solid rgba(16,185,129,0.3)' : (log.status === 'Pending' ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(239,68,68,0.3)')
                         }}
                       >
                         {log.status}
