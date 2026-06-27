@@ -185,7 +185,20 @@ const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null)
         let normalizedData = data;
         if (Array.isArray(initialValue)) {
           if (typeof data === 'object' && !Array.isArray(data)) {
-            normalizedData = Object.values(data);
+            normalizedData = Object.keys(data).map(key => {
+              const item = data[key];
+              if (item && typeof item === 'object') {
+                Object.defineProperty(item, '_firebaseKey', { value: key, enumerable: false, writable: true });
+              }
+              return item;
+            });
+          } else if (Array.isArray(data)) {
+            normalizedData = data.map((item, index) => {
+              if (item && typeof item === 'object') {
+                Object.defineProperty(item, '_firebaseKey', { value: index.toString(), enumerable: false, writable: true });
+              }
+              return item;
+            });
           }
           if (Array.isArray(normalizedData)) {
             normalizedData = normalizedData.filter(item => item !== null && item !== undefined);
@@ -200,17 +213,44 @@ const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null)
   }, [path, initialValue, enabled]);
 
   const updateData = (updater) => {
-    setLocalData(updater);
-    const db = getDatabase(firebaseApp);
-    runTransaction(ref(db, path), (currentData) => {
-      let currentArray = [];
-      if (currentData) {
-        currentArray = Array.isArray(currentData) ? currentData : Object.values(currentData);
-        currentArray = currentArray.filter(item => item !== null && item !== undefined);
-      } else {
-        currentArray = initialValue;
-      }
-      return typeof updater === 'function' ? updater(currentArray) : updater;
+    setLocalData(prev => {
+      const currentArray = prev || [];
+      const nextArray = typeof updater === 'function' ? updater(currentArray) : updater;
+      
+      const db = getDatabase(firebaseApp);
+      import('firebase/database').then(({ update, ref }) => {
+        const updates = {};
+        
+        // Find additions and modifications
+        nextArray.forEach(item => {
+          let fbKey = item._firebaseKey;
+          if (!fbKey) {
+            // New item! Use id, email, or a random string as the key
+            fbKey = item.id || (item.email ? item.email.replace(/\./g, ',') : Math.random().toString(36).substring(2, 10));
+            Object.defineProperty(item, '_firebaseKey', { value: fbKey, enumerable: false, writable: true });
+          }
+          
+          const currentItem = currentArray.find(i => i._firebaseKey === fbKey);
+          if (!currentItem || JSON.stringify(currentItem) !== JSON.stringify(item)) {
+            updates[fbKey] = item;
+          }
+        });
+        
+        // Find deletions
+        currentArray.forEach(item => {
+          const fbKey = item._firebaseKey;
+          const stillExists = nextArray.some(i => i._firebaseKey === fbKey);
+          if (!stillExists && fbKey) {
+            updates[fbKey] = null;
+          }
+        });
+        
+        if (Object.keys(updates).length > 0) {
+          update(ref(db, path), updates).catch(err => console.error('Firebase update error:', err));
+        }
+      });
+      
+      return nextArray;
     });
   };
 
@@ -234,11 +274,14 @@ const useFirebaseObject = (path, initialValue, enabled = true) => {
   }, [path, initialValue, enabled]);
 
   const updateData = (updater) => {
-    setLocalData(updater);
-    const db = getDatabase(firebaseApp);
-    runTransaction(ref(db, path), (currentData) => {
-      const dataToUpdate = currentData ? currentData : initialValue;
-      return typeof updater === 'function' ? updater(dataToUpdate) : updater;
+    setLocalData(prev => {
+      const dataToUpdate = prev ? prev : initialValue;
+      const nextData = typeof updater === 'function' ? updater(dataToUpdate) : updater;
+      const db = getDatabase(firebaseApp);
+      import('firebase/database').then(({ set, ref }) => {
+        set(ref(db, path), nextData).catch(err => console.error('Firebase set error:', err));
+      });
+      return nextData;
     });
   };
 
@@ -277,6 +320,21 @@ export const AppProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
   const [siteVersion, setSiteVersion] = useState(null);
+
+  const visibleChatMessages = React.useMemo(() => {
+    if (!currentUser) return [];
+    return chatMessages.filter(m => {
+      if (m.channel === 'Staff Chat' || m.channel === 'Global') return true;
+      if (m.channel === 'Security') return !!currentUser.isAdmin;
+      
+      const pChat = privateChats.find(c => c.id === m.channel);
+      if (pChat) {
+        if (currentUser.isAdmin) return true;
+        return pChat.participants?.includes(currentUser.email);
+      }
+      return true;
+    });
+  }, [chatMessages, privateChats, currentUser]);
 
   // Removed one-time script that was causing excessive Firebase writes and downloads
 
@@ -433,14 +491,14 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     if (!currentUser) return;
-    if (prevDataRef.current.chatMessages && chatMessages.length > prevDataRef.current.chatMessages.length) {
-      const newMsg = chatMessages.find(m => !prevDataRef.current.chatMessages.some(pm => pm.id === m.id));
+    if (prevDataRef.current.chatMessages && visibleChatMessages.length > prevDataRef.current.chatMessages.length) {
+      const newMsg = visibleChatMessages.find(m => !prevDataRef.current.chatMessages.some(pm => pm.id === m.id));
       if (newMsg && newMsg.senderEmail !== currentUser.email) {
         addNotification(`New message from ${newMsg.senderName}`, newMsg.text.length > 40 ? newMsg.text.substring(0, 40) + '...' : newMsg.text, 'info');
       }
     }
-    prevDataRef.current.chatMessages = chatMessages;
-  }, [chatMessages, currentUser]);
+    prevDataRef.current.chatMessages = visibleChatMessages;
+  }, [visibleChatMessages, currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -1454,7 +1512,7 @@ useEffect(() => {
         addStaffNote,
         deleteStaffNote,
         awardSOTW,
-        chatMessages,
+        chatMessages: visibleChatMessages,
         addChatMessage,
         deleteChatMessage,
         addMessageReaction,
