@@ -162,7 +162,7 @@ const STORAGE_KEYS = {
 };
 
 const isActiveStaff = (user) => (
-  user?.approved && (!user.suspendedUntil || new Date(user.suspendedUntil).getTime() <= Date.now())
+  user?.approved && user?.role !== 'passenger' && (!user.suspendedUntil || new Date(user.suspendedUntil).getTime() <= Date.now())
 );
 
 const escapeEmail = (email) => email ? email.replace(/\./g, ',') : '';
@@ -337,8 +337,8 @@ export const AppProvider = ({ children }) => {
   const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements, true, 50);
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
   const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats, isLoggedIn, 50);
-  const [informalSanctions, setInformalSanctions] = useFirebaseArray('informalSanctions', [], isLoggedIn, 50);
-  const [pointLogs, setPointLogs] = useFirebaseArray('pointLogs', [], isLoggedIn, 500);
+  const [informalSanctions, setInformalSanctions] = useFirebaseArray('informalSanctions', EMPTY_ARRAY, isLoggedIn, 50);
+  const [pointLogs, setPointLogs] = useFirebaseArray('pointLogs', EMPTY_ARRAY, isLoggedIn, 500);
   const [events, setEvents] = useFirebaseArray('events', initialEvents, true, 50);
   const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn, 50);
   const [applicationConfig, setApplicationConfig] = useFirebaseObject('applicationConfig', initialApplicationConfig);
@@ -815,13 +815,13 @@ export const AppProvider = ({ children }) => {
           robloxUsername: userData.robloxUsername,
           isAdmin: false,
           approved: isPassenger ? true : false, 
-          role: userData.role || 'staff',
+          role: isPassenger ? 'passenger' : (userData.role || 'staff'),
           createdAt: new Date().toISOString(),
           profilePicture: '',
           points: 0,
           customRole: '',
           suspendedUntil: null,
-          siteRole: 'Staff',
+          siteRole: isPassenger ? 'Passenger' : 'Staff',
         };
         
         setUsers(prev => [...prev, newUser]);
@@ -1171,7 +1171,6 @@ export const AppProvider = ({ children }) => {
     const cleanLog = JSON.parse(JSON.stringify(newLog));
     update(ref(db, `flightLogs`), { [cleanLog.id]: cleanLog }).catch(err => console.error('Failed to save flight log:', err));
 
-    setFlightLogs(prev => [newLog, ...prev]);
     logAction('flight_log_submitted', `Submitted flight log for ${logData.flightCode}`, { flightCode: logData.flightCode });
   };
 
@@ -1191,14 +1190,14 @@ export const AppProvider = ({ children }) => {
       logAction('flight_log_approved', `Approved flight log for ${logToApprove.flightCode}`, { logId });
       
       // Give points to pilot and copilot
-      const pilotUser = users.find(u => u.robloxUsername === logToApprove.pilot);
+      const submitterUser = users.find(u => u.email === logToApprove.submitterEmail);
       const copilotUser = users.find(u => u.robloxUsername === logToApprove.coPilot);
       
-      if (pilotUser) {
-        setUsers(prev => prev.map(u => u.email === pilotUser.email ? { ...u, points: (u.points || 0) + 7 } : u));
-        logPointsAction(pilotUser.email, 7, `Flight Log Approved: ${logToApprove.flightCode}`);
+      if (submitterUser) {
+        setUsers(prev => prev.map(u => u.email === submitterUser.email ? { ...u, points: (u.points || 0) + 7 } : u));
+        logPointsAction(submitterUser.email, 7, `Flight Log Approved: ${logToApprove.flightCode}`);
       }
-      if (copilotUser) {
+      if (copilotUser && copilotUser.email !== logToApprove.submitterEmail) {
         setUsers(prev => prev.map(u => u.email === copilotUser.email ? { ...u, points: (u.points || 0) + 7 } : u));
         logPointsAction(copilotUser.email, 7, `Flight Log Approved (Co-Pilot): ${logToApprove.flightCode}`);
       }

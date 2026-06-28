@@ -314,8 +314,8 @@ export default function AdminPanel() {
   };
 
   // Derived lists
-  const pendingUsers = users.filter(u => !u.approved);
-  const approvedUsers = users.filter(u => u.approved);
+  const pendingUsers = users.filter(u => !u.approved && u.role !== 'passenger');
+  const approvedUsers = users.filter(u => u.approved && u.role !== 'passenger');
   const pendingLoas = loaRequests.filter(req => req.status === 'Pending');
   const activeLoas = loaRequests.filter(req => req.status === 'Approved' || req.status === 'End Requested');
   const pendingFlightLogs = flightLogs.filter(log => log.status === 'Pending');
