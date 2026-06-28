@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Users, User, Trophy, ShieldAlert, Award, FileText, Send, X, Trash2 } from 'lucide-react';
+import { Users, User, Trophy, ShieldAlert, Award, FileText, Send, X, Trash2, Medal } from 'lucide-react';
 
 export default function AllStaff() {
   const { 
@@ -118,13 +118,15 @@ export default function AllStaff() {
         })}
       </div>
 
-      {selectedStaff && currentUser.isAdmin && (
-        <div style={styles.modalOverlay}>
-          <div className="glass-panel" style={styles.modalContent}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Manage Staff: {selectedStaff.firstName} {selectedStaff.lastName}</h3>
-              <button onClick={() => setSelectedStaff(null)} style={styles.closeModalBtn}><X size={20}/></button>
-            </div>
+      {selectedStaff && currentUser.isAdmin && (() => {
+        const currentStaff = activeUsers.find(u => u.email === selectedStaff.email) || selectedStaff;
+        return (
+          <div style={styles.modalOverlay}>
+            <div className="glass-panel" style={styles.modalContent}>
+              <div style={styles.modalHeader}>
+                <h3 style={styles.modalTitle}>Manage Staff: {currentStaff.firstName} {currentStaff.lastName}</h3>
+                <button onClick={() => setSelectedStaff(null)} style={styles.closeModalBtn}><X size={20}/></button>
+              </div>
 
             <div style={styles.modalBody}>
               <div style={{display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px'}}>
@@ -140,31 +142,31 @@ export default function AllStaff() {
                       <Trophy size={20} color="#fbbf24" />
                       <strong>Star of the Week Medals</strong>
                       <div style={{color: '#9ca3af', fontSize: '0.9rem', display: 'flex', gap: '8px', marginTop: '4px'}}>
-                        <span style={{ color: '#f59e0b' }}>🥇 {selectedStaff.goldMedals || 0}</span>
-                        <span style={{ color: '#9ca3af' }}>🥈 {selectedStaff.silverMedals || 0}</span>
-                        <span style={{ color: '#b45309' }}>🥉 {selectedStaff.bronzeMedals || 0}</span>
+                        <span style={{ color: '#f59e0b' }}>🥇 {currentStaff.goldMedals || 0}</span>
+                        <span style={{ color: '#9ca3af' }}>🥈 {currentStaff.silverMedals || 0}</span>
+                        <span style={{ color: '#b45309' }}>🥉 {currentStaff.bronzeMedals || 0}</span>
                       </div>
                     </div>
                     { (currentUser.siteRole === 'Owner' || currentUser.email === 'evanm.100000@gmail.com') && (
                       <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
                         <button 
-                          onClick={() => awardMedal(selectedStaff.email, 'gold')} 
+                          onClick={() => awardMedal(currentStaff.email, 'gold')} 
                           style={{...styles.awardSotwBtn, background: '#f59e0b', color: '#fff'}}
-                          disabled={selectedStaff.email === currentUser.email}
+                          disabled={currentStaff.email === currentUser.email}
                         >
                           🥇 Gold
                         </button>
                         <button 
-                          onClick={() => awardMedal(selectedStaff.email, 'silver')} 
+                          onClick={() => awardMedal(currentStaff.email, 'silver')} 
                           style={{...styles.awardSotwBtn, background: '#9ca3af', color: '#fff'}}
-                          disabled={selectedStaff.email === currentUser.email}
+                          disabled={currentStaff.email === currentUser.email}
                         >
                           🥈 Silver
                         </button>
                         <button 
-                          onClick={() => awardMedal(selectedStaff.email, 'bronze')} 
+                          onClick={() => awardMedal(currentStaff.email, 'bronze')} 
                           style={{...styles.awardSotwBtn, background: '#b45309', color: '#fff'}}
-                          disabled={selectedStaff.email === currentUser.email}
+                          disabled={currentStaff.email === currentUser.email}
                         >
                           🥉 Bronze
                         </button>
@@ -197,10 +199,10 @@ export default function AllStaff() {
                     </form>
 
                     <div style={styles.notesList}>
-                      {staffNotes.filter(n => n.staffEmail === selectedStaff.email).length === 0 ? (
+                      {staffNotes.filter(n => n.staffEmail === currentStaff.email).length === 0 ? (
                         <p style={styles.emptyNotes}>No notes found for this staff member.</p>
                       ) : (
-                        staffNotes.filter(n => n.staffEmail === selectedStaff.email).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(note => (
+                        staffNotes.filter(n => n.staffEmail === currentStaff.email).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).map(note => (
                           <div key={note.id} style={styles.noteItem}>
                             <div style={styles.noteHeader}>
                               <span style={styles.noteTypeBadge}>{note.type}</span>
@@ -217,14 +219,14 @@ export default function AllStaff() {
               )}
 
               {manageTab === 'history' && (() => {
-                const staffReports = reports.filter(r => r.reporterEmail === selectedStaff.email);
-                const staffLogs = flightLogs.filter(l => l.submitterEmail === selectedStaff.email);
-                const staffInfs = infractions.filter(i => i.staffEmail === selectedStaff.email);
-                const staffLoas = loaRequests.filter(l => l.userEmail === selectedStaff.email);
+                const staffReports = reports.filter(r => r.reporterEmail === currentStaff.email);
+                const staffLogs = flightLogs.filter(l => l.submitterEmail === currentStaff.email);
+                const staffInfs = infractions.filter(i => i.staffEmail === currentStaff.email);
+                const staffLoas = loaRequests.filter(l => l.userEmail === currentStaff.email);
 
                 return (
                   <div style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                    <h4 style={{color: '#fff', margin: 0}}>Summary Record for {selectedStaff.firstName}</h4>
+                    <h4 style={{color: '#fff', margin: 0}}>Summary Record for {currentStaff.firstName}</h4>
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                       <div className="glass-panel" style={{padding: '16px', borderRadius: '8px'}}>
                         <h5 style={{margin: '0 0 8px 0', color: '#9ca3af'}}>Approved Flights</h5>
@@ -248,10 +250,9 @@ export default function AllStaff() {
               })()}
 
               {manageTab === 'promotion' && (() => {
-                const logins = selectedStaff.loginHistory || [];
-                const recentLogins = logins.filter(d => (Date.now() - new Date(d).getTime()) < 7 * 24 * 3600000);
-                const approvedFlights = flightLogs.filter(l => l.submitterEmail === selectedStaff.email && l.status === 'Approved').length;
-                const infs = infractions.filter(i => i.staffEmail === selectedStaff.email).length;
+                const logins = currentStaff.loginHistory || [];
+                const approvedFlights = flightLogs.filter(l => l.submitterEmail === currentStaff.email && l.status === 'Approved').length;
+                const infs = infractions.filter(i => i.staffEmail === currentStaff.email).length;
 
                 const reasons = [];
                 
