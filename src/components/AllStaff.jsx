@@ -289,7 +289,8 @@ export default function AllStaff() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
