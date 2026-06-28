@@ -1,10 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { Trophy, Medal, Award, User, ChevronDown, ChevronUp, Info, TrendingUp, TrendingDown } from 'lucide-react';
 
 export default function Leaderboard() {
-  const { activeUsers } = useApp();
+  const { activeUsers, applicationConfig } = useApp();
   const [showAll, setShowAll] = useState(false);
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
+
+  useEffect(() => {
+    if (!applicationConfig?.nextPointResetDate) return;
+    
+    const updateTimer = () => {
+      const now = new Date();
+      const target = new Date(applicationConfig.nextPointResetDate);
+      const diff = target - now;
+      
+      if (diff > 0) {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / 1000 / 60) % 60);
+        setTimeLeft({ days, hours, minutes });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0 });
+      }
+    };
+    
+    updateTimer();
+    const interval = setInterval(updateTimer, 60000);
+    return () => clearInterval(interval);
+  }, [applicationConfig?.nextPointResetDate]);
 
   // Sort users by points, descending. Filter out users with 0 points if desired, 
   // but let's show everyone who has points or just sort everyone.
@@ -21,6 +45,13 @@ export default function Leaderboard() {
         <p style={styles.subtitle}>
           Recognizing our most dedicated staff based on approved flight logs and admin awards.
         </p>
+        {applicationConfig?.nextPointResetDate && (
+          <div style={{ marginTop: '12px', display: 'inline-block', background: 'rgba(245, 158, 11, 0.1)', padding: '6px 16px', borderRadius: '20px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+            <span style={{ fontSize: '0.9rem', color: '#f59e0b', fontWeight: '600' }}>
+              Points Reset In: {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m
+            </span>
+          </div>
+        )}
       </div>
 
       <div style={styles.list}>

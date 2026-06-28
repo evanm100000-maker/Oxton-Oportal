@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { db, storage, firebaseApp } from "../firebase"; 
 import { ref, onValue, set, runTransaction, push, get, remove, getDatabase, query, limitToLast, update, onDisconnect } from "firebase/database";
-
+import { getNextMondayMidnightUK } from '../utils/timeUtils.js';
 const AppContext = createContext();
 
 const SUPER_ADMIN_EMAIL = 'Evanm.100000@gmail.com';
@@ -560,17 +560,14 @@ export const AppProvider = ({ children }) => {
     const now = new Date();
     
     if (!applicationConfig.nextPointResetDate) {
-      const nextSunday = new Date();
-      nextSunday.setDate(nextSunday.getDate() + ((7 - nextSunday.getDay()) % 7 || 7));
-      nextSunday.setHours(0, 0, 0, 0);
-      setApplicationConfig({ ...applicationConfig, nextPointResetDate: nextSunday.toISOString() });
+      const nextMonday = getNextMondayMidnightUK();
+      setApplicationConfig({ ...applicationConfig, nextPointResetDate: nextMonday.toISOString() });
       return;
     }
 
     const resetDate = new Date(applicationConfig.nextPointResetDate);
     if (now >= resetDate) {
-      const nextSunday = new Date(resetDate);
-      nextSunday.setDate(nextSunday.getDate() + 7);
+      const nextMonday = getNextMondayMidnightUK(resetDate);
       
       const sortedUsers = [...users].filter(u => (u.points || 0) > 0).sort((a, b) => (b.points || 0) - (a.points || 0));
       
@@ -600,7 +597,7 @@ export const AppProvider = ({ children }) => {
         setUsers(users.map(u => ({ ...u, points: 0 })));
       }
       
-      setApplicationConfig({ ...applicationConfig, nextPointResetDate: nextSunday.toISOString() });
+      setApplicationConfig({ ...applicationConfig, nextPointResetDate: nextMonday.toISOString() });
     }
   }, [applicationConfig, users, currentUser]);
 
@@ -1054,6 +1051,14 @@ export const AppProvider = ({ children }) => {
     };
     setFlights(prev => [...prev, newFlight]);
     logAction('flight_added', `Scheduled flight ${flightData.flightCode}`, { flightCode: flightData.flightCode });
+  };
+
+  const editFlight = (flightId, updatedData) => {
+    setFlights(prev => prev.map(f => {
+      if (f.id !== flightId) return f;
+      return { ...f, ...updatedData };
+    }));
+    logAction('flight_edited', `Edited flight ${updatedData.flightCode || flightId}`, { flightId });
   };
 
   const removeFlight = (flightId) => {
@@ -1758,6 +1763,7 @@ useEffect(() => {
         setMaintenance,
         publishUpdate,
         addFlight,
+        editFlight,
         removeFlight,
         toggleFlightLock,
         toggleAllocation,

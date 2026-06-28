@@ -22,6 +22,8 @@ export default function AdminPanel() {
     addInfraction,
     deleteInfraction,
     addFlight, 
+    editFlight,
+    flights = [],
     flightLogs,
     approveFlightLog,
     rejectFlightLog,
@@ -69,6 +71,8 @@ export default function AdminPanel() {
   const [location, setLocation] = useState('');
   const [serverLink, setServerLink] = useState('');
   const [host, setHost] = useState('');
+  
+  const [editingFlightId, setEditingFlightId] = useState(null);
 
   // Announcement states
   const [annType, setAnnType] = useState('Normal');
@@ -163,9 +167,32 @@ export default function AdminPanel() {
   const handleCreateFlight = (e) => {
     e.preventDefault();
     if (!flightCode || !date || !time || !location || !serverLink || !host) return;
-    addFlight({ flightCode, date, time, location, serverLink, host });
+    
+    if (editingFlightId) {
+      editFlight(editingFlightId, { flightCode, date, time, location, serverLink, host });
+      displaySuccess(`Flight ${flightCode} successfully updated!`);
+      setEditingFlightId(null);
+    } else {
+      addFlight({ flightCode, date, time, location, serverLink, host });
+      displaySuccess(`Flight ${flightCode} successfully scheduled!`);
+    }
     setFlightCode(''); setDate(''); setTime(''); setLocation(''); setServerLink(''); setHost('');
-    displaySuccess(`Flight ${flightCode} successfully scheduled!`);
+  };
+
+  const startEditFlight = (flight) => {
+    setEditingFlightId(flight.id);
+    setFlightCode(flight.flightCode || '');
+    setDate(flight.date || '');
+    setTime(flight.time || '');
+    setLocation(flight.location || '');
+    setServerLink(flight.serverLink || '');
+    setHost(flight.host || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  const cancelEditFlight = () => {
+    setEditingFlightId(null);
+    setFlightCode(''); setDate(''); setTime(''); setLocation(''); setServerLink(''); setHost('');
   };
 
   const handleLoaAction = (loaId, status) => {
@@ -736,7 +763,7 @@ export default function AdminPanel() {
       {activeSubTab === 'flights' && (
 <div id="section-flights">
         <div style={styles.panelSection}>
-          <h3 style={styles.panelTitle}>Schedule New Flight</h3>
+          <h3 style={styles.panelTitle}>{editingFlightId ? 'Edit Flight' : 'Schedule New Flight'}</h3>
           <form onSubmit={handleCreateFlight} style={styles.form}>
             <div style={styles.formRow}>
               <div style={styles.inputWrapper}><label style={styles.label}>Flight Code *</label><input type="text" required value={flightCode} onChange={e=>setFlightCode(e.target.value)} className="input-field" /></div>
@@ -758,8 +785,55 @@ export default function AdminPanel() {
               </div>
               <div style={styles.inputWrapper}><label style={styles.label}>Roblox Server Direct Link *</label><input type="url" required value={serverLink} onChange={e=>setServerLink(e.target.value)} className="input-field" /></div>
             </div>
-            <button type="submit" className="btn-primary" style={styles.submitBtn}><Plus size={16} /> Schedule Flight</button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button type="submit" className="btn-primary" style={{ ...styles.submitBtn, flex: 1 }}>
+                {editingFlightId ? 'Update Flight' : <><Plus size={16} /> Schedule Flight</>}
+              </button>
+              {editingFlightId && (
+                <button type="button" onClick={cancelEditFlight} className="btn-secondary" style={{ padding: '0 20px', borderRadius: '8px' }}>
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
+        </div>
+
+        <div style={{...styles.panelSection, marginTop: '24px'}}>
+          <h3 style={styles.panelTitle}>Scheduled Flights</h3>
+          {flights.length === 0 ? (
+            <div style={styles.emptyGrid}><Plane size={36} color="rgba(255,255,255,0.15)" /><p style={styles.emptyText}>No flights currently scheduled.</p></div>
+          ) : (
+            <div style={styles.tableWrapper}>
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.trHead}>
+                    <th style={styles.th}>Flight Code</th>
+                    <th style={styles.th}>Date & Time (UTC)</th>
+                    <th style={styles.th}>Host</th>
+                    <th style={styles.th}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flights.map(flight => {
+                    const hostUser = users.find(u => u.email === flight.host);
+                    return (
+                      <tr key={flight.id} style={styles.trBody}>
+                        <td style={styles.td}><strong>{flight.flightCode}</strong><br/><span style={{fontSize:'0.8rem', color:'#9ca3af'}}>{flight.location}</span></td>
+                        <td style={styles.td}>{flight.date} at {flight.time}</td>
+                        <td style={styles.td}>{hostUser ? `${hostUser.firstName} ${hostUser.lastName}` : flight.host}</td>
+                        <td style={styles.td}>
+                          <div style={styles.actionRow}>
+                            <button type="button" onClick={() => startEditFlight(flight)} className="btn-secondary" style={styles.actionMiniBtn}>Edit</button>
+                            {/* The Cancel Flight button is already in AllocationRequests, but admins might want it here too, though not strictly required */}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

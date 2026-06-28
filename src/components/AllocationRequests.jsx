@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plane, Calendar, Clock, MapPin, ExternalLink, Users, UserPlus, UserMinus, Trash2, Lock, Unlock } from 'lucide-react';
 import { getRankWeight } from '../context/AppContext';
+import { formatFlightTimeLocal, formatFlightDateLocal } from '../utils/timeUtils';
 
 const escapeEmail = (email) => email ? email.replace(/\./g, ',') : '';
 const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
@@ -139,11 +140,11 @@ export default function AllocationRequests() {
                 <div style={styles.detailsSection}>
                   <div style={styles.detailRow}>
                     <Calendar size={16} color="#3b82f6" />
-                    <span>{flight.date}</span>
+                    <span>{formatFlightDateLocal(flight.date, flight.time) || flight.date}</span>
                   </div>
                   <div style={styles.detailRow}>
                     <Clock size={16} color="#3b82f6" />
-                    <span>{flight.time} UTC</span>
+                    <span>{formatFlightTimeLocal(flight.date, flight.time) || `${flight.time} UTC`}</span>
                   </div>
                 </div>
 

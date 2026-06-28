@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plane, Calendar, Megaphone, Ticket, ChevronLeft, Send, Clock, AlertCircle, FileText, UserPlus, LogIn, MessageSquare } from 'lucide-react';
 import StaffApplication from './StaffApplication';
 import SupportTickets from './SupportTickets';
+import { formatFlightTimeLocal, formatFlightDateLocal } from '../utils/timeUtils';
 
 export default function PassengerPortal({ onBack }) {
   const { flights, events, announcements, createTicket, currentUser, login, signup } = useApp();
@@ -98,8 +99,8 @@ export default function PassengerPortal({ onBack }) {
                           <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{flight.location}</div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ color: '#60a5fa', fontWeight: '600' }}>{flight.time}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{flight.date}</div>
+                          <div style={{ color: '#60a5fa', fontWeight: '600' }}>{formatFlightTimeLocal(flight.date, flight.time) || flight.time}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{formatFlightDateLocal(flight.date, flight.time) || flight.date}</div>
                         </div>
                       </div>
                       {flight.serverLink && (
