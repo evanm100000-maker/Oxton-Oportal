@@ -11,6 +11,7 @@ import { getStorage } from "firebase/storage";
 const firebaseConfig = {
   apiKey: "AIzaSyBNjs7UL_7O7k8UwSHizZwQpn6Kuj7Qqs4",
   authDomain: "oxton-new-main-database.firebaseapp.com",
+  databaseURL: "https://oxton-new-main-database-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "oxton-new-main-database",
   storageBucket: "oxton-new-main-database.firebasestorage.app",
   messagingSenderId: "967307028847",
