@@ -331,7 +331,7 @@ export const AppProvider = ({ children }) => {
   const [theme, setTheme] = useState('dark');
   const [warningConfig, setWarningConfig] = useFirebaseObject('warningConfig', initialWarningConfig);
   const [maintenanceConfig, setMaintenanceConfig] = useFirebaseObject('maintenanceConfig', initialMaintenanceConfig);
-  const [auditLogs, setAuditLogs] = useFirebaseArray('auditLogs', EMPTY_ARRAY, isLoggedIn, 200);
+  const [auditLogs, setAuditLogs] = useState([]);
   const [passwordResets, setPasswordResets] = useFirebaseArray('passwordResets', EMPTY_ARRAY);
   const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', EMPTY_ARRAY, isLoggedIn, 200);
   const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements, true, 50);
@@ -659,10 +659,8 @@ export const AppProvider = ({ children }) => {
   }, [tickets, currentUser]);
 
   useEffect(() => {
-    if (currentUser?.isAdmin && auditLogs.length > 0) {
-      const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
-}
-  }, [auditLogs, currentUser, setAuditLogs]);
+    // Audit logs cleanup effect removed because audit logs are disabled
+  }, []);
 
   // Sync currentUser with users list
   useEffect(() => {
@@ -683,16 +681,7 @@ export const AppProvider = ({ children }) => {
 
   // Audit Log function
   const logAction = (type, description, details = {}) => {
-    const newLog = {
-      id: makeId('log'),
-      type,
-      description,
-      details,
-      adminEmail: currentUser?.email || 'System',
-      adminName: currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'System',
-      timestamp: new Date().toISOString()
-    };
-    setAuditLogs(prev => [newLog, ...prev]);
+    // Audit logs are completely disabled
   };
 
   const logPointsAction = (staffEmail, amountDelta, reason) => {

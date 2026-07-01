@@ -9,14 +9,13 @@ import { getStorage } from "firebase/storage";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyDoh6QtKpZpsO4Y4apZ96lYo2x4blxlfrM",
-  authDomain: "oxton-database.firebaseapp.com",
-  databaseURL: "https://oxton-database-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "oxton-database",
-  storageBucket: "oxton-database.firebasestorage.app",
-  messagingSenderId: "549469601889",
-  appId: "1:549469601889:web:686537f4c08dea73e2ea20",
-  measurementId: "G-ZQLDXES5SS"
+  apiKey: "AIzaSyBNjs7UL_7O7k8UwSHizZwQpn6Kuj7Qqs4",
+  authDomain: "oxton-new-main-database.firebaseapp.com",
+  projectId: "oxton-new-main-database",
+  storageBucket: "oxton-new-main-database.firebasestorage.app",
+  messagingSenderId: "967307028847",
+  appId: "1:967307028847:web:753964ca99379a4116609a",
+  measurementId: "G-SK10CQ096L"
 };
 
 // Initialize Firebase

@@ -388,9 +388,7 @@ export default function AdminPanel() {
         <button type="button" onClick={() => setActiveSubTab('applications')} style={getTabStyle(activeSubTab === 'applications')}>
           <FileText size={16} /> Applications ({pendingApplications.length})
         </button>
-        <button type="button" onClick={() => setActiveSubTab('audit')} style={getTabStyle(activeSubTab === 'audit')}>
-          <Activity size={16} /> Audit Log
-        </button>
+
         <button type="button" onClick={() => setActiveSubTab('pointLogs')} style={getTabStyle(activeSubTab === 'pointLogs')}>
           <Award size={16} /> Point Logs
         </button>
@@ -1150,40 +1148,7 @@ export default function AdminPanel() {
       </div>
 
       )}
-      {/* Sub Tab: Audit Log */}
-      {activeSubTab === 'audit' && (
-      <div id="section-audit">
-        <div style={styles.panelSection}>
-          <h3 style={styles.panelTitle}>System Audit Log</h3>
-          <div style={styles.tableWrapper}>
-            <table style={styles.table}>
-              <thead>
-                <tr style={styles.trHead}>
-                  <th style={styles.th}>Date/Time</th>
-                  <th style={styles.th}>Admin</th>
-                  <th style={styles.th}>Action</th>
-                  <th style={styles.th}>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditLogs.map(log => (
-                  <tr key={log.id} style={styles.trBody}>
-                    <td style={styles.td}>{new Date(log.timestamp).toLocaleString()}</td>
-                    <td style={styles.td}>{log.adminName}</td>
-                    <td style={styles.td}>{log.description}</td>
-                    <td style={styles.td}>
-                      <button type="button" onClick={() => setSelectedAuditLog(log)} className="btn-secondary" style={{padding: '4px 8px', fontSize: '0.8rem'}}>View</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {auditLogs.length === 0 && <p style={{padding: '20px', color: '#9ca3af', textAlign: 'center'}}>No audit logs found.</p>}
-          </div>
-        </div>
-      </div>
-      
-      )}
+
       
       {/* Sub Tab: Point Logs */}
       {activeSubTab === 'pointLogs' && (

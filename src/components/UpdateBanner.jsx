@@ -1,22 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { useApp } from '../context/AppContext';
+
 import { RefreshCw, DownloadCloud } from 'lucide-react';
 
-let INITIAL_VERSION = null;
+let INITIAL_COMMIT = null;
+const GITHUB_API_URL = 'https://api.github.com/repos/evanm100000-maker/Oxton-Oportal/commits/main';
 
 export default function UpdateBanner() {
-  const { siteVersion } = useApp();
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    if (siteVersion) {
-      if (!INITIAL_VERSION) {
-        INITIAL_VERSION = siteVersion;
-      } else if (INITIAL_VERSION !== siteVersion) {
-        setShowBanner(true);
+    const checkForUpdates = async () => {
+      try {
+        const response = await fetch(GITHUB_API_URL);
+        const data = await response.json();
+        if (data && data.sha) {
+          if (!INITIAL_COMMIT) {
+            INITIAL_COMMIT = data.sha;
+          } else if (INITIAL_COMMIT !== data.sha) {
+            setShowBanner(true);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check for updates:', error);
       }
-    }
-  }, [siteVersion]);
+    };
+
+    checkForUpdates();
+    const intervalId = setInterval(checkForUpdates, 300000); // Check every 5 minutes
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   if (!showBanner) return null;
 
