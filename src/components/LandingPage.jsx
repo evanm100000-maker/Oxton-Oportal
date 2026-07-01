@@ -108,7 +108,7 @@ export default function LandingPage({ onSelectPortal }) {
         </div>
       </div>
 
-      <div style={styles.versionText}>V1.1.2</div>
+      <div style={styles.versionText}>V1.1.3</div>
     </div>
   );
 }
