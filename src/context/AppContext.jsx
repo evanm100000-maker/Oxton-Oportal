@@ -602,7 +602,7 @@ export const AppProvider = ({ children }) => {
   }, [applicationConfig, users, currentUser]);
 
   // Notifications Watchers
-  const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null });
+  const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null, tasks: null });
 
   useEffect(() => {
     if (!currentUser) return;
@@ -657,6 +657,17 @@ export const AppProvider = ({ children }) => {
     }
     prevDataRef.current.tickets = tickets;
   }, [tickets, currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (prevDataRef.current.tasks && tasks.length > prevDataRef.current.tasks.length) {
+      const newTask = tasks.find(t => !prevDataRef.current.tasks.some(pt => pt.id === t.id));
+      if (newTask && newTask.assignedToEmail === currentUser.email) {
+        addNotification(`New Task Assigned`, `You have a new task: ${newTask.title}`, 'info');
+      }
+    }
+    prevDataRef.current.tasks = tasks;
+  }, [tasks, currentUser]);
 
   useEffect(() => {
     // Audit logs cleanup effect removed because audit logs are disabled

@@ -28,7 +28,7 @@ import AllStaff from './AllStaff';
 import Events from './Events';
 
 export default function Dashboard() {
-  const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail } = useApp();
+  const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks } = useApp();
   const [activeTab, setActiveTab] = useState(() => {
     return sessionStorage.getItem('oxton_activeTab') || 'home';
   });
@@ -90,6 +90,12 @@ export default function Dashboard() {
   );
   const unreadInfractions = myInfractions.filter(inf => !reviewedInfractionIds.includes(inf.id));
 
+  const myTasks = React.useMemo(
+    () => (tasks || []).filter(t => t.assignedToEmail === currentUser.email && t.status !== 'Completed'),
+    [tasks, currentUser.email]
+  );
+  const pendingTasksCount = myTasks.length;
+
   const markInfractionsReviewed = React.useCallback(() => {
     const reviewedIds = Array.from(new Set([
       ...reviewedInfractionIds,
@@ -136,7 +142,8 @@ export default function Dashboard() {
       description: 'Manage and complete tasks assigned by administrators.',
       icon: CheckSquare,
       color: '#14b8a6',
-      component: Tasks
+      component: Tasks,
+      badgeCount: pendingTasksCount
     },
     {
       id: 'tickets',
