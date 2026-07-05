@@ -380,6 +380,38 @@ export default function Dashboard() {
             <LogOut size={16} />
           </button>
         </div>
+
+        {showClockBattery && (
+          <div style={{ position: 'absolute', bottom: '-72px', right: '0px', display: 'flex', alignItems: 'center', gap: '20px', color: 'var(--color-text-main)', fontSize: '2rem', fontWeight: '800', letterSpacing: '-0.5px', border: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 24px', borderRadius: '16px', zIndex: 10, backdropFilter: 'blur(20px)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Clock size={28} />
+              <span>
+                {useLongDateFormat 
+                  ? formatCustomLongDate(currentTime)
+                  : currentTime.toLocaleDateString()}
+              </span>
+              <div style={{ width: '2px', height: '32px', background: 'rgba(255, 255, 255, 0.2)' }} />
+              <span>
+                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !use24HourClock })}
+              </span>
+            </div>
+            {hasBattery && batteryLevel !== null && (
+              <>
+                <div style={{ width: '2px', height: '32px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {(() => {
+                    if (isCharging) return <BatteryCharging size={28} color="#10b981" />;
+                    if (batteryLevel > 80) return <BatteryFull size={28} />;
+                    if (batteryLevel > 40) return <BatteryMedium size={28} />;
+                    if (batteryLevel > 15) return <BatteryLow size={28} />;
+                    return <BatteryWarning size={28} color="#ef4444" />;
+                  })()}
+                  <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </nav>
 
       {unreadInfractions.length > 0 && activeTab !== 'infractions' && (
@@ -422,37 +454,6 @@ export default function Dashboard() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px', justifyContent: 'space-between' }}>
                 <h1 style={{ ...styles.greetingText, marginBottom: 0 }}>Hello, {currentUser.firstName}!</h1>
-                {showClockBattery && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', color: 'var(--color-text-main)', fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.5px', border: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 24px', borderRadius: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <Clock size={32} />
-                      <span>
-                        {useLongDateFormat 
-                          ? formatCustomLongDate(currentTime)
-                          : currentTime.toLocaleDateString()}
-                      </span>
-                      <div style={{ width: '2px', height: '36px', background: 'rgba(255, 255, 255, 0.2)' }} />
-                      <span>
-                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !use24HourClock })}
-                      </span>
-                    </div>
-                    {hasBattery && batteryLevel !== null && (
-                      <>
-                        <div style={{ width: '2px', height: '36px', background: 'rgba(255, 255, 255, 0.2)' }} />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {(() => {
-                            if (isCharging) return <BatteryCharging size={32} color="#10b981" />;
-                            if (batteryLevel > 80) return <BatteryFull size={32} />;
-                            if (batteryLevel > 40) return <BatteryMedium size={32} />;
-                            if (batteryLevel > 15) return <BatteryLow size={32} />;
-                            return <BatteryWarning size={32} color="#ef4444" />;
-                          })()}
-                          <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
               <p style={{ ...styles.greetingSub, marginTop: '8px' }}>
                 Welcome back. Use the cards below to view, log, and request staff actions.
@@ -577,6 +578,7 @@ const styles = {
     flexDirection: 'column',
   },
   navbar: {
+    position: 'relative',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
