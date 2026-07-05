@@ -153,6 +153,7 @@ const STORAGE_KEYS = {
   theme: 'oxton_theme',
   showClockBattery: 'oxton_showClockBattery',
   use24HourClock: 'oxton_use24HourClock',
+  useLongDateFormat: 'oxton_useLongDateFormat',
   warningConfig: 'oxton_warning',
   maintenanceConfig: 'oxton_maintenance',
   auditLogs: 'oxton_audit_logs',
@@ -333,6 +334,7 @@ export const AppProvider = ({ children }) => {
   const [theme, setTheme] = useState('dark');
   const [showClockBattery, setShowClockBattery] = useState(true);
   const [use24HourClock, setUse24HourClock] = useState(false);
+  const [useLongDateFormat, setUseLongDateFormat] = useState(false);
   const [warningConfig, setWarningConfig] = useFirebaseObject('warningConfig', initialWarningConfig);
   const [maintenanceConfig, setMaintenanceConfig] = useFirebaseObject('maintenanceConfig', initialMaintenanceConfig);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -429,6 +431,7 @@ export const AppProvider = ({ children }) => {
     setTheme(safeParse(localStorage, STORAGE_KEYS.theme, 'dark'));
     setShowClockBattery(safeParse(localStorage, STORAGE_KEYS.showClockBattery, true));
     setUse24HourClock(safeParse(localStorage, STORAGE_KEYS.use24HourClock, false));
+    setUseLongDateFormat(safeParse(localStorage, STORAGE_KEYS.useLongDateFormat, false));
     // setWarningConfig(safeParse(localStorage, STORAGE_KEYS.warningConfig, initialWarningConfig));
     // setMaintenanceConfig(safeParse(localStorage, STORAGE_KEYS.maintenanceConfig, initialMaintenanceConfig));
     // setAuditLogs(safeParse(localStorage, STORAGE_KEYS.auditLogs, []));
@@ -477,6 +480,10 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.use24HourClock, JSON.stringify(use24HourClock));
   }, [use24HourClock]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.useLongDateFormat, JSON.stringify(useLongDateFormat));
+  }, [useLongDateFormat]);
 
   useEffect(() => {
     if (currentUser) {
@@ -1756,6 +1763,8 @@ useEffect(() => {
         setShowClockBattery,
         use24HourClock,
         setUse24HourClock,
+        useLongDateFormat,
+        setUseLongDateFormat,
         warningConfig,
         maintenanceConfig,
         auditLogs,

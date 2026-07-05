@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
-import { X, Moon, Sun, Save, User, Image as ImageIcon, Upload, Clock, Battery, ToggleLeft, ToggleRight } from 'lucide-react';
+import { X, Moon, Sun, Save, User, Image as ImageIcon, Upload, Clock, Battery, ToggleLeft, ToggleRight, Calendar } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import { getCroppedImg } from '../utils/cropImage';
 import { compressImage } from '../utils/compressImage';
 
 export default function SettingsModal({ isOpen, onClose }) {
-  const { currentUser, updateUserProfile, theme, toggleTheme, showClockBattery, setShowClockBattery, use24HourClock, setUse24HourClock } = useApp();
+  const { currentUser, updateUserProfile, theme, toggleTheme, showClockBattery, setShowClockBattery, use24HourClock, setUse24HourClock, useLongDateFormat, setUseLongDateFormat } = useApp();
   
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -215,18 +215,32 @@ export default function SettingsModal({ isOpen, onClose }) {
               </button>
               
               {showClockBattery && (
-                <button 
-                  type="button" 
-                  onClick={() => setUse24HourClock(!use24HourClock)}
-                  style={{ ...styles.themeToggleBtn, flex: 1, justifyContent: 'center' }}
-                  className="btn-secondary"
-                >
-                  {use24HourClock ? (
-                    <><Clock size={16} /> 24-Hour</>
-                  ) : (
-                    <><Clock size={16} /> 12-Hour</>
-                  )}
-                </button>
+                <>
+                  <button 
+                    type="button" 
+                    onClick={() => setUse24HourClock(!use24HourClock)}
+                    style={{ ...styles.themeToggleBtn, flex: 1, justifyContent: 'center' }}
+                    className="btn-secondary"
+                  >
+                    {use24HourClock ? (
+                      <><Clock size={16} /> 24-Hour</>
+                    ) : (
+                      <><Clock size={16} /> 12-Hour</>
+                    )}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setUseLongDateFormat(!useLongDateFormat)}
+                    style={{ ...styles.themeToggleBtn, flex: 1, justifyContent: 'center' }}
+                    className="btn-secondary"
+                  >
+                    {useLongDateFormat ? (
+                      <><Calendar size={16} /> Long Date</>
+                    ) : (
+                      <><Calendar size={16} /> Short Date</>
+                    )}
+                  </button>
+                </>
               )}
             </div>
           </div>

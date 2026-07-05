@@ -28,7 +28,7 @@ import AllStaff from './AllStaff';
 import Events from './Events';
 
 export default function Dashboard() {
-  const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks, showClockBattery, use24HourClock } = useApp();
+  const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks, showClockBattery, use24HourClock, useLongDateFormat } = useApp();
   const [activeTab, setActiveTab] = useState(() => {
     return sessionStorage.getItem('oxton_activeTab') || 'home';
   });
@@ -422,16 +422,27 @@ export default function Dashboard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px', justifyContent: 'space-between' }}>
                 <h1 style={{ ...styles.greetingText, marginBottom: 0 }}>Hello, {currentUser.firstName}!</h1>
                 {showClockBattery && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', color: 'var(--color-text-main)', fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.5px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', color: 'var(--color-text-main)', fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.5px', border: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 24px', borderRadius: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <Clock size={32} />
-                      <span>{currentTime.toLocaleDateString()} {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !use24HourClock })}</span>
+                      <span>
+                        {useLongDateFormat 
+                          ? currentTime.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                          : currentTime.toLocaleDateString()}
+                      </span>
+                      <div style={{ width: '2px', height: '36px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                      <span>
+                        {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !use24HourClock })}
+                      </span>
                     </div>
                     {hasBattery && batteryLevel !== null && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {isCharging ? <BatteryCharging size={32} color="#10b981" /> : <Battery size={32} color={batteryLevel <= 20 ? "#ef4444" : "inherit"} />}
-                        <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
-                      </div>
+                      <>
+                        <div style={{ width: '2px', height: '36px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {isCharging ? <BatteryCharging size={32} color="#10b981" /> : <Battery size={32} color={batteryLevel <= 20 ? "#ef4444" : "inherit"} />}
+                          <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
