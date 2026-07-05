@@ -419,17 +419,17 @@ export default function Dashboard() {
               transition={{ type: 'spring', stiffness: 180, damping: 22 }}
               style={styles.greetingHeader}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px', justifyContent: 'space-between' }}>
                 <h1 style={{ ...styles.greetingText, marginBottom: 0 }}>Hello, {currentUser.firstName}!</h1>
                 {showClockBattery && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-secondary)', fontSize: '0.9rem', background: 'rgba(255, 255, 255, 0.03)', padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Clock size={16} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', color: 'var(--color-text-main)', fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.5px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Clock size={32} />
                       <span>{currentTime.toLocaleDateString()} {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !use24HourClock })}</span>
                     </div>
                     {hasBattery && batteryLevel !== null && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {isCharging ? <BatteryCharging size={16} color="#10b981" /> : <Battery size={16} color={batteryLevel <= 20 ? "#ef4444" : "inherit"} />}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {isCharging ? <BatteryCharging size={32} color="#10b981" /> : <Battery size={32} color={batteryLevel <= 20 ? "#ef4444" : "inherit"} />}
                         <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
                       </div>
                     )}
