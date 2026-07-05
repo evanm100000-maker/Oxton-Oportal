@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   Plane, ClipboardList, Calendar, FileText, 
   AlertTriangle, Slash, Settings, LogOut, ArrowLeft, User, Trophy, Medal, Award, MessageSquare, Eye,
-  Activity, CheckSquare, LifeBuoy, BarChart2, Megaphone, Bell, Battery, BatteryCharging, Clock
+  Activity, CheckSquare, LifeBuoy, BarChart2, Megaphone, Bell, Battery, BatteryCharging, BatteryFull, BatteryMedium, BatteryLow, BatteryWarning, Clock
 } from 'lucide-react';
 
 // Subcomponents (we will create these next)
@@ -440,7 +440,13 @@ export default function Dashboard() {
                       <>
                         <div style={{ width: '2px', height: '36px', background: 'rgba(255, 255, 255, 0.2)' }} />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {isCharging ? <BatteryCharging size={32} color="#10b981" /> : <Battery size={32} color={batteryLevel <= 20 ? "#ef4444" : "inherit"} />}
+                          {(() => {
+                            if (isCharging) return <BatteryCharging size={32} color="#10b981" />;
+                            if (batteryLevel > 80) return <BatteryFull size={32} color="inherit" />;
+                            if (batteryLevel > 40) return <BatteryMedium size={32} color="inherit" />;
+                            if (batteryLevel > 15) return <BatteryLow size={32} color="inherit" />;
+                            return <BatteryWarning size={32} color="#ef4444" />;
+                          })()}
                           <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
                         </div>
                       </>
