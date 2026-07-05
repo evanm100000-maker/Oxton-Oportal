@@ -16,7 +16,7 @@ export default function InstallAppButton({ style, className }) {
 
   return (
     <motion.a
-      href="/Oxton-Oportal-Setup.exe" // Placeholder for where the actual .exe will be hosted
+      href="https://github.com/evanm100000-maker/Oxton-Oportal/releases/download/oxton/Oxton-Oportal-Setup.exe" // Real GitHub Release URL
       download="Oxton-Oportal-Setup.exe"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
