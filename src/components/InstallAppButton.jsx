@@ -1,57 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Download } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { isDesktopBrowser } from '../utils/platform';
 
 export default function InstallAppButton({ style, className }) {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstallable, setIsInstallable] = useState(false);
+  // If they are on a mobile phone or already in the Electron app, we might not want to show this
+  // However, we definitely want to show it to standard desktop browsers.
+  
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isElectron = userAgent.indexOf('electron') > -1;
 
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
-      e.preventDefault();
-      // Stash the event so it can be triggered later.
-      setDeferredPrompt(e);
-      setIsInstallable(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      return;
-    }
-    // Show the install prompt
-    deferredPrompt.prompt();
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
-    }
-    // We've used the prompt, and can't use it again, throw it away
-    setDeferredPrompt(null);
-    setIsInstallable(false);
-  };
-
-  if (!isInstallable) {
-    return null; // Don't show the button if not installable
+  if (isElectron) {
+    return null; // Already in the app, no need to download
   }
 
   return (
-    <motion.button
+    <motion.a
+      href="/Oxton-Oportal-Setup.exe" // Placeholder for where the actual .exe will be hosted
+      download="Oxton-Oportal-Setup.exe"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      onClick={handleInstallClick}
       className={`btn-primary ${className || ''}`}
       style={{
-        display: 'flex',
+        display: 'inline-flex',
         alignItems: 'center',
         gap: '8px',
         padding: '10px 16px',
@@ -62,11 +33,12 @@ export default function InstallAppButton({ style, className }) {
         border: 'none',
         cursor: 'pointer',
         boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+        textDecoration: 'none',
         ...style
       }}
     >
       <Download size={18} />
-      <span>Install App</span>
-    </motion.button>
+      <span>Download PC App</span>
+    </motion.a>
   );
 }
