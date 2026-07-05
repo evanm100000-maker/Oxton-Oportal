@@ -355,21 +355,6 @@ export default function Dashboard() {
             </button>
           )}
 
-          {showClockBattery && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginRight: '8px', background: 'rgba(255, 255, 255, 0.03)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Clock size={14} />
-                <span>{currentTime.toLocaleDateString()} {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !use24HourClock })}</span>
-              </div>
-              {hasBattery && batteryLevel !== null && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {isCharging ? <BatteryCharging size={14} color="#10b981" /> : <Battery size={14} color={batteryLevel <= 20 ? "#ef4444" : "inherit"} />}
-                  <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
-                </div>
-              )}
-            </div>
-          )}
-
           <div style={styles.profileBadge}>
             {currentUser.profilePicture ? (
               <img src={currentUser.profilePicture} alt="PFP" style={{width: 24, height: 24, borderRadius: '50%', objectFit: 'cover'}} />
@@ -434,8 +419,24 @@ export default function Dashboard() {
               transition={{ type: 'spring', stiffness: 180, damping: 22 }}
               style={styles.greetingHeader}
             >
-              <h1 style={styles.greetingText}>Hello, {currentUser.firstName}!</h1>
-              <p style={styles.greetingSub}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                <h1 style={{ ...styles.greetingText, marginBottom: 0 }}>Hello, {currentUser.firstName}!</h1>
+                {showClockBattery && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-secondary)', fontSize: '0.9rem', background: 'rgba(255, 255, 255, 0.03)', padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock size={16} />
+                      <span>{currentTime.toLocaleDateString()} {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !use24HourClock })}</span>
+                    </div>
+                    {hasBattery && batteryLevel !== null && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isCharging ? <BatteryCharging size={16} color="#10b981" /> : <Battery size={16} color={batteryLevel <= 20 ? "#ef4444" : "inherit"} />}
+                        <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <p style={{ ...styles.greetingSub, marginTop: '8px' }}>
                 Welcome back. Use the cards below to view, log, and request staff actions.
               </p>
               
