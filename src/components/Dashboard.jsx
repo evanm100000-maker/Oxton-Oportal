@@ -27,6 +27,7 @@ import StaffChat from './StaffChat';
 import AllStaff from './AllStaff';
 import Events from './Events';
 import { formatCustomLongDate } from '../utils/timeUtils';
+import InstallAppButton from './InstallAppButton';
 
 export default function Dashboard() {
   const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks, showClockBattery, use24HourClock, useLongDateFormat } = useApp();
@@ -355,6 +356,8 @@ export default function Dashboard() {
               <span>Admin Panel</span>
             </button>
           )}
+
+          <InstallAppButton style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem' }} />
 
           <div style={styles.profileBadge}>
             {currentUser.profilePicture ? (

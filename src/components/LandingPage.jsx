@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plane, Users, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
+import InstallAppButton from './InstallAppButton';
 
 export default function LandingPage({ onSelectPortal }) {
   const [selectedCard, setSelectedCard] = useState(null);
@@ -37,6 +38,9 @@ export default function LandingPage({ onSelectPortal }) {
           </div>
           <h1 style={styles.title}>Oxton Oportal <span style={{ fontFamily: 'monospace', fontSize: '0.4em', color: '#60a5fa', verticalAlign: 'super', fontWeight: 'bold' }}>BETA</span></h1>
           <p style={styles.subtitle}>Select your portal</p>
+          <div style={{ marginTop: '20px' }}>
+            <InstallAppButton />
+          </div>
         </motion.div>
 
         <div style={styles.cardsContainer}>
