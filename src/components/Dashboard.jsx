@@ -382,29 +382,29 @@ export default function Dashboard() {
         </div>
 
         {showClockBattery && (
-          <div style={{ position: 'absolute', bottom: '-72px', right: '0px', display: 'flex', alignItems: 'center', gap: '20px', color: 'var(--color-text-main)', fontSize: '2rem', fontWeight: '800', letterSpacing: '-0.5px', border: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(255, 255, 255, 0.03)', padding: '8px 24px', borderRadius: '16px', zIndex: 10, backdropFilter: 'blur(20px)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <Clock size={28} />
+          <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: '32px', display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-main)', fontSize: '0.95rem', fontWeight: '600', letterSpacing: '-0.2px', border: '1px solid rgba(255, 255, 255, 0.08)', background: 'rgba(255, 255, 255, 0.05)', padding: '8px 16px', borderRadius: '12px', zIndex: 10, backdropFilter: 'blur(20px)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Clock size={18} />
               <span>
                 {useLongDateFormat 
                   ? formatCustomLongDate(currentTime)
                   : currentTime.toLocaleDateString()}
               </span>
-              <div style={{ width: '2px', height: '32px', background: 'rgba(255, 255, 255, 0.2)' }} />
+              <div style={{ width: '1px', height: '20px', background: 'rgba(255, 255, 255, 0.2)' }} />
               <span>
                 {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !use24HourClock })}
               </span>
             </div>
             {hasBattery && batteryLevel !== null && (
               <>
-                <div style={{ width: '2px', height: '32px', background: 'rgba(255, 255, 255, 0.2)' }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '1px', height: '20px', background: 'rgba(255, 255, 255, 0.2)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {(() => {
-                    if (isCharging) return <BatteryCharging size={28} color="#10b981" />;
-                    if (batteryLevel > 80) return <BatteryFull size={28} />;
-                    if (batteryLevel > 40) return <BatteryMedium size={28} />;
-                    if (batteryLevel > 15) return <BatteryLow size={28} />;
-                    return <BatteryWarning size={28} color="#ef4444" />;
+                    if (isCharging) return <BatteryCharging size={18} color="#10b981" />;
+                    if (batteryLevel > 80) return <BatteryFull size={18} />;
+                    if (batteryLevel > 40) return <BatteryMedium size={18} />;
+                    if (batteryLevel > 15) return <BatteryLow size={18} />;
+                    return <BatteryWarning size={18} color="#ef4444" />;
                   })()}
                   <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
                 </div>
