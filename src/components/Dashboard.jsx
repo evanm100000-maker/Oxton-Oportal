@@ -442,9 +442,9 @@ export default function Dashboard() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {(() => {
                             if (isCharging) return <BatteryCharging size={32} color="#10b981" />;
-                            if (batteryLevel > 80) return <BatteryFull size={32} color="inherit" />;
-                            if (batteryLevel > 40) return <BatteryMedium size={32} color="inherit" />;
-                            if (batteryLevel > 15) return <BatteryLow size={32} color="inherit" />;
+                            if (batteryLevel > 80) return <BatteryFull size={32} />;
+                            if (batteryLevel > 40) return <BatteryMedium size={32} />;
+                            if (batteryLevel > 15) return <BatteryLow size={32} />;
                             return <BatteryWarning size={32} color="#ef4444" />;
                           })()}
                           <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
