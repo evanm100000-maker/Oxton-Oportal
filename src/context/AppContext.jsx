@@ -501,7 +501,7 @@ export const AppProvider = ({ children }) => {
       if (data) {
         setSiteVersion(data);
       } else {
-        const initialVersion = '1.1.3';
+        const initialVersion = '1.2.0';
         set(ref(db, 'users'), initialUsers);
         set(ref(db, 'flights'), initialFlights);
         set(ref(db, 'flightLogs'), initialFlightLogs);
@@ -1052,7 +1052,7 @@ export const AppProvider = ({ children }) => {
 
   const publishUpdate = () => {
     const db = getDatabase(firebaseApp);
-    const newVersion = `1.1.3.${Date.now()}`;
+    const newVersion = `1.2.0.${Date.now()}`;
     set(ref(db, 'siteVersion'), newVersion);
     logAction('site_updated', `Triggered global site update to ${newVersion}`);
   };

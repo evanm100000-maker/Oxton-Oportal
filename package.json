@@ -1,7 +1,7 @@
 {
   "name": "staff-app",
   "private": true,
-  "version": "1.1.3",
+  "version": "1.2.0",
   "description": "Oxton Oportal",
   "author": "Oxton",
   "type": "module",
