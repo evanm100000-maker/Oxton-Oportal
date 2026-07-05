@@ -60,3 +60,26 @@ export function getNextMondayMidnightUK(fromDate = new Date()) {
   
   return d;
 }
+
+/**
+ * Formats a Date object as 'Weekday Dth Month YYYY'
+ * @param {Date} date 
+ * @returns {string} e.g., 'Sunday 5th July 2026'
+ */
+export function formatCustomLongDate(date) {
+  if (!date) return '';
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  const dayName = days[date.getDay()];
+  const monthName = months[date.getMonth()];
+  const year = date.getFullYear();
+  const day = date.getDate();
+  
+  let suffix = 'th';
+  if (day % 10 === 1 && day !== 11) suffix = 'st';
+  else if (day % 10 === 2 && day !== 12) suffix = 'nd';
+  else if (day % 10 === 3 && day !== 13) suffix = 'rd';
+  
+  return `${dayName} ${day}${suffix} ${monthName} ${year}`;
+}

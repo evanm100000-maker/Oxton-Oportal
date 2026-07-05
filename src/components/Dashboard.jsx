@@ -26,6 +26,7 @@ import NotificationsModal from './NotificationsModal';
 import StaffChat from './StaffChat';
 import AllStaff from './AllStaff';
 import Events from './Events';
+import { formatCustomLongDate } from '../utils/timeUtils';
 
 export default function Dashboard() {
   const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks, showClockBattery, use24HourClock, useLongDateFormat } = useApp();
@@ -427,7 +428,7 @@ export default function Dashboard() {
                       <Clock size={32} />
                       <span>
                         {useLongDateFormat 
-                          ? currentTime.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                          ? formatCustomLongDate(currentTime)
                           : currentTime.toLocaleDateString()}
                       </span>
                       <div style={{ width: '2px', height: '36px', background: 'rgba(255, 255, 255, 0.2)' }} />
