@@ -151,6 +151,8 @@ const STORAGE_KEYS = {
   staffNotes: 'oxton_staff_notes',
   currentUser: 'oxton_current_user',
   theme: 'oxton_theme',
+  showClockBattery: 'oxton_showClockBattery',
+  use24HourClock: 'oxton_use24HourClock',
   warningConfig: 'oxton_warning',
   maintenanceConfig: 'oxton_maintenance',
   auditLogs: 'oxton_audit_logs',
@@ -329,6 +331,8 @@ export const AppProvider = ({ children }) => {
 
   // New States
   const [theme, setTheme] = useState('dark');
+  const [showClockBattery, setShowClockBattery] = useState(true);
+  const [use24HourClock, setUse24HourClock] = useState(false);
   const [warningConfig, setWarningConfig] = useFirebaseObject('warningConfig', initialWarningConfig);
   const [maintenanceConfig, setMaintenanceConfig] = useFirebaseObject('maintenanceConfig', initialMaintenanceConfig);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -423,6 +427,8 @@ export const AppProvider = ({ children }) => {
     setCurrentUser(safeParse(sessionStorage, STORAGE_KEYS.currentUser, null));
     
     setTheme(safeParse(localStorage, STORAGE_KEYS.theme, 'dark'));
+    setShowClockBattery(safeParse(localStorage, STORAGE_KEYS.showClockBattery, true));
+    setUse24HourClock(safeParse(localStorage, STORAGE_KEYS.use24HourClock, false));
     // setWarningConfig(safeParse(localStorage, STORAGE_KEYS.warningConfig, initialWarningConfig));
     // setMaintenanceConfig(safeParse(localStorage, STORAGE_KEYS.maintenanceConfig, initialMaintenanceConfig));
     // setAuditLogs(safeParse(localStorage, STORAGE_KEYS.auditLogs, []));
@@ -463,6 +469,14 @@ export const AppProvider = ({ children }) => {
     }
     localStorage.setItem(STORAGE_KEYS.theme, JSON.stringify(theme));
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.showClockBattery, JSON.stringify(showClockBattery));
+  }, [showClockBattery]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.use24HourClock, JSON.stringify(use24HourClock));
+  }, [use24HourClock]);
 
   useEffect(() => {
     if (currentUser) {
@@ -1738,6 +1752,10 @@ useEffect(() => {
         siteVersion, setSiteVersion,
         pointLogs, setPointLogs,
         theme,
+        showClockBattery,
+        setShowClockBattery,
+        use24HourClock,
+        setUse24HourClock,
         warningConfig,
         maintenanceConfig,
         auditLogs,

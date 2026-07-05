@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   Plane, ClipboardList, Calendar, FileText, 
   AlertTriangle, Slash, Settings, LogOut, ArrowLeft, User, Trophy, Medal, Award, MessageSquare, Eye,
-  Activity, CheckSquare, LifeBuoy, BarChart2, Megaphone, Bell
+  Activity, CheckSquare, LifeBuoy, BarChart2, Megaphone, Bell, Battery, BatteryCharging, Clock
 } from 'lucide-react';
 
 // Subcomponents (we will create these next)
@@ -28,7 +28,7 @@ import AllStaff from './AllStaff';
 import Events from './Events';
 
 export default function Dashboard() {
-  const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks } = useApp();
+  const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks, showClockBattery, use24HourClock } = useApp();
   const [activeTab, setActiveTab] = useState(() => {
     return sessionStorage.getItem('oxton_activeTab') || 'home';
   });
@@ -37,6 +37,36 @@ export default function Dashboard() {
   const [lastReadChatCount, setLastReadChatCount] = useState(0);
   const [lastReadFlightCount, setLastReadFlightCount] = useState(0);
   const [reviewedInfractionIds, setReviewedInfractionIds] = useState([]);
+  
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [batteryLevel, setBatteryLevel] = useState(null);
+  const [isCharging, setIsCharging] = useState(false);
+  const [hasBattery, setHasBattery] = useState(false);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  React.useEffect(() => {
+    if ('getBattery' in navigator) {
+      navigator.getBattery().then((battery) => {
+        const checkBattery = () => {
+          // If level is 1 (100%), charging is true, chargingTime is 0, dischargingTime is Infinity
+          // It's likely a desktop PC without a real battery (or a fully charged laptop on AC).
+          const isDesktopFake = battery.charging && battery.chargingTime === 0 && battery.dischargingTime === Infinity && battery.level === 1;
+          setHasBattery(!isDesktopFake);
+          setBatteryLevel(Math.round(battery.level * 100));
+          setIsCharging(battery.charging);
+        };
+        checkBattery();
+        battery.addEventListener('levelchange', checkBattery);
+        battery.addEventListener('chargingchange', checkBattery);
+      }).catch(() => {
+        setHasBattery(false);
+      });
+    }
+  }, []);
 
   React.useEffect(() => {
     if (currentUser?.email) {
@@ -323,6 +353,21 @@ export default function Dashboard() {
               <Settings size={16} />
               <span>Admin Panel</span>
             </button>
+          )}
+
+          {showClockBattery && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginRight: '8px', background: 'rgba(255, 255, 255, 0.03)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Clock size={14} />
+                <span>{currentTime.toLocaleDateString()} {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: !use24HourClock })}</span>
+              </div>
+              {hasBattery && batteryLevel !== null && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {isCharging ? <BatteryCharging size={14} color="#10b981" /> : <Battery size={14} color={batteryLevel <= 20 ? "#ef4444" : "inherit"} />}
+                  <span style={{ color: batteryLevel <= 20 && !isCharging ? "#ef4444" : "inherit" }}>{batteryLevel}%</span>
+                </div>
+              )}
+            </div>
           )}
 
           <div style={styles.profileBadge}>
