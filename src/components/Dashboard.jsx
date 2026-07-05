@@ -338,7 +338,7 @@ export default function Dashboard() {
       {/* Navbar */}
       <nav className="glass-panel dashboard-navbar" style={styles.navbar}>
         <div className="dashboard-nav-brand" style={styles.navBrand} onClick={() => setActiveTab('home')}>
-          <img src="/logo.png" alt="Oxton Logo" style={styles.navLogo} />
+          <img src="./logo.png" alt="Oxton Logo" style={styles.navLogo} />
           <span style={styles.navBrandText}>Oxton Oportal <span style={{ fontFamily: 'monospace', fontSize: '0.6em', color: '#60a5fa', fontWeight: 'bold', marginLeft: '4px' }}>BETA</span></span>
         </div>
 

@@ -34,7 +34,7 @@ export default function LandingPage({ onSelectPortal }) {
           style={styles.header}
         >
           <div style={styles.logoContainer}>
-            <img src="/logo.png" alt="Oxton Logo" style={styles.logoIcon} />
+            <img src="./logo.png" alt="Oxton Logo" style={styles.logoIcon} />
           </div>
           <h1 style={styles.title}>Oxton Oportal <span style={{ fontFamily: 'monospace', fontSize: '0.4em', color: '#60a5fa', verticalAlign: 'super', fontWeight: 'bold' }}>BETA</span></h1>
           <p style={styles.subtitle}>Select your portal</p>
