@@ -1,7 +1,7 @@
 {
   "name": "staff-app",
   "private": true,
-  "version": "1.2.1",
+  "version": "1.2.3",
   "description": "Oxton Oportal",
   "author": "Oxton",
   "type": "module",
@@ -56,7 +56,8 @@
       "output": "dist_electron"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "artifactName": "Oxton-Oportal-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
