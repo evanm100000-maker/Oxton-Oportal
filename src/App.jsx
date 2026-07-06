@@ -12,6 +12,7 @@ import BypassOverlay from './components/BypassOverlay';
 import LandingPage from './components/LandingPage';
 import PassengerPortal from './components/PassengerPortal';
 import { useState } from 'react';
+import UpdateNotifier from './components/UpdateNotifier';
 
 function MainApp() {
   const { currentUser, maintenanceConfig } = useApp();
@@ -96,6 +97,7 @@ export default function App() {
   return (
     <AppProvider>
       <MainApp />
+      <UpdateNotifier />
     </AppProvider>
   );
 }

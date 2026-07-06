@@ -1,10 +1,12 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const url = require('url');
 const { autoUpdater } = require('electron-updater');
 
+let mainWindow;
+
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 900,
@@ -35,8 +37,13 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
 
-  // Check for updates after window is created
+  // Check for updates on startup
   autoUpdater.checkForUpdatesAndNotify();
+
+  // Check for updates every 5 minutes (300,000 ms)
+  setInterval(() => {
+    autoUpdater.checkForUpdatesAndNotify();
+  }, 300000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -45,47 +52,33 @@ app.whenReady().then(() => {
   });
 });
 
+// Helper to send messages to React
+function sendToReact(channel, data) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send(channel, data);
+  }
+}
+
 // Auto-updater events
-autoUpdater.on('checking-for-update', () => {
-  // Comment this out later, just for debugging
-  console.log('Checking for update...');
-});
-
 autoUpdater.on('update-available', (info) => {
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Update Found',
-    message: 'An update is available! Downloading now...'
-  });
+  sendToReact('updater:available', info);
 });
 
-autoUpdater.on('update-not-available', (info) => {
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'No Update',
-    message: 'You are on the latest version.'
-  });
+autoUpdater.on('download-progress', (progressObj) => {
+  sendToReact('updater:progress', progressObj);
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Update Ready',
-    message: 'A new version of Oxton Oportal has been downloaded. Would you like to install it and restart now?',
-    buttons: ['Restart and Install', 'Later']
-  }).then((result) => {
-    if (result.response === 0) {
-      autoUpdater.quitAndInstall();
-    }
-  });
+  sendToReact('updater:downloaded', info);
 });
 
 autoUpdater.on('error', (err) => {
-  dialog.showMessageBox({
-    type: 'error',
-    title: 'Updater Error',
-    message: 'Error in auto-updater: ' + err.toString()
-  });
+  sendToReact('updater:error', err.toString());
+});
+
+// Receive command from React to install the update
+ipcMain.on('updater:install', () => {
+  autoUpdater.quitAndInstall();
 });
 
 app.on('window-all-closed', () => {

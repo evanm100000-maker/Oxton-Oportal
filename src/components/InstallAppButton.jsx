@@ -16,7 +16,7 @@ export default function InstallAppButton({ style, className }) {
 
   return (
     <motion.a
-      href="https://github.com/evanm100000-maker/Oxton-Oportal/releases/download/oxton/Oxton-Oportal-Setup-1.2.3.exe" // Real GitHub Release URL
+      href="https://github.com/evanm100000-maker/Oxton-Oportal/releases/download/oxton/Oxton-Oportal-Setup-1.2.4.exe" // Real GitHub Release URL
       target="_blank"
       rel="noopener noreferrer"
       whileHover={{ scale: 1.05 }}
