@@ -46,6 +46,27 @@ app.whenReady().then(() => {
 });
 
 // Auto-updater events
+autoUpdater.on('checking-for-update', () => {
+  // Comment this out later, just for debugging
+  console.log('Checking for update...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Found',
+    message: 'An update is available! Downloading now...'
+  });
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'No Update',
+    message: 'You are on the latest version.'
+  });
+});
+
 autoUpdater.on('update-downloaded', (info) => {
   dialog.showMessageBox({
     type: 'info',
@@ -60,7 +81,11 @@ autoUpdater.on('update-downloaded', (info) => {
 });
 
 autoUpdater.on('error', (err) => {
-  console.error('Auto-updater error:', err);
+  dialog.showMessageBox({
+    type: 'error',
+    title: 'Updater Error',
+    message: 'Error in auto-updater: ' + err.toString()
+  });
 });
 
 app.on('window-all-closed', () => {
