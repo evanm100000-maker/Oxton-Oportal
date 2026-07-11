@@ -63,6 +63,9 @@ export default function AdminPanel() {
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  const [consequencesSearchQuery, setConsequencesSearchQuery] = useState('');
+  const [infCategory, setInfCategory] = useState('Behavior');
   const [successMsg, setSuccessMsg] = useState('');
 
   const [flightCode, setFlightCode] = useState('');
@@ -244,12 +247,7 @@ export default function AdminPanel() {
         return;
       }
     } else {
-      const wasLogged = addInfraction({
-        staffEmail: infStaffEmail,
-        type: infType,
-        mainMessage: infMainMessage,
-        confidentialMessage: infConfidentialMessage
-      });
+      const wasLogged = addInfraction({ staffEmail: infStaffEmail, type: infType, mainMessage: `[${infCategory}] ${infMainMessage}`, confidentialMessage: infConfidentialMessage });
       if (!wasLogged) {
         alert('The consequence could not be logged. Please check the staff member and message.');
         return;
@@ -443,6 +441,16 @@ export default function AdminPanel() {
         <div style={styles.panelSection}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             <h3 style={styles.panelTitle}>Staff Consequences</h3>
+            <div style={{ display: 'flex', gap: '16px', flex: 1, margin: '0 24px', marginBottom: '16px' }}>
+              <input 
+                type="text" 
+                placeholder="Search staff..." 
+                value={consequencesSearchQuery} 
+                onChange={(e) => setConsequencesSearchQuery(e.target.value)} 
+                className="input-field" 
+                style={{ width: '100%', maxWidth: '300px' }} 
+              />
+            </div>
             <button type="button" className="btn-danger" onClick={() => setShowInfractionModal(true)} style={{padding: '10px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'}}>
               <ShieldAlert size={16} /> Log New Consequence
             </button>
@@ -452,7 +460,7 @@ export default function AdminPanel() {
             {groupedInfractions.length === 0 ? (
               <p style={{padding: '20px', color: '#9ca3af', textAlign: 'center'}}>No consequences logged.</p>
             ) : (
-              groupedInfractions.map(group => (
+              groupedInfractions.filter(group => `${group.name} ${group.email}`.toLowerCase().includes(consequencesSearchQuery.toLowerCase())).map(group => (
                 <div key={group.email} className="glass-panel" style={{ borderRadius: '12px', overflow: 'hidden' }}>
                   <div 
                     style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: 'rgba(255,255,255,0.05)' }}
@@ -518,137 +526,114 @@ export default function AdminPanel() {
       </div>
 
       )}
-      {/* Sub Tab: Roles */}
-      {activeSubTab === 'roles' && (
-<div id="section-roles">
+      {/* Sub Tab: Staff Management */}
+      {activeSubTab === 'staffManagement' && (
+      <div id="section-staffManagement">
         <div style={styles.panelSection}>
-          <h3 style={styles.panelTitle}>Staff Role Management</h3>
+          <h3 style={styles.panelTitle}>Staff Management</h3>
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+            <input 
+              type="text" 
+              placeholder="Search staff..." 
+              value={staffSearchQuery} 
+              onChange={(e) => setStaffSearchQuery(e.target.value)} 
+              className="input-field" 
+              style={{ width: '100%', maxWidth: '300px' }} 
+            />
+          </div>
           {!(currentUser?.siteRole === 'Admin' || currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com') && (
-            <div style={styles.securityAlert}><ShieldAlert size={18} /><span>RESTRICTED ACTION: You do not have permission to modify account roles.</span></div>
+            <div style={styles.securityAlert}><ShieldAlert size={18} /><span>NOTE: You do not have permission to modify account roles.</span></div>
           )}
           <div style={styles.tableWrapper}>
             <table style={styles.table}>
               <thead>
                 <tr style={styles.trHead}>
                   <th style={styles.th}>Staff Member</th>
-                  <th style={styles.th}>Permissions</th>
-                  <th style={styles.th}>Custom Role Name</th>
+                  <th style={styles.th}>Role & Permissions</th>
+                  <th style={styles.th}>Points</th>
+                  <th style={styles.th}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {approvedUsers.map(user => {
-                  const isUserSuperAdmin = user.email === superAdminEmail;
+                {approvedUsers.filter(user => `${user.firstName} ${user.lastName} ${user.email}`.toLowerCase().includes(staffSearchQuery.toLowerCase())).map(user => {
+                  const isSuspended = user.suspendedUntil && new Date(user.suspendedUntil).getTime() > Date.now();
                   return (
                     <tr key={user.email} style={styles.trBody}>
-                      <td style={styles.td}><strong>{user.firstName} {user.lastName}</strong><br/>{user.email}</td>
                       <td style={styles.td}>
-                          {user.siteRole === 'Owner' ? <span className="badge badge-admin" style={{background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.5)'}}>Owner</span> : 
-                           user.siteRole === 'Admin' ? <span className="badge badge-admin">Admin</span> : 
-                           user.siteRole === 'Moderator' ? <span className="badge badge-admin" style={{background: 'rgba(52, 211, 153, 0.2)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.5)'}}>Moderator</span> : 
-                           <span className="badge">Staff</span>}
-                          
-                          <select 
-                            value={user.siteRole || 'Staff'} 
-                            onChange={(e) => {
-                              changeSiteRole(user.email, e.target.value); 
-                              displaySuccess('Role updated');
-                            }}
-                            className="input-field"
-                            style={{marginLeft: '10px', padding: '4px', fontSize: '0.85rem'}}
-                            disabled={!canTakeAction(currentUser, user)}
-                          >
-                            <option value="Staff">Staff</option>
-                            <option value="Moderator">Moderator</option>
-                            {getRankWeight(currentUser) >= 60 && (
-                              <option value="Admin">Admin</option>
-                            )}
-                            {getRankWeight(currentUser) >= 80 && (
-                              <option value="Owner">Owner</option>
-                            )}
-                          </select>
+                        <strong>{user.firstName} {user.lastName}</strong><br/>{user.email}
+                        {isSuspended && <div style={{color: '#ef4444', fontSize: '0.8rem', marginTop: '4px'}}>Suspended until: {new Date(user.suspendedUntil).toLocaleString()}</div>}
                       </td>
                       <td style={styles.td}>
-                        <div style={{display: 'flex', gap: '8px'}}>
-                          <input type="text" placeholder={user.customRole || "e.g. Owner"} value={roleInputs[user.email] !== undefined ? roleInputs[user.email] : user.customRole} onChange={e => setRoleInputs({...roleInputs, [user.email]: e.target.value})} className="input-field" style={{width: '150px', padding: '6px'}} />
-                          <button type="button" onClick={() => handleSetRole(user.email)} className="btn-primary" style={{padding: '6px 10px', borderRadius: '6px'}}>Save</button>
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                          <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                            {user.siteRole === 'Owner' ? <span className="badge badge-admin" style={{background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.5)'}}>Owner</span> : 
+                             user.siteRole === 'Admin' ? <span className="badge badge-admin">Admin</span> : 
+                             user.siteRole === 'Moderator' ? <span className="badge badge-admin" style={{background: 'rgba(52, 211, 153, 0.2)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.5)'}}>Moderator</span> : 
+                             <span className="badge">Staff</span>}
+                            
+                            <select 
+                              value={user.siteRole || 'Staff'} 
+                              onChange={(e) => {
+                                changeSiteRole(user.email, e.target.value); 
+                                displaySuccess('Role updated');
+                              }}
+                              className="input-field"
+                              style={{padding: '4px', fontSize: '0.85rem'}}
+                              disabled={!canTakeAction(currentUser, user)}
+                            >
+                              <option value="Staff">Staff</option>
+                              <option value="Moderator">Moderator</option>
+                              {getRankWeight(currentUser) >= 60 && (
+                                <option value="Admin">Admin</option>
+                              )}
+                              {getRankWeight(currentUser) >= 80 && (
+                                <option value="Owner">Owner</option>
+                              )}
+                            </select>
+                          </div>
+                          <div style={{display: 'flex', gap: '8px'}}>
+                            <input type="text" placeholder={user.customRole || "Custom Role"} value={roleInputs[user.email] !== undefined ? roleInputs[user.email] : user.customRole} onChange={e => setRoleInputs({...roleInputs, [user.email]: e.target.value})} className="input-field" style={{width: '120px', padding: '6px'}} />
+                            <button type="button" onClick={() => handleSetRole(user.email)} className="btn-primary" style={{padding: '6px 10px', borderRadius: '6px'}}>Save</button>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{marginBottom: '4px'}}>Current: <strong>{user.points || 0}</strong></div>
+                        <div style={{display: 'flex', gap: '4px', flexWrap: 'wrap'}}>
+                          <input type="number" placeholder="Amt" value={pointsAmounts[user.email] || ''} onChange={e => setPointsAmounts({...pointsAmounts, [user.email]: e.target.value})} className="input-field" style={{width: '60px', padding: '6px'}} />
+                          <input type="text" placeholder="Reason" value={pointsReasons[user.email] || ''} onChange={e => setPointsReasons({...pointsReasons, [user.email]: e.target.value})} className="input-field" style={{width: '100px', padding: '6px'}} />
+                          <button type="button" onClick={() => handleAddPoints(user.email)} className="btn-primary" style={{padding: '6px', borderRadius: '6px'}}><Plus size={14}/></button>
+                        </div>
+                      </td>
+                      <td style={styles.td}>
+                        <div style={{display: 'flex', gap: '6px', flexWrap: 'wrap'}}>
+                          <button type="button" onClick={() => {
+                            if (window.confirm(`Log Missed Flight for ${user.firstName}?`)) {
+                              logMissedFlight(user.email);
+                              displaySuccess('Missed flight logged.');
+                            }
+                          }} className="btn-secondary" style={{padding: '6px 10px', fontSize: '0.8rem'}}>
+                            Missed Flight
+                          </button>
+
+                          {isSuspended ? (
+                            <button type="button" disabled={!canTakeAction(currentUser, user)} onClick={() => {unsuspendUser(user.email); displaySuccess('User unsuspended.');}} className="btn-success" style={{padding: '6px 10px', fontSize: '0.8rem', opacity: (!canTakeAction(currentUser, user)) ? 0.5 : 1}}>
+                              Unsuspend
+                            </button>
+                          ) : (
+                            <button type="button" disabled={!canTakeAction(currentUser, user)} onClick={() => setSuspendModalUser(user)} className="btn-danger" style={{padding: '6px 10px', fontSize: '0.8rem', opacity: (!canTakeAction(currentUser, user)) ? 0.5 : 1}}>Suspend</button>
+                          )}
+
+                          {user.email !== currentUser.email && canTakeAction(currentUser, user) && (
+                            <button type="button" onClick={() => {removeUser(user.email); displaySuccess('Staff removed.');}} className="btn-danger" style={{padding: '6px 10px', fontSize: '0.8rem'}}>
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      )}
-      {/* Sub Tab: Staff Actions (Remove, Points) */}
-      {activeSubTab === 'staff' && (
-<div id="section-staff">
-        <div style={styles.panelSection}>
-          <h3 style={styles.panelTitle}>Staff Management & Points</h3>
-          <div style={styles.tableWrapper}>
-            <table style={styles.table}>
-              <thead>
-                <tr style={styles.trHead}>
-                  <th style={styles.th}>Staff Member</th>
-                  <th style={styles.th}>Points</th>
-                  <th style={styles.th}>Add Points</th>
-                  <th style={styles.th}>Penalties</th>
-                  <th style={styles.th}>Suspension</th>
-                  <th style={styles.th}>Remove Staff</th>
-                </tr>
-              </thead>
-              <tbody>
-                {approvedUsers.map(user => {
-                  const isSuspended = user.suspendedUntil && new Date(user.suspendedUntil).getTime() > Date.now();
-                  return (
-                  <tr key={user.email} style={styles.trBody}>
-                    <td style={styles.td}>
-                      <strong>{user.firstName} {user.lastName}</strong><br/>{user.email}
-                      {isSuspended && <div style={{color: '#ef4444', fontSize: '0.8rem', marginTop: '4px'}}>Suspended until: {new Date(user.suspendedUntil).toLocaleString()}</div>}
-                    </td>
-                    <td style={styles.td}>{user.points || 0}</td>
-                    <td style={styles.td}>
-                      <div style={{display: 'flex', gap: '8px'}}>
-                        <input type="number" placeholder="Amt" value={pointsAmounts[user.email] || ''} onChange={e => setPointsAmounts({...pointsAmounts, [user.email]: e.target.value})} className="input-field" style={{width: '70px', padding: '6px'}} />
-                        <input type="text" placeholder="Reason" value={pointsReasons[user.email] || ''} onChange={e => setPointsReasons({...pointsReasons, [user.email]: e.target.value})} className="input-field" style={{width: '120px', padding: '6px'}} />
-                        <button type="button" onClick={() => handleAddPoints(user.email)} className="btn-primary" style={{padding: '6px 10px', borderRadius: '6px'}}><Plus size={14}/></button>
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      <div style={{display: 'flex', flexDirection: 'column', gap: '4px'}}>
-                        <button type="button" onClick={() => {
-                          if (window.confirm(`Log Missed Flight for ${user.firstName}?`)) {
-                            logMissedFlight(user.email);
-                            displaySuccess('Missed flight logged.');
-                          }
-                        }} className="btn-secondary" style={{...styles.actionMiniBtn, width: '100%'}}>
-                          Missed Flight
-                        </button>
-                      </div>
-                    </td>
-                    <td style={styles.td}>
-                      {isSuspended ? (
-                        <button type="button" disabled={!canTakeAction(currentUser, user)} onClick={() => {unsuspendUser(user.email); displaySuccess('User unsuspended.');}} className="btn-success" style={{...styles.actionMiniBtn, opacity: (!canTakeAction(currentUser, user)) ? 0.5 : 1}}>
-                          Unsuspend
-                        </button>
-                      ) : (
-                        <div style={{display: 'flex', gap: '8px'}}>
-                          <button type="button" disabled={!canTakeAction(currentUser, user)} onClick={() => setSuspendModalUser(user)} className="btn-danger" style={{padding: '6px 10px', borderRadius: '6px', opacity: (!canTakeAction(currentUser, user)) ? 0.5 : 1}}>Suspend User</button>
-                        </div>
-                      )}
-                    </td>
-                    <td style={styles.td}>
-                      {user.email !== currentUser.email && canTakeAction(currentUser, user) && (
-                        <button type="button" onClick={() => {removeUser(user.email); displaySuccess('Staff removed.');}} className="btn-danger" style={styles.actionMiniBtn}>
-                          <Trash2 size={14} /> Remove
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                )})}
               </tbody>
             </table>
           </div>
@@ -1264,6 +1249,16 @@ export default function AdminPanel() {
                 </select>
               </div>
 
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Reason Category</label>
+                <select value={infCategory} onChange={e => setInfCategory(e.target.value)} className="input-field">
+                  <option value="Behavior">Behavior</option>
+                  <option value="Verbal assault">Verbal assault</option>
+                  <option value="Refusal">Refusal</option>
+                  <option value="Absence">Absence</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
               <div style={styles.inputWrapper}>
                 <label style={styles.label}>Main Message * (Visible to the staff member)</label>
                 <textarea

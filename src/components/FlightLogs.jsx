@@ -3,6 +3,8 @@ import { useApp } from '../context/AppContext';
 import { ClipboardList, PlusCircle, History, User, Users, Clipboard, Info, Calendar } from 'lucide-react';
 import { compressImage } from '../utils/compressImage';
 
+const escapeEmail = (email) => email ? email.replace(/\./g, ',') : '';
+
 export default function FlightLogs() {
   const { flightLogs, submitFlightLog, flights, currentUser } = useApp();
   const [activeTab, setActiveTab] = useState('submit');
@@ -14,7 +16,13 @@ export default function FlightLogs() {
   const [photoProof, setPhotoProof] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const lockedFlights = flights.filter(f => f.locked);
+  const lockedFlights = flights.filter(f => {
+    if (!f.locked) return false;
+    const record = f.attendanceRecord;
+    if (!record) return false;
+    const myMark = record[escapeEmail(currentUser.email)];
+    return myMark === 'Present' || myMark === 'Late';
+  });
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -254,6 +262,17 @@ export default function FlightLogs() {
                                     <span style={styles.roleLabel}>ROBLOX USERNAME</span>
                                     <span style={styles.roleValue}>{log.pilot}</span>
                                   </div>
+                                  {flight && flight.attendanceRecord && flight.attendanceRecord[escapeEmail(log.submitterEmail)] && (
+                                    <div style={styles.roleBox}>
+                                      <span style={styles.roleLabel}>ATTENDANCE</span>
+                                      <span style={{
+                                        ...styles.roleValue, 
+                                        color: flight.attendanceRecord[escapeEmail(log.submitterEmail)] === 'Present' ? '#10b981' : flight.attendanceRecord[escapeEmail(log.submitterEmail)] === 'Late' ? '#f59e0b' : '#ef4444'
+                                      }}>
+                                        {flight.attendanceRecord[escapeEmail(log.submitterEmail)]}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
               
                                 {log.photoProof && (

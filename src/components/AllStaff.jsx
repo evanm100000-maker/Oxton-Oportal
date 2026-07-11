@@ -21,6 +21,7 @@ export default function AllStaff() {
   const [manageTab, setManageTab] = useState('notes');
   const [noteType, setNoteType] = useState('Performance');
   const [noteText, setNoteText] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const calculateBadge = (email) => {
     const flightsCount = flightLogs.filter(log => log.submitterEmail === email && log.status === 'Approved').length;
@@ -50,15 +51,27 @@ export default function AllStaff() {
           <span>{activeUsers.length} Total Staff</span>
         </div>
       </div>
+      
+      <div style={{ marginBottom: '16px' }}>
+        <input 
+          type="text" 
+          placeholder="Search staff by name or username..." 
+          value={searchQuery} 
+          onChange={(e) => setSearchQuery(e.target.value)} 
+          className="input-field" 
+          style={{ width: '100%', maxWidth: '400px' }} 
+        />
+      </div>
 
       <div style={styles.grid}>
-        {activeUsers.map(user => {
+        {activeUsers.filter(user => `${user.firstName} ${user.lastName} ${user.robloxUsername}`.toLowerCase().includes(searchQuery.toLowerCase())).map(user => {
           const isOnline = user.email && onlineUsers[user.email.replace(/\./g, ',')];
           const badge = calculateBadge(user.email);
           const goldMedals = user.goldMedals || 0;
           const silverMedals = user.silverMedals || 0;
           const bronzeMedals = user.bronzeMedals || 0;
           const hasMedals = goldMedals > 0 || silverMedals > 0 || bronzeMedals > 0;
+          const isOnLOA = loaRequests.some(loa => loa.userEmail === user.email && loa.status === 'Approved');
           
           return (
             <div key={user.email} style={styles.card} className="glass-panel interactive-card">
@@ -81,6 +94,9 @@ export default function AllStaff() {
                 <div style={styles.userInfo}>
                   <div style={styles.nameRow}>
                     <strong style={styles.name}>{user.firstName} {user.lastName}</strong>
+                    {isOnLOA && (
+                      <span style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold' }}>LOA</span>
+                    )}
                     {badge && (
                       <span style={{...styles.rankBadge, color: badge.color, borderColor: badge.color}}>
                         {badge.label}

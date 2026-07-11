@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { LogIn, UserPlus, Key, Mail, User, ShieldAlert, Award, ChevronLeft, Eye, EyeOff } from 'lucide-react';
+import { LogIn, UserPlus, Key, Mail, User, ShieldAlert, Award, ChevronLeft, Eye, EyeOff, Plane, Star, Heart, Cloud, Moon, Sun, Camera, Bell, Zap } from 'lucide-react';
 
 export default function LoginScreen({ onBack }) {
   const { login, signup, requestPasswordReset } = useApp();
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -12,14 +13,36 @@ export default function LoginScreen({ onBack }) {
   const [showPassword, setShowPassword] = useState(false);
 
   // Captcha state
-  const [captchaAnswer, setCaptchaAnswer] = useState('');
-  const [captchaNum1, setCaptchaNum1] = useState(Math.floor(Math.random() * 10) + 1);
-  const [captchaNum2, setCaptchaNum2] = useState(Math.floor(Math.random() * 10) + 1);
+  const allIcons = ['Plane', 'Star', 'Heart', 'Cloud', 'Moon', 'Sun', 'Camera', 'Bell', 'Zap'];
+  const [captchaTarget, setCaptchaTarget] = useState('Plane');
+  const [captchaGrid, setCaptchaGrid] = useState([]);
+  const [selectedCaptchaIndices, setSelectedCaptchaIndices] = useState([]);
 
-  const regenerateCaptcha = () => {
-    setCaptchaNum1(Math.floor(Math.random() * 10) + 1);
-    setCaptchaNum2(Math.floor(Math.random() * 10) + 1);
-    setCaptchaAnswer('');
+  const regenerateCaptcha = React.useCallback(() => {
+    const target = 'Plane'; // For simplicity, we always ask for Plane, but we can randomize target too
+    setCaptchaTarget(target);
+    const newGrid = [];
+    const targetCount = Math.floor(Math.random() * 3) + 2; // 2 to 4 planes
+    for (let i = 0; i < 9; i++) {
+      newGrid.push(i < targetCount ? target : allIcons[Math.floor(Math.random() * (allIcons.length - 1)) + 1]);
+    }
+    // Shuffle
+    for (let i = newGrid.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newGrid[i], newGrid[j]] = [newGrid[j], newGrid[i]];
+    }
+    setCaptchaGrid(newGrid);
+    setSelectedCaptchaIndices([]);
+  }, []);
+
+  React.useEffect(() => {
+    regenerateCaptcha();
+  }, [regenerateCaptcha]);
+
+  const toggleCaptchaSelection = (index) => {
+    setSelectedCaptchaIndices(prev => 
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
   };
 
   // Form states
@@ -35,8 +58,12 @@ export default function LoginScreen({ onBack }) {
     setSuccess('');
     setLoading(true);
 
-    if (parseInt(captchaAnswer, 10) !== captchaNum1 + captchaNum2) {
-      setError('Incorrect security question answer. Please try again.');
+    const isCaptchaValid = 
+      captchaGrid.filter((_, i) => selectedCaptchaIndices.includes(i)).every(icon => icon === captchaTarget) &&
+      captchaGrid.filter(icon => icon === captchaTarget).length === selectedCaptchaIndices.length;
+
+    if (!isCaptchaValid) {
+      setError('Captcha failed. Please select all ' + captchaTarget + 's.');
       regenerateCaptcha();
       setLoading(false);
       return;
@@ -49,7 +76,7 @@ export default function LoginScreen({ onBack }) {
         setSuccess('Password reset request sent. Please message vortex23575 (Jamie) on Discord.');
         setIsForgotPassword(false);
       } else if (isLogin) {
-        await login(email, password);
+        await login(email, password, rememberMe);
       } else {
         if (!firstName || !robloxUsername || !email || !password) {
           throw new Error('Please fill in all fields.');
@@ -234,19 +261,67 @@ export default function LoginScreen({ onBack }) {
             </div>
           )}
 
-          <div style={styles.inputWrapper}>
-            <label style={styles.label}>Security Question: What is {captchaNum1} + {captchaNum2}?</label>
-            <div style={styles.inputInnerWrapper}>
-              <ShieldAlert size={16} style={styles.inputIcon} />
-              <input
-                type="number"
-                required
-                value={captchaAnswer}
-                onChange={(e) => setCaptchaAnswer(e.target.value)}
-                placeholder="Enter answer"
-                className="input-field"
-                style={{ paddingLeft: '38px' }}
+          {isLogin && !isForgotPassword && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', marginBottom: '8px' }}>
+              <input 
+                type="checkbox" 
+                id="rememberMe" 
+                checked={rememberMe} 
+                onChange={(e) => setRememberMe(e.target.checked)} 
+                style={{ cursor: 'pointer' }}
               />
+              <label htmlFor="rememberMe" style={{ ...styles.label, cursor: 'pointer', margin: 0 }}>Remember Me</label>
+            </div>
+          )}
+
+          <div style={{ ...styles.inputWrapper, alignItems: 'center' }}>
+            <label style={{ ...styles.label, textAlign: 'center', marginBottom: '8px' }}>
+              Security Check: Select all images with <strong>{captchaTarget}s</strong>
+            </label>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(3, 1fr)', 
+              gap: '8px', 
+              background: 'rgba(255,255,255,0.05)', 
+              padding: '12px', 
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.1)'
+            }}>
+              {captchaGrid.map((iconName, idx) => {
+                const isSelected = selectedCaptchaIndices.includes(idx);
+                let IconComp = null;
+                switch(iconName) {
+                  case 'Plane': IconComp = <Plane size={24} color="#fff" />; break;
+                  case 'Star': IconComp = <Star size={24} color="#fff" />; break;
+                  case 'Heart': IconComp = <Heart size={24} color="#fff" />; break;
+                  case 'Cloud': IconComp = <Cloud size={24} color="#fff" />; break;
+                  case 'Moon': IconComp = <Moon size={24} color="#fff" />; break;
+                  case 'Sun': IconComp = <Sun size={24} color="#fff" />; break;
+                  case 'Camera': IconComp = <Camera size={24} color="#fff" />; break;
+                  case 'Bell': IconComp = <Bell size={24} color="#fff" />; break;
+                  case 'Zap': IconComp = <Zap size={24} color="#fff" />; break;
+                }
+                return (
+                  <div 
+                    key={idx}
+                    onClick={() => toggleCaptchaSelection(idx)}
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      background: isSelected ? '#3b82f6' : 'rgba(0,0,0,0.3)',
+                      border: isSelected ? '2px solid #60a5fa' : '2px solid transparent',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {IconComp}
+                  </div>
+                );
+              })}
             </div>
           </div>
 

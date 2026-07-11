@@ -27,8 +27,6 @@ import StaffChat from './StaffChat';
 import AllStaff from './AllStaff';
 import Events from './Events';
 import { formatCustomLongDate } from '../utils/timeUtils';
-import InstallAppButton from './InstallAppButton';
-import { isDesktopBrowser } from '../utils/platform';
 
 export default function Dashboard() {
   const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks, showClockBattery, use24HourClock, useLongDateFormat } = useApp();
@@ -357,8 +355,7 @@ export default function Dashboard() {
               <span>Admin Panel</span>
             </button>
           )}
-
-          <InstallAppButton style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem' }} />
+          {/* InstallAppButton removed */}
 
           <div style={styles.profileBadge}>
             {currentUser.profilePicture ? (
@@ -445,24 +442,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {isDesktopBrowser() && (
-        <motion.div
-          initial={{ opacity: 0, y: -18, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          style={{ ...styles.infractionAlert, borderColor: 'rgba(234, 179, 8, 0.4)', background: 'linear-gradient(135deg, rgba(161, 98, 7, 0.4), rgba(15, 23, 42, 0.86))' }}
-          className="glass-panel"
-        >
-          <div style={{ ...styles.infractionAlertIcon, background: '#eab308', boxShadow: '0 0 0 6px rgba(234, 179, 8, 0.16)' }}>
-            <AlertTriangle size={22} color="#fff" />
-          </div>
-          <div style={styles.infractionAlertBody}>
-            <span style={{ ...styles.infractionAlertKicker, color: '#fef08a' }}>IMPORTANT NOTICE</span>
-            <strong style={styles.infractionAlertTitle}>
-              PC support for non-app users is ending soon. Please ensure you download the app from the role selection page. Website support will still be available through phones, but on computers, you will be redirected to a download link.
-            </strong>
-          </div>
-        </motion.div>
-      )}
+      {/* Banner removed */}
 
       {/* Main Area */}
       <main className="dashboard-main-content" style={styles.mainContent}>
@@ -476,7 +456,15 @@ export default function Dashboard() {
               style={styles.greetingHeader}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginBottom: '8px', justifyContent: 'space-between' }}>
-                <h1 style={{ ...styles.greetingText, marginBottom: 0 }}>Hello, {currentUser.firstName}!</h1>
+                <h1 style={{ ...styles.greetingText, marginBottom: 0 }}>
+                  {(() => {
+                    const hour = currentTime.getHours();
+                    if (hour >= 6 && hour < 12) return 'Good Morning';
+                    if (hour >= 12 && hour < 18) return 'Good Afternoon';
+                    if (hour >= 18 && hour < 21) return 'Good Evening';
+                    return 'Good Night';
+                  })()}, {currentUser.firstName}!
+                </h1>
               </div>
               <p style={{ ...styles.greetingSub, marginTop: '8px' }}>
                 Welcome back. Use the cards below to view, log, and request staff actions.

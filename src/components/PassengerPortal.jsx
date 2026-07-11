@@ -5,7 +5,6 @@ import { Plane, Calendar, Megaphone, Ticket, ChevronLeft, Send, Clock, AlertCirc
 import StaffApplication from './StaffApplication';
 import SupportTickets from './SupportTickets';
 import { formatFlightTimeLocal, formatFlightDateLocal } from '../utils/timeUtils';
-import InstallAppButton from './InstallAppButton';
 
 export default function PassengerPortal({ onBack }) {
   const { flights, events, announcements, createTicket, currentUser, login, signup } = useApp();
@@ -311,9 +310,7 @@ export default function PassengerPortal({ onBack }) {
               <span style={styles.logoText}>OPORTAL <span style={{ color: '#9ca3af', fontWeight: '500', fontSize: '1rem' }}>| Passenger</span></span>
             </div>
           </div>
-          <div style={styles.headerRight}>
-            <InstallAppButton style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem' }} />
-          </div>
+            {/* App downloads removed */}
         </div>
       </header>
 

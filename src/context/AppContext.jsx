@@ -426,7 +426,22 @@ export const AppProvider = ({ children }) => {
     // setTasks(safeParse(localStorage, STORAGE_KEYS.tasks, initialTasks));
     // setTickets(safeParse(localStorage, STORAGE_KEYS.tickets, initialTickets));
     // setStaffNotes(safeParse(localStorage, STORAGE_KEYS.staffNotes, initialStaffNotes));
-    setCurrentUser(safeParse(sessionStorage, STORAGE_KEYS.currentUser, null));
+        let savedUser = safeParse(sessionStorage, STORAGE_KEYS.currentUser, null);
+    if (!savedUser) {
+      savedUser = safeParse(localStorage, STORAGE_KEYS.currentUser, null);
+      if (savedUser && savedUser.rememberMeExpiry) {
+        if (Date.now() > savedUser.rememberMeExpiry) {
+          savedUser = null;
+          localStorage.removeItem(STORAGE_KEYS.currentUser);
+        }
+      } else {
+        if (savedUser && !savedUser.rememberMeExpiry) {
+            savedUser = null;
+            localStorage.removeItem(STORAGE_KEYS.currentUser);
+        }
+      }
+    }
+    setCurrentUser(savedUser);
     
     setTheme(safeParse(localStorage, STORAGE_KEYS.theme, 'dark'));
     setShowClockBattery(safeParse(localStorage, STORAGE_KEYS.showClockBattery, true));
@@ -485,11 +500,18 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem(STORAGE_KEYS.useLongDateFormat, JSON.stringify(useLongDateFormat));
   }, [useLongDateFormat]);
 
-  useEffect(() => {
+    useEffect(() => {
     if (currentUser) {
-      sessionStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
+      if (currentUser.rememberMeExpiry) {
+        localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
+        sessionStorage.removeItem(STORAGE_KEYS.currentUser);
+      } else {
+        sessionStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
+        localStorage.removeItem(STORAGE_KEYS.currentUser);
+      }
     } else {
       sessionStorage.removeItem(STORAGE_KEYS.currentUser);
+      localStorage.removeItem(STORAGE_KEYS.currentUser);
     }
   }, [currentUser]);
 
@@ -731,7 +753,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // Auth Operations
-  const login = (email, password) => {
+  const login = (email, password, rememberMe = false) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const normalizedEmail = email.toLowerCase().trim();
@@ -801,7 +823,8 @@ export const AppProvider = ({ children }) => {
           lastLoginDate: now, 
           loginStreak: newStreak, 
           last5DayBonusDate,
-          points: (user.points || 0) + pointsToAdd 
+          points: (user.points || 0) + pointsToAdd,
+          rememberMeExpiry: rememberMe ? Date.now() + 10 * 24 * 60 * 60 * 1000 : null
         };
         setUsers(prev => prev.map(u => u.email === updatedUser.email ? updatedUser : u));
         

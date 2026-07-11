@@ -17,7 +17,8 @@ export default function AllocationRequests() {
     removeFlight,
     users,
     activeUsers,
-    toggleFlightLock
+    toggleFlightLock,
+    editFlight
   } = useApp();
 
   const [directAssignEmail, setDirectAssignEmail] = useState({});
@@ -209,6 +210,58 @@ export default function AllocationRequests() {
                     );
                   })()}
                 </div>
+
+                {/* Attendance Register Section (Only for Hosts or Admins) */}
+                {(currentUser.isAdmin || currentUser.email === flight.host) && (
+                  <div style={{...styles.crewSection, marginTop: '8px', background: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.1)'}}>
+                    <div style={styles.crewHeader}>
+                      <Users size={16} color="#10b981" />
+                      <span style={{...styles.crewTitle, color: '#10b981'}}>Attendance Register</span>
+                    </div>
+                    {(() => {
+                      const attending = getStaffList(flight, 'Attending').filter(email => activeUsers.some(user => user.email === email));
+                      if (attending.length === 0) {
+                        return <p style={styles.emptyCrewText}>No staff attending to mark.</p>;
+                      }
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {attending.map(email => {
+                            const currentMark = (flight.attendanceRecord && flight.attendanceRecord[escapeEmail(email)]) || 'Pending';
+                            return (
+                              <div key={`register-${email}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '8px' }}>
+                                <span style={{ fontSize: '0.85rem', color: '#e5e7eb' }}>{getStaffNameByEmail(email)}</span>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                  {['Present', 'Late', 'Absent'].map(mark => (
+                                    <button
+                                      key={mark}
+                                      onClick={() => {
+                                        const newRecord = { ...(flight.attendanceRecord || {}) };
+                                        newRecord[escapeEmail(email)] = mark;
+                                        editFlight(flight.id, { attendanceRecord: newRecord });
+                                      }}
+                                      style={{
+                                        padding: '4px 8px',
+                                        fontSize: '0.75rem',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        border: currentMark === mark ? `1px solid ${mark === 'Present' ? '#10b981' : mark === 'Late' ? '#f59e0b' : '#ef4444'}` : '1px solid rgba(255,255,255,0.1)',
+                                        background: currentMark === mark ? (mark === 'Present' ? '#10b981' : mark === 'Late' ? '#f59e0b' : '#ef4444') : 'rgba(255,255,255,0.05)',
+                                        color: currentMark === mark ? '#fff' : '#9ca3af',
+                                        transition: 'all 0.2s'
+                                      }}
+                                    >
+                                      {mark}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
 
                 <div style={styles.actionContainer}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1.3 }}>
