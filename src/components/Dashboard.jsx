@@ -459,10 +459,10 @@ export default function Dashboard() {
                 <h1 style={{ ...styles.greetingText, marginBottom: 0 }}>
                   {(() => {
                     const hour = currentTime.getHours();
-                    if (hour >= 6 && hour < 12) return 'Good Morning';
-                    if (hour >= 12 && hour < 18) return 'Good Afternoon';
-                    if (hour >= 18 && hour < 21) return 'Good Evening';
-                    return 'Good Night';
+                    if (hour >= 6 && hour < 12) return 'Morning';
+                    if (hour >= 12 && hour < 18) return 'Afternoon';
+                    if (hour >= 18 && hour < 21) return 'Evening';
+                    return 'Night';
                   })()}, {currentUser.firstName}!
                 </h1>
               </div>

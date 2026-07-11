@@ -64,6 +64,7 @@ export default function AdminPanel() {
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  const [privateChatSearchQuery, setPrivateChatSearchQuery] = useState('');
   const [consequencesSearchQuery, setConsequencesSearchQuery] = useState('');
   const [infCategory, setInfCategory] = useState('Behavior');
   const [successMsg, setSuccessMsg] = useState('');
@@ -350,11 +351,8 @@ export default function AdminPanel() {
         <button type="button" onClick={() => setActiveSubTab('approvals')} style={getTabStyle(activeSubTab === 'approvals')}>
           <UserCheck size={16} /> Approvals ({pendingUsers.length})
         </button>
-        <button type="button" onClick={() => setActiveSubTab('roles')} style={getTabStyle(activeSubTab === 'roles')}>
-          <Users size={16} /> Roles
-        </button>
-        <button type="button" onClick={() => setActiveSubTab('staff')} style={getTabStyle(activeSubTab === 'staff')}>
-          <UserCheck size={16} /> Staff Actions
+        <button type="button" onClick={() => setActiveSubTab('staffManagement')} style={getTabStyle(activeSubTab === 'staffManagement')}>
+          <Users size={16} /> Staff Management
         </button>
         <button type="button" onClick={() => setActiveSubTab('infractions')} style={getTabStyle(activeSubTab === 'infractions')}>
           <ShieldAlert size={16} /> Consequences
@@ -1299,6 +1297,17 @@ export default function AdminPanel() {
             <h2 style={styles.panelTitle}>Private Chats Oversight</h2>
             <p style={styles.panelSubtitle}>As an Admin, you have access to review all private messages sent on the platform.</p>
           </div>
+          
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', marginTop: '16px' }}>
+            <input 
+              type="text" 
+              placeholder="Search chats by name, participant, or creator..." 
+              value={privateChatSearchQuery} 
+              onChange={(e) => setPrivateChatSearchQuery(e.target.value)} 
+              className="input-field" 
+              style={{ width: '100%', maxWidth: '400px' }} 
+            />
+          </div>
           <div style={styles.tableWrapper} className="glass-panel">
             <table style={styles.table}>
               <thead>
@@ -1315,7 +1324,14 @@ export default function AdminPanel() {
                 {Array.isArray(privateChats) && privateChats.length === 0 ? (
                   <tr><td colSpan="6" style={{...styles.td, textAlign: 'center'}}>No private chats found.</td></tr>
                 ) : (
-                  Array.isArray(privateChats) && privateChats.map(chat => {
+                  Array.isArray(privateChats) && privateChats.filter(chat => {
+                      if (!privateChatSearchQuery) return true;
+                      const q = privateChatSearchQuery.toLowerCase();
+                      const matchName = (chat.name || chat.id).toLowerCase().includes(q);
+                      const matchCreator = (chat.createdBy || '').toLowerCase().includes(q);
+                      const matchParticipants = (chat.participants || []).some(p => p.toLowerCase().includes(q));
+                      return matchName || matchCreator || matchParticipants;
+                    }).map(chat => {
                     const messagesInChat = Array.isArray(chatMessages) ? chatMessages.filter(m => m.channel === chat.id) : [];
                     return (
                       <React.Fragment key={chat.id}>
@@ -1329,7 +1345,7 @@ export default function AdminPanel() {
                           <td style={styles.td}>{new Date(chat.createdAt).toLocaleString()}</td>
                           <td style={styles.td}>{messagesInChat.length} msgs</td>
                           <td style={styles.td}>
-                            <button onClick={() => setPasswordPromptChatId(chat.id)} className="btn-secondary" style={{padding: '4px 8px', fontSize: '0.8rem'}}>Open Chat</button>
+                            <button onClick={() => setPasswordPromptChatId(chat.id)} className="btn-primary" style={{padding: '6px 12px', fontSize: '0.85rem', borderRadius: '6px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.4)'}}>Open Chat</button>
                           </td>
                         </tr>
                       </React.Fragment>

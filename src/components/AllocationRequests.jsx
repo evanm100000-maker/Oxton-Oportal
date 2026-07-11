@@ -21,6 +21,7 @@ export default function AllocationRequests() {
     editFlight
   } = useApp();
 
+  const [activeRegisterFlight, setActiveRegisterFlight] = useState(null);
   const [directAssignEmail, setDirectAssignEmail] = useState({});
   const [selectedStatuses, setSelectedStatuses] = useState({});
 
@@ -76,6 +77,100 @@ export default function AllocationRequests() {
   };
 
   const eligibleStaff = activeUsers;
+
+  
+  if (activeRegisterFlight) {
+    const flight = activeRegisterFlight;
+    const attending = getStaffList(flight, 'Attending').filter(email => activeUsers.some(user => user.email === email));
+    
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(10px)', padding: '20px' }}>
+        <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+          
+          <div style={{ padding: '24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(16, 185, 129, 0.05)' }}>
+            <div>
+              <h2 style={{ margin: 0, color: '#10b981', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.4rem' }}>
+                <Users size={24} /> Attendance Register
+              </h2>
+              <p style={{ margin: '6px 0 0 0', color: '#9ca3af', fontSize: '0.95rem' }}>{flight.flightCode} • {flight.location}</p>
+            </div>
+            <button onClick={() => setActiveRegisterFlight(null)} className="btn-secondary" style={{ padding: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', color: '#fff' }}>✕</button>
+          </div>
+
+          <div style={{ padding: '24px', flex: 1 }}>
+            {attending.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#9ca3af', fontSize: '1.1rem' }}>No staff attending to mark.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {attending.map(email => {
+                  const user = activeUsers.find(u => u.email === email);
+                  if (!user) return null;
+                  
+                  const currentMark = (flight.attendanceRecord && flight.attendanceRecord[escapeEmail(email)]) || 'Pending';
+                  
+                  return (
+                    <div key={`modal-register-${email}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '16px', borderRadius: '12px', flexWrap: 'wrap', gap: '16px' }}>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#374151', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)' }}>
+                           <img 
+                            src={`https://tr.rbxcdn.com/38c6edcb50633730ff4cf39ac8859840/150/150/AvatarHeadshot/Png`} 
+                            alt="PFP" 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: '600', color: '#f3f4f6', fontSize: '1.05rem' }}>{user.firstName} {user.lastName}</div>
+                          <div style={{ color: '#9ca3af', fontSize: '0.85rem', marginTop: '2px' }}>@{user.robloxUsername}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        {['Present', 'Late', 'Absent'].map(mark => {
+                          const isActive = currentMark === mark;
+                          const activeColor = mark === 'Present' ? '#10b981' : mark === 'Late' ? '#f59e0b' : '#ef4444';
+                          
+                          return (
+                            <button
+                              key={mark}
+                              onClick={() => {
+                                const newRecord = { ...(flight.attendanceRecord || {}) };
+                                newRecord[escapeEmail(email)] = mark;
+                                editFlight(flight.id, { attendanceRecord: newRecord });
+                                
+                                flight.attendanceRecord = newRecord;
+                                setActiveRegisterFlight({...flight});
+                              }}
+                              style={{
+                                padding: '8px 18px',
+                                fontSize: '0.9rem',
+                                fontWeight: isActive ? '600' : '500',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                border: isActive ? `1px solid ${activeColor}` : '1px solid rgba(255,255,255,0.1)',
+                                background: isActive ? activeColor : 'rgba(255,255,255,0.03)',
+                                color: isActive ? '#fff' : '#9ca3af',
+                                transition: 'all 0.2s ease',
+                                boxShadow: isActive ? `0 0 15px ${activeColor}30` : 'none'
+                              }}
+                            >
+                              {mark}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -213,54 +308,10 @@ export default function AllocationRequests() {
 
                 {/* Attendance Register Section (Only for Hosts or Admins) */}
                 {(currentUser.isAdmin || currentUser.email === flight.host) && (
-                  <div style={{...styles.crewSection, marginTop: '8px', background: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.1)'}}>
-                    <div style={styles.crewHeader}>
-                      <Users size={16} color="#10b981" />
-                      <span style={{...styles.crewTitle, color: '#10b981'}}>Attendance Register</span>
-                    </div>
-                    {(() => {
-                      const attending = getStaffList(flight, 'Attending').filter(email => activeUsers.some(user => user.email === email));
-                      if (attending.length === 0) {
-                        return <p style={styles.emptyCrewText}>No staff attending to mark.</p>;
-                      }
-                      return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {attending.map(email => {
-                            const currentMark = (flight.attendanceRecord && flight.attendanceRecord[escapeEmail(email)]) || 'Pending';
-                            return (
-                              <div key={`register-${email}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '8px' }}>
-                                <span style={{ fontSize: '0.85rem', color: '#e5e7eb' }}>{getStaffNameByEmail(email)}</span>
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                  {['Present', 'Late', 'Absent'].map(mark => (
-                                    <button
-                                      key={mark}
-                                      onClick={() => {
-                                        const newRecord = { ...(flight.attendanceRecord || {}) };
-                                        newRecord[escapeEmail(email)] = mark;
-                                        editFlight(flight.id, { attendanceRecord: newRecord });
-                                      }}
-                                      style={{
-                                        padding: '4px 8px',
-                                        fontSize: '0.75rem',
-                                        borderRadius: '4px',
-                                        cursor: 'pointer',
-                                        border: currentMark === mark ? `1px solid ${mark === 'Present' ? '#10b981' : mark === 'Late' ? '#f59e0b' : '#ef4444'}` : '1px solid rgba(255,255,255,0.1)',
-                                        background: currentMark === mark ? (mark === 'Present' ? '#10b981' : mark === 'Late' ? '#f59e0b' : '#ef4444') : 'rgba(255,255,255,0.05)',
-                                        color: currentMark === mark ? '#fff' : '#9ca3af',
-                                        transition: 'all 0.2s'
-                                      }}
-                                    >
-                                      {mark}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
+                  <button type="button" onClick={() => setActiveRegisterFlight(flight)} className="btn-primary" style={{marginTop: '12px', marginBottom: '12px', width: '100%', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)', padding: '10px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <Users size={16} style={{marginRight: '8px'}} />
+                    Open Attendance Register
+                  </button>
                 )}
 
                 <div style={styles.actionContainer}>
