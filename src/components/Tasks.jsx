@@ -5,7 +5,7 @@ import { CheckSquare, Clock, Plus, Trash2, CheckCircle } from 'lucide-react';
 export default function Tasks() {
   const { currentUser, activeUsers, tasks, addTask, updateTaskStatus, deleteTask } = useApp();
   const [showForm, setShowForm] = useState(false);
-  const [assignedToEmail, setAssignedToEmail] = useState('');
+  const [assignedToEmails, setAssignedToEmails] = useState([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
@@ -14,9 +14,13 @@ export default function Tasks() {
 
   const handleAssign = (e) => {
     e.preventDefault();
-    if (!assignedToEmail || !title) return;
-    addTask({ assignedToEmail, title, description });
-    setAssignedToEmail('');
+    if (assignedToEmails.length === 0 || !title) return;
+    
+    assignedToEmails.forEach(email => {
+      addTask({ assignedToEmail: email, title, description });
+    });
+    
+    setAssignedToEmails([]);
     setTitle('');
     setDescription('');
     setShowForm(false);
@@ -42,13 +46,36 @@ export default function Tasks() {
         <form onSubmit={handleAssign} className="glass-panel" style={styles.form}>
           <h4 style={styles.formTitle}>Assign Task</h4>
           <div style={styles.formGroup}>
-            <label style={styles.label}>Assign To</label>
-            <select required value={assignedToEmail} onChange={(e) => setAssignedToEmail(e.target.value)} style={styles.input}>
-              <option value="">-- Select Staff --</option>
-              {activeUsers.map(u => (
-                <option key={u.email} value={u.email}>{u.firstName} {u.lastName} (@{u.robloxUsername})</option>
-              ))}
-            </select>
+            <label style={styles.label}>Assign To *</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <select 
+                value="" 
+                onChange={(e) => {
+                  if (e.target.value && !assignedToEmails.includes(e.target.value)) {
+                    setAssignedToEmails([...assignedToEmails, e.target.value]);
+                  }
+                }} 
+                style={styles.input}
+              >
+                <option value="">-- Add Staff to Task --</option>
+                {activeUsers.filter(u => !assignedToEmails.includes(u.email)).map(u => (
+                  <option key={u.email} value={u.email}>{u.firstName} {u.lastName} (@{u.robloxUsername})</option>
+                ))}
+              </select>
+              {assignedToEmails.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                  {assignedToEmails.map(email => {
+                    const u = activeUsers.find(user => user.email === email);
+                    return (
+                      <div key={email} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                        {u ? u.firstName + ' ' + u.lastName : email}
+                        <button type="button" onClick={() => setAssignedToEmails(assignedToEmails.filter(e => e !== email))} style={{ background: 'transparent', border: 'none', color: '#93c5fd', cursor: 'pointer', padding: 0, display: 'flex', marginLeft: '4px' }}><X size={14} /></button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
           <div style={styles.formGroup}>
             <label style={styles.label}>Task Title</label>
