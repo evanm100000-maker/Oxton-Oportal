@@ -454,6 +454,34 @@ export default function AdminPanel() {
             </button>
           </div>
 
+          
+          <div style={{ padding: '20px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)', marginBottom: '24px' }}>
+            <h3 style={{...styles.panelTitle, color: '#ef4444', marginBottom: '16px'}}>Active Suspensions</h3>
+            {approvedUsers.filter(u => u.suspendedUntil && new Date(u.suspendedUntil).getTime() > Date.now()).length === 0 ? (
+              <p style={{color: '#9ca3af', margin: 0}}>No staff are currently suspended.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+                {approvedUsers.filter(u => u.suspendedUntil && new Date(u.suspendedUntil).getTime() > Date.now()).map(user => (
+                  <div key={user.email} style={{ background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong style={{ color: '#fff' }}>{user.firstName} {user.lastName}</strong>
+                        <div style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '4px' }}>Until: {new Date(user.suspendedUntil).toLocaleString()}</div>
+                      </div>
+                      <button 
+                        onClick={() => { unsuspendUser(user.email); displaySuccess('User unsuspended.'); }} 
+                        className="btn-success" 
+                        style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                      >
+                        Lift
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {groupedInfractions.length === 0 ? (
               <p style={{padding: '20px', color: '#9ca3af', textAlign: 'center'}}>No consequences logged.</p>
@@ -1227,7 +1255,7 @@ export default function AdminPanel() {
                 <label style={styles.label}>Staff Member *</label>
                 <select required value={infStaffEmail} onChange={e => setInfStaffEmail(e.target.value)} className="input-field">
                   <option value="">Choose active staff...</option>
-                  {approvedUsers.filter(user => user.email !== currentUser.email && (!user.isAdmin || currentUser.email === superAdminEmail)).map(user => (
+                  {approvedUsers.filter(user => user.email !== currentUser.email && canTakeAction(currentUser, user)).map(user => (
                     <option key={user.email} value={user.email}>
                       {user.firstName} {user.lastName} (@{user.robloxUsername})
                       {(user.suspendedUntil && new Date(user.suspendedUntil).getTime() > Date.now()) ? ' - Suspended' : ''}
@@ -1252,7 +1280,7 @@ export default function AdminPanel() {
                 <select value={infCategory} onChange={e => setInfCategory(e.target.value)} className="input-field">
                   <option value="Behavior">Behavior</option>
                   <option value="Verbal assault">Verbal assault</option>
-                  <option value="Refusal">Refusal</option>
+                  <option value="Refusing a reasonable request">Refusing a reasonable request</option>
                   <option value="Absence">Absence</option>
                   <option value="Other">Other</option>
                 </select>

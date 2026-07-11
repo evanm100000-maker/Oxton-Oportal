@@ -71,6 +71,7 @@ export default function AllStaff() {
           const silverMedals = user.silverMedals || 0;
           const bronzeMedals = user.bronzeMedals || 0;
           const hasMedals = goldMedals > 0 || silverMedals > 0 || bronzeMedals > 0;
+          const isSuspended = user.suspendedUntil && new Date(user.suspendedUntil).getTime() > Date.now();
           const isOnLOA = loaRequests.some(loa => loa.userEmail === user.email && loa.status === 'Approved');
           
           return (
@@ -94,6 +95,9 @@ export default function AllStaff() {
                 <div style={styles.userInfo}>
                   <div style={styles.nameRow}>
                     <strong style={styles.name}>{user.firstName} {user.lastName}</strong>
+                    {isSuspended && (
+                      <span style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(220, 38, 38, 0.2)', border: '1px solid #dc2626', color: '#f87171', fontSize: '0.7rem', fontWeight: 'bold' }}>SUSPENDED</span>
+                    )}
                     {isOnLOA && (
                       <span style={{ padding: '2px 6px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#ef4444', fontSize: '0.7rem', fontWeight: 'bold' }}>LOA</span>
                     )}

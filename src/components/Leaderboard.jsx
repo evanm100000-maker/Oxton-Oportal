@@ -150,8 +150,7 @@ export default function Leaderboard() {
             </div>
             <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--color-text-muted)', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <li><strong>+7</strong> for an approved flight log</li>
-              <li><strong>+5</strong> for logging in 3 days in a row</li>
-              <li><strong>+10</strong> for 5 days without an infraction</li>
+              <li><strong>+5</strong> for every 3 consecutive days of logging in</li>
               <li><strong>+2</strong> for your report being actioned</li>
             </ul>
           </div>
