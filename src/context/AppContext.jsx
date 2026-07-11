@@ -596,6 +596,42 @@ export const AppProvider = ({ children }) => {
     }
   }, [theme]);
 
+  
+  // Auto-lift expired suspensions
+  useEffect(() => {
+    if (!users || !Array.isArray(users)) return;
+    const now = Date.now();
+    let changed = false;
+    
+    const updatedUsers = users.map(user => {
+      if (user.suspendedUntil && new Date(user.suspendedUntil).getTime() <= now) {
+        changed = true;
+        // Also log the action if we have the current user context
+        if (currentUser && currentUser.isAdmin) {
+           // We might not have access to logAction here easily without adding it to deps, 
+           // but the main goal is just lifting it.
+        }
+        return { ...user, suspendedUntil: null };
+      }
+      return user;
+    });
+
+    if (changed) {
+      setUsers(updatedUsers);
+    }
+    
+    if (currentUser?.suspendedUntil && new Date(currentUser.suspendedUntil).getTime() <= now) {
+      setCurrentUser({ ...currentUser, suspendedUntil: null });
+      // Update local storage too so it doesn't revert on refresh before firebase sync
+      const isRemembered = localStorage.getItem('oxton_current_user') !== null;
+      if (isRemembered) {
+         localStorage.setItem('oxton_current_user', JSON.stringify({ ...currentUser, suspendedUntil: null }));
+      } else {
+         sessionStorage.setItem('oxton_current_user', JSON.stringify({ ...currentUser, suspendedUntil: null }));
+      }
+    }
+  }, [users, currentUser, setUsers, setCurrentUser]);
+
   // Weekly Points Reset Logic
   useEffect(() => {
     if (!currentUser || !users || !users.length || !applicationConfig) return;
