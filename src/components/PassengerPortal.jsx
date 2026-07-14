@@ -77,6 +77,12 @@ export default function PassengerPortal({ onBack }) {
       return <StaffApplication onBack={() => setActiveTab('overview')} />;
     }
 
+    const sortedFlights = [...flights].sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time || '00:00'}`);
+      const dateB = new Date(`${b.date}T${b.time || '00:00'}`);
+      return dateA - dateB;
+    });
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {activeTab === 'overview' && (
@@ -88,10 +94,10 @@ export default function PassengerPortal({ onBack }) {
                 <h2 style={styles.sectionTitle}>Upcoming Flights</h2>
               </div>
               <div>
-                {flights.length === 0 ? (
+                {sortedFlights.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '32px 0', color: '#9ca3af' }}>No scheduled flights at this time.</div>
                 ) : (
-                  flights.slice(0, 5).map(flight => (
+                  sortedFlights.slice(0, 5).map(flight => (
                     <div key={flight.id} style={{...styles.itemCard, display: 'flex', flexDirection: 'column', gap: '12px'}}>
                       <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
                         <div>

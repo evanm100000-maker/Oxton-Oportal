@@ -15,6 +15,7 @@ export default function Reports() {
   const [type, setType] = useState('Exploiting');
   const [description, setDescription] = useState('');
   const [severity, setSeverity] = useState('Medium');
+  const [visibleToAllStaff, setVisibleToAllStaff] = useState(true);
 
   // Comment input state (keyed by report ID)
   const [commentText, setCommentText] = useState({});
@@ -40,13 +41,15 @@ export default function Reports() {
       type,
       description,
       severity,
-      evidenceLink: ''
+      evidenceLink: '',
+      visibleToAllStaff
     });
 
     setReportedPlayer('');
     setType('Exploiting');
     setDescription('');
     setSeverity('Medium');
+    setVisibleToAllStaff(true);
     setIsModalOpen(false);
     
     setSuccessMsg('Player report submitted successfully.');
@@ -103,8 +106,12 @@ export default function Reports() {
   // Sort reports (newest first)
   const sortedReports = [...safeReports].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-  // "Outgoing" -> All reports
-  const outgoingReports = sortedReports;
+  // "Outgoing" -> Reports created by currentUser or visible to all (or admin)
+  const outgoingReports = sortedReports.filter(r => {
+    if (currentUser.isAdmin) return true;
+    if (r.reporterEmail === currentUser.email) return true;
+    return r.visibleToAllStaff;
+  });
   // "My Reports" -> Reports created by currentUser
   const myReports = sortedReports.filter(r => r.reporterEmail === currentUser.email);
 
@@ -144,7 +151,16 @@ export default function Reports() {
         <button 
           onClick={() => setIsModalOpen(true)} 
           className="btn-primary" 
-          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            padding: '10px 20px',
+            borderRadius: '10px',
+            fontWeight: '600',
+            height: 'fit-content',
+            whiteSpace: 'nowrap'
+          }}
         >
           <Plus size={18} />
           Log New Report
@@ -335,6 +351,19 @@ export default function Reports() {
                   rows="4"
                   placeholder="Provide a detailed reason and context for this report..."
                 />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px' }}>
+                <input 
+                  type="checkbox" 
+                  id="visibleToAllStaff"
+                  checked={visibleToAllStaff} 
+                  onChange={(e) => setVisibleToAllStaff(e.target.checked)}
+                  style={{ cursor: 'pointer' }}
+                />
+                <label htmlFor="visibleToAllStaff" style={{ ...styles.label, cursor: 'pointer', margin: 0, textTransform: 'none' }}>
+                  Visible to All Staff
+                </label>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>

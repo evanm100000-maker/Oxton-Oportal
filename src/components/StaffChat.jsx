@@ -350,12 +350,12 @@ export default function StaffChat() {
                 type="text" 
                 value={inputText} 
                 onChange={e => setInputText(e.target.value)} 
-                placeholder={isUploading ? "Uploading attachment..." : (safePrivateChats.find(c => c.id === activeChannel)?.isSuspended && !currentUser.isAdmin ? "Chat suspended..." : `Message ${getChannelName()}`)}
+                placeholder={isUploading ? "Uploading attachment..." : `Message ${getChannelName()}`}
                 style={styles.input}
-                disabled={isUploading || (safePrivateChats.find(c => c.id === activeChannel)?.isSuspended && !currentUser.isAdmin)}
+                disabled={isUploading}
               />
             </div>
-            <button type="submit" className="btn-primary" style={styles.sendBtn} disabled={(!inputText.trim() && !attachment) || isUploading || (safePrivateChats.find(c => c.id === activeChannel)?.isSuspended && !currentUser.isAdmin)}>
+            <button type="submit" className="btn-primary" style={styles.sendBtn} disabled={(!inputText.trim() && !attachment) || isUploading}>
               <Send size={18} />
             </button>
           </form>
