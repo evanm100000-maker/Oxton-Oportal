@@ -455,9 +455,20 @@ button {
 
   /* Force grids to single column on mobile */
   .dashboard-card-grid,
-  .admin-layout,
   div[style*="display: grid"] {
     grid-template-columns: 1fr !important;
+  }
+
+  /* Fix admin layout for mobile */
+  .admin-layout {
+    flex-direction: column !important;
+  }
+
+  .admin-sidebar {
+    width: 100% !important;
+    position: static !important;
+    max-height: none !important;
+    overflow-y: visible !important;
   }
 
   /* Prevent rigid minimum widths from blowing out the screen */
@@ -476,17 +487,21 @@ button {
   div[style*="overflow-x: auto"],
   div[style*="overflowX: auto"] {
     -webkit-overflow-scrolling: touch !important;
-    max-width: 100vw !important;
+    max-width: 100% !important;
   }
 
   /* Modals and overlay panels */
+  .glass-panel[style*="width: 400px"],
   .glass-panel[style*="width: 500px"],
   .glass-panel[style*="width: 600px"],
-  .glass-panel[style*="maxWidth: 800px"] {
+  .glass-panel[style*="maxWidth: 800px"],
+  div[style*="maxWidth: 650px"],
+  div[style*="maxWidth: 600px"] {
     width: 90vw !important;
     max-width: 90vw !important;
     padding: 16px !important;
     margin: 0 auto !important;
+    box-sizing: border-box !important;
   }
 
   .page-container {
