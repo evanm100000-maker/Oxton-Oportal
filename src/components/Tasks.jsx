@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckSquare, Clock, Plus, Trash2, CheckCircle } from 'lucide-react';
+import { CheckSquare, Clock, Plus, Trash2, CheckCircle, X } from 'lucide-react';
 
 export default function Tasks() {
   const { currentUser, activeUsers, tasks, addTask, updateTaskStatus, deleteTask } = useApp();

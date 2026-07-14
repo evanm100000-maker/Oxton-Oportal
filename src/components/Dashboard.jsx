@@ -26,10 +26,11 @@ import NotificationsModal from './NotificationsModal';
 import StaffChat from './StaffChat';
 import AllStaff from './AllStaff';
 import Events from './Events';
+import Meetings from './Meetings';
 import { formatCustomLongDate } from '../utils/timeUtils';
 
 export default function Dashboard() {
-  const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks, showClockBattery, use24HourClock, useLongDateFormat } = useApp();
+  const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks, announcements, documents, reports, showClockBattery, use24HourClock, useLongDateFormat } = useApp();
   const [activeTab, setActiveTab] = useState(() => {
     return sessionStorage.getItem('oxton_activeTab') || 'home';
   });
@@ -37,6 +38,9 @@ export default function Dashboard() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [lastReadChatCount, setLastReadChatCount] = useState(0);
   const [lastReadFlightCount, setLastReadFlightCount] = useState(0);
+  const [lastReadAnnouncementsCount, setLastReadAnnouncementsCount] = useState(0);
+  const [lastReadDocumentsCount, setLastReadDocumentsCount] = useState(0);
+  const [lastReadReportsCount, setLastReadReportsCount] = useState(0);
   const [reviewedInfractionIds, setReviewedInfractionIds] = useState([]);
   
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -78,6 +82,15 @@ export default function Dashboard() {
         const flightRead = localStorage.getItem(`oxton_flight_read_${currentUser.email}`);
         if (flightRead !== null) setLastReadFlightCount(parseInt(flightRead, 10) || 0);
 
+        const annRead = localStorage.getItem(`oxton_ann_read_${currentUser.email}`);
+        if (annRead !== null) setLastReadAnnouncementsCount(parseInt(annRead, 10) || 0);
+
+        const docRead = localStorage.getItem(`oxton_doc_read_${currentUser.email}`);
+        if (docRead !== null) setLastReadDocumentsCount(parseInt(docRead, 10) || 0);
+
+        const reportRead = localStorage.getItem(`oxton_report_read_${currentUser.email}`);
+        if (reportRead !== null) setLastReadReportsCount(parseInt(reportRead, 10) || 0);
+
         const infractionsRead = localStorage.getItem(`oxton_infraction_reviewed_${currentUser.email}`);
         if (infractionsRead !== null) {
           try {
@@ -105,7 +118,22 @@ export default function Dashboard() {
       setLastReadFlightCount(flightLen);
       localStorage.setItem(`oxton_flight_read_${currentUser.email}`, flightLen);
     }
-  }, [activeTab, chatMessages, flights, currentUser.email]);
+    if (activeTab === 'announcements') {
+      const annLen = Array.isArray(announcements) ? announcements.length : 0;
+      setLastReadAnnouncementsCount(annLen);
+      localStorage.setItem(`oxton_ann_read_${currentUser.email}`, annLen);
+    }
+    if (activeTab === 'documents') {
+      const docLen = Array.isArray(documents) ? documents.length : 0;
+      setLastReadDocumentsCount(docLen);
+      localStorage.setItem(`oxton_doc_read_${currentUser.email}`, docLen);
+    }
+    if (activeTab === 'reports') {
+      const repLen = Array.isArray(reports) ? reports.length : 0;
+      setLastReadReportsCount(repLen);
+      localStorage.setItem(`oxton_report_read_${currentUser.email}`, repLen);
+    }
+  }, [activeTab, chatMessages, flights, announcements, documents, reports, currentUser.email]);
 
   React.useEffect(() => {
     sessionStorage.setItem('oxton_activeTab', activeTab);
@@ -115,6 +143,9 @@ export default function Dashboard() {
   const safeChatMessages = Array.isArray(chatMessages) ? chatMessages : [];
   const unreadChatCount = Math.max(0, safeChatMessages.length - lastReadChatCount);
   const unreadFlightCount = Math.max(0, (Array.isArray(flights) ? flights.length : 0) - lastReadFlightCount);
+  const unreadAnnouncementsCount = Math.max(0, (Array.isArray(announcements) ? announcements.length : 0) - lastReadAnnouncementsCount);
+  const unreadDocumentsCount = Math.max(0, (Array.isArray(documents) ? documents.length : 0) - lastReadDocumentsCount);
+  const unreadReportsCount = Math.max(0, (Array.isArray(reports) ? reports.length : 0) - lastReadReportsCount);
   const myInfractions = React.useMemo(
     () => infractions.filter(inf => inf.staffEmail === currentUser.email),
     [infractions, currentUser.email]
@@ -149,7 +180,8 @@ export default function Dashboard() {
       description: 'View the latest news and updates from the administration.',
       icon: Megaphone,
       color: '#8b5cf6',
-      component: Announcements
+      component: Announcements,
+      badgeCount: unreadAnnouncementsCount
     },
     {
       id: 'events',
@@ -158,6 +190,14 @@ export default function Dashboard() {
       icon: Calendar,
       color: '#10b981',
       component: Events
+    },
+    {
+      id: 'meetings',
+      title: 'Upcoming Meetings',
+      description: 'View scheduled meetings and receive reminders.',
+      icon: Calendar,
+      color: '#60a5fa',
+      component: Meetings
     },
     {
       id: 'performance',
@@ -217,7 +257,8 @@ export default function Dashboard() {
       description: 'Report rule-breaking players. Review admin actions.',
       icon: AlertTriangle,
       color: '#2563eb',
-      component: Reports
+      component: Reports,
+      badgeCount: unreadReportsCount
     },
 
     // Row 3
@@ -252,7 +293,8 @@ export default function Dashboard() {
       description: 'Read operations manuals, protocols, and manuals.',
       icon: FileText,
       color: '#1e40af',
-      component: Documents
+      component: Documents,
+      badgeCount: unreadDocumentsCount
     },
 
     // Row 4

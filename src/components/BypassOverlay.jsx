@@ -8,8 +8,8 @@ export default function BypassOverlay() {
   const [dismissedId, setDismissedId] = useState(null);
 
   useEffect(() => {
-    // Check session storage for dismissed ID on mount
-    const savedId = sessionStorage.getItem('dismissedBypassId');
+    // Check local storage for dismissed ID on mount
+    const savedId = localStorage.getItem('dismissedBypassId');
     if (savedId) {
       setDismissedId(savedId);
     }
@@ -18,11 +18,21 @@ export default function BypassOverlay() {
   const handleClose = () => {
     if (bypassConfig?.id) {
       setDismissedId(bypassConfig.id);
-      sessionStorage.setItem('dismissedBypassId', bypassConfig.id);
+      localStorage.setItem('dismissedBypassId', bypassConfig.id);
     }
   };
 
-  if (!currentUser) return null; // Only show to logged in staff
+  useEffect(() => {
+    if (bypassConfig?.isActive && bypassConfig.id !== dismissedId && currentUser && currentUser.role !== 'passenger') {
+      const isExpired = bypassConfig?.timestamp ? (Date.now() - bypassConfig.timestamp > 5 * 60 * 1000) : false;
+      if (!isExpired) {
+        const audio = new Audio('/panic-button.mp3');
+        audio.play().catch(e => console.error("Could not play panic button sound", e));
+      }
+    }
+  }, [bypassConfig, dismissedId, currentUser]);
+
+  if (!currentUser || currentUser.role === 'passenger') return null; // Only show to staff
   
   const isExpired = bypassConfig?.timestamp ? (Date.now() - bypassConfig.timestamp > 5 * 60 * 1000) : false;
 

@@ -37,11 +37,8 @@ export default function AdminPanel() {
     passwordResets,
     approvePasswordReset,
     rejectPasswordReset,
-    privateChats,
     chatMessages,
     addChatMessage,
-    toggleSuspendPrivateChat,
-    deletePrivateChat,
     applications = [],
     applicationConfig,
     updateApplicationStatus,
@@ -49,6 +46,9 @@ export default function AdminPanel() {
     events,
     addEvent,
     deleteEvent,
+    meetings,
+    addMeeting,
+    deleteMeeting,
     addAnnouncement,
     setBypassAnnouncement,
     pageConfig,
@@ -64,7 +64,6 @@ export default function AdminPanel() {
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
-  const [privateChatSearchQuery, setPrivateChatSearchQuery] = useState('');
   const [consequencesSearchQuery, setConsequencesSearchQuery] = useState('');
   const [infCategory, setInfCategory] = useState('Behavior');
   const [successMsg, setSuccessMsg] = useState('');
@@ -88,10 +87,15 @@ export default function AdminPanel() {
   const [bypassTitle, setBypassTitle] = useState('');
   const [bypassMessage, setBypassMessage] = useState('');
 
-  // Event states
+  // Events Form State
   const [eventTitle, setEventTitle] = useState('');
   const [eventDescription, setEventDescription] = useState('');
   const [eventDate, setEventDate] = useState('');
+
+  // Meetings Form State
+  const [meetingTitle, setMeetingTitle] = useState('');
+  const [meetingDescription, setMeetingDescription] = useState('');
+  const [meetingDate, setMeetingDate] = useState('');
 
   // LOA Review comments
   const [loaComments, setLoaComments] = useState({});
@@ -137,36 +141,14 @@ export default function AdminPanel() {
   // Audit modal state
   const [selectedAuditLog, setSelectedAuditLog] = useState(null);
 
-  // Private Chats Oversight state
-  const [passwordPromptChatId, setPasswordPromptChatId] = useState(null);
-  const [chatPasswordInput, setChatPasswordInput] = useState('');
-  const [chatPasswordError, setChatPasswordError] = useState('');
-  const [activeOversightChatId, setActiveOversightChatId] = useState(null);
-  const [oversightMessageText, setOversightMessageText] = useState('');
+
 
   const displaySuccess = (msg) => {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 4000);
   };
 
-  const handleOversightAuth = (e) => {
-    e.preventDefault();
-    if (chatPasswordInput === '1186') {
-      setActiveOversightChatId(passwordPromptChatId);
-      setPasswordPromptChatId(null);
-      setChatPasswordInput('');
-      setChatPasswordError('');
-    } else {
-      setChatPasswordError('Incorrect password');
-    }
-  };
 
-  const handleOversightSend = (e) => {
-    e.preventDefault();
-    if (!oversightMessageText.trim()) return;
-    addChatMessage(activeOversightChatId, oversightMessageText.trim());
-    setOversightMessageText('');
-  };
 
   const handleCreateFlight = (e) => {
     e.preventDefault();
@@ -309,7 +291,17 @@ export default function AdminPanel() {
     setEventTitle('');
     setEventDescription('');
     setEventDate('');
-    displaySuccess('Event scheduled successfully.');
+    displaySuccess('Event scheduled!');
+  };
+
+  const handleAddMeeting = (e) => {
+    e.preventDefault();
+    if (!meetingTitle || !meetingDate) return;
+    addMeeting({ title: meetingTitle, description: meetingDescription, date: meetingDate });
+    setMeetingTitle('');
+    setMeetingDescription('');
+    setMeetingDate('');
+    displaySuccess('Meeting scheduled!');
   };
 
   // Derived lists
@@ -372,15 +364,16 @@ export default function AdminPanel() {
         <button type="button" onClick={() => setActiveSubTab('events')} style={getTabStyle(activeSubTab === 'events')}>
           <Calendar size={16} /> Events
         </button>
+        <button type="button" onClick={() => setActiveSubTab('meetings')} style={getTabStyle(activeSubTab === 'meetings')}>
+          <Calendar size={16} /> Meetings
+        </button>
         <button type="button" onClick={() => setActiveSubTab('passwords')} style={getTabStyle(activeSubTab === 'passwords')}>
           <Key size={16} /> Passwords ({pendingPasswords.length})
         </button>
         <button type="button" onClick={() => setActiveSubTab('status')} style={getTabStyle(activeSubTab === 'status')}>
           <Settings size={16} /> System Status
         </button>
-        <button type="button" onClick={() => setActiveSubTab('privateChats')} style={getTabStyle(activeSubTab === 'privateChats')}>
-          <MessageSquare size={16} /> Private Chats
-        </button>
+
         <button type="button" onClick={() => setActiveSubTab('applications')} style={getTabStyle(activeSubTab === 'applications')}>
           <FileText size={16} /> Applications ({pendingApplications.length})
         </button>
@@ -1037,6 +1030,43 @@ export default function AdminPanel() {
         </div>
       )}
 
+      {activeSubTab === 'meetings' && (
+        <div id="section-meetings" className="admin-section active">
+          <div className="section-header">
+            <h2><Calendar size={20} /> Manage Meetings</h2>
+            <p>Schedule upcoming meetings for staff.</p>
+          </div>
+          <div className="glass-panel" style={styles.composeBox}>
+            <form onSubmit={handleAddMeeting} style={styles.form}>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Meeting Title</label>
+                <input type="text" value={meetingTitle} onChange={e=>setMeetingTitle(e.target.value)} className="input-field" required />
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Meeting Description (Optional)</label>
+                <textarea value={meetingDescription} onChange={e=>setMeetingDescription(e.target.value)} className="input-field" rows="2" />
+              </div>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Meeting Date & Time</label>
+                <input type="datetime-local" value={meetingDate} onChange={e=>setMeetingDate(e.target.value)} className="input-field" required />
+              </div>
+              <button type="submit" className="btn-primary" style={styles.submitBtn}>Schedule Meeting</button>
+            </form>
+          </div>
+          <div style={{ marginTop: '24px' }}>
+            <h3 style={styles.composeTitle}>Scheduled Meetings</h3>
+            {meetings && meetings.map(meeting => (
+              <div key={meeting.id} style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                <div>
+                  <strong>{meeting.title}</strong> - {new Date(meeting.date).toLocaleString()}
+                </div>
+                <button onClick={() => deleteMeeting(meeting.id)} className="btn-danger" style={{ padding: '4px 12px' }}>Cancel</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {activeSubTab === 'passwords' && (
 <div id="section-passwords">
         <div style={styles.panelSection}>
@@ -1318,73 +1348,7 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* PRIVATE CHATS OVERSIGHT SECTION */}
-      {activeSubTab === 'privateChats' && (
-        <div id="section-privateChats" style={styles.panelSection}>
-          <div>
-            <h2 style={styles.panelTitle}>Private Chats Oversight</h2>
-            <p style={styles.panelSubtitle}>As an Admin, you have access to review all private messages sent on the platform.</p>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', marginTop: '16px' }}>
-            <input 
-              type="text" 
-              placeholder="Search chats by name, participant, or creator..." 
-              value={privateChatSearchQuery} 
-              onChange={(e) => setPrivateChatSearchQuery(e.target.value)} 
-              className="input-field" 
-              style={{ width: '100%', maxWidth: '400px' }} 
-            />
-          </div>
-          <div style={styles.tableWrapper} className="glass-panel">
-            <table style={styles.table}>
-              <thead>
-                <tr style={styles.trHead}>
-                  <th style={styles.th}>Chat ID / Name</th>
-                  <th style={styles.th}>Participants</th>
-                  <th style={styles.th}>Created By</th>
-                  <th style={styles.th}>Created At</th>
-                  <th style={styles.th}>Message Count</th>
-                  <th style={styles.th}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Array.isArray(privateChats) && privateChats.length === 0 ? (
-                  <tr><td colSpan="6" style={{...styles.td, textAlign: 'center'}}>No private chats found.</td></tr>
-                ) : (
-                  Array.isArray(privateChats) && privateChats.filter(chat => {
-                      if (!privateChatSearchQuery) return true;
-                      const q = privateChatSearchQuery.toLowerCase();
-                      const matchName = (chat.name || chat.id).toLowerCase().includes(q);
-                      const matchCreator = (chat.createdBy || '').toLowerCase().includes(q);
-                      const matchParticipants = (chat.participants || []).some(p => p.toLowerCase().includes(q));
-                      return matchName || matchCreator || matchParticipants;
-                    }).map(chat => {
-                    const messagesInChat = Array.isArray(chatMessages) ? chatMessages.filter(m => m.channel === chat.id) : [];
-                    return (
-                      <React.Fragment key={chat.id}>
-                        <tr style={styles.trBody}>
-                          <td style={styles.td}>
-                            <strong>{chat.name || chat.id}</strong>
-                            {chat.isSuspended && <span style={{marginLeft: '8px', color: '#ef4444', fontSize: '0.75rem', border: '1px solid #ef4444', padding: '2px 4px', borderRadius: '4px'}}>Suspended</span>}
-                          </td>
-                          <td style={styles.td}>{chat.participants?.join(', ')}</td>
-                          <td style={styles.td}>{chat.createdBy}</td>
-                          <td style={styles.td}>{new Date(chat.createdAt).toLocaleString()}</td>
-                          <td style={styles.td}>{messagesInChat.length} msgs</td>
-                          <td style={styles.td}>
-                            <button onClick={() => setPasswordPromptChatId(chat.id)} className="btn-primary" style={{padding: '6px 12px', fontSize: '0.85rem', borderRadius: '6px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.4)'}}>Open Chat</button>
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+
 
       {/* APPLICATIONS SECTION */}
       {activeSubTab === 'applications' && (
@@ -1537,85 +1501,6 @@ export default function AdminPanel() {
 
       {/* Password Prompt Modal */}
       {passwordPromptChatId && (
-        <div style={styles.overlay}>
-          <div className="glass-panel" style={{...styles.modal, width: '350px'}}>
-            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '16px'}}>
-              <h3 style={{color: 'var(--color-text-main)', fontSize: '1.2rem'}}>Admin Override</h3>
-              <button type="button" onClick={() => { setPasswordPromptChatId(null); setChatPasswordError(''); setChatPasswordInput(''); }} style={{background: 'transparent', border: 'none', color: 'var(--color-text-main)', cursor: 'pointer'}}><X size={20}/></button>
-            </div>
-            <form onSubmit={handleOversightAuth}>
-              <div style={styles.inputWrapper}>
-                <label style={styles.label}>Enter Admin Password</label>
-                <input type="password" value={chatPasswordInput} onChange={e => setChatPasswordInput(e.target.value)} className="input-field" autoFocus required />
-              </div>
-              {chatPasswordError && <p style={{color: '#ef4444', fontSize: '0.85rem', marginTop: '8px'}}>{chatPasswordError}</p>}
-              <button type="submit" className="btn-primary" style={{...styles.submitBtn, width: '100%', justifyContent: 'center', marginTop: '16px'}}>Unlock Chat</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Oversight Chat View */}
-      {activeOversightChatId && (
-        <div style={{...styles.overlay, zIndex: 10000}}>
-          <div className="glass-panel" style={{...styles.modal, width: '800px', height: '80vh', padding: 0, overflow: 'hidden'}}>
-            {(() => {
-              const activeChat = privateChats?.find(c => c.id === activeOversightChatId);
-              const msgs = chatMessages?.filter(m => m.channel === activeOversightChatId) || [];
-              if (!activeChat) return <div style={{padding: '24px'}}>Chat not found.</div>;
-              return (
-                <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-                  {/* Header */}
-                  <div style={{padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                    <div>
-                      <h3 style={{fontSize: '1.2rem', margin: 0, color: 'var(--color-text-main)'}}>{activeChat.name || activeChat.id} (Oversight)</h3>
-                      <div style={{fontSize: '0.85rem', color: '#9ca3af', marginTop: '4px'}}>Participants: {activeChat.participants?.join(', ')}</div>
-                    </div>
-                    <div style={{display: 'flex', gap: '8px'}}>
-                      <button onClick={() => toggleSuspendPrivateChat(activeChat.id)} className="btn-secondary" style={{padding: '6px 12px', fontSize: '0.85rem'}}>
-                        {activeChat.isSuspended ? 'Unsuspend' : 'Suspend Chat'}
-                      </button>
-                      <button onClick={() => { if(window.confirm('Delete this chat forever?')) { deletePrivateChat(activeChat.id); setActiveOversightChatId(null); } }} className="btn-danger" style={{padding: '6px 12px', fontSize: '0.85rem'}}>
-                        Delete Chat
-                      </button>
-                      <button onClick={() => setActiveOversightChatId(null)} style={{background: 'transparent', border: 'none', color: 'var(--color-text-main)', cursor: 'pointer', marginLeft: '8px'}}><X size={20}/></button>
-                    </div>
-                  </div>
-                  {/* Messages */}
-                  <div style={{flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px'}}>
-                    {msgs.length === 0 ? (
-                      <p style={{color: '#9ca3af', fontStyle: 'italic', textAlign: 'center'}}>No messages.</p>
-                    ) : (
-                      msgs.map(msg => (
-                        <div key={msg.id} style={{display: 'flex', gap: '12px'}}>
-                          <div style={{width: '36px', height: '36px', borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold'}}>
-                            {msg.senderName.charAt(0)}
-                          </div>
-                          <div>
-                            <div>
-                              <strong style={{color: 'var(--color-text-main)'}}>{msg.senderName}</strong>
-                              <span style={{color: '#6b7280', fontSize: '0.75rem', marginLeft: '8px'}}>{new Date(msg.timestamp).toLocaleString()}</span>
-                            </div>
-                            <div style={{color: '#d1d5db', marginTop: '4px'}}>{msg.text}</div>
-                            {msg.attachmentUrl && <img src={msg.attachmentUrl} alt="Attachment" style={{maxWidth: '300px', borderRadius: '8px', marginTop: '8px'}} />}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  {/* Input */}
-                  <div style={{padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.1)'}}>
-                    <form onSubmit={handleOversightSend} style={{display: 'flex', gap: '12px'}}>
-                      <input type="text" value={oversightMessageText} onChange={e => setOversightMessageText(e.target.value)} placeholder="Send message as Admin..." style={{background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px 16px', color: 'var(--color-text-main)', outline: 'none', flex: 1}} />
-                      <button type="submit" className="btn-primary" style={{padding: '0 20px', borderRadius: '8px', fontWeight: '600'}}>Send</button>
-                    </form>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

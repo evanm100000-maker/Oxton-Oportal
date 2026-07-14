@@ -228,7 +228,7 @@ export default function FlightLogs() {
                               <h4 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '4px' }}>Flight: {flight.flightCode}</h4>
                               <div style={{ display: 'flex', gap: '16px', fontSize: '0.9rem', color: '#9ca3af' }}>
                                 <span><Calendar size={12} style={{marginRight:'4px'}} />{flight.date}</span>
-                                <span><ClipboardList size={12} style={{marginRight:'4px'}} />{flight.time} UTC</span>
+                                <span><ClipboardList size={12} style={{marginRight:'4px'}} />{flight.time} BST</span>
                                 {flight.host && <span><User size={12} style={{marginRight:'4px'}} />Host: {flight.host}</span>}
                               </div>
                             </div>

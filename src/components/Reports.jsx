@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { AlertTriangle, Send, MessageSquare, Shield, Clock, ExternalLink, RefreshCw, Upload } from 'lucide-react';
-import { compressImage } from '../utils/compressImage';
+import { AlertTriangle, Send, MessageSquare, Shield, Clock, Plus, X } from 'lucide-react';
 
 export default function Reports() {
   const { reports, submitReport, addReportComment, updateReportStatus, currentUser } = useApp();
-  const [activeTab, setActiveTab] = useState('active');
+  const [activeTab, setActiveTab] = useState('outgoing');
   const [successMsg, setSuccessMsg] = useState('');
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Form state
   const [reportedPlayer, setReportedPlayer] = useState('');
   const [type, setType] = useState('Exploiting');
   const [description, setDescription] = useState('');
-  const [evidenceFile, setEvidenceFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
+  const [severity, setSeverity] = useState('Medium');
 
   // Comment input state (keyed by report ID)
   const [commentText, setCommentText] = useState({});
@@ -34,46 +35,22 @@ export default function Reports() {
     e.preventDefault();
     if (!reportedPlayer || !description) return;
 
-    setIsUploading(true);
+    submitReport({
+      reportedPlayer,
+      type,
+      description,
+      severity,
+      evidenceLink: ''
+    });
 
-    try {
-      let finalEvidenceUrl = '';
-      
-      if (evidenceFile) {
-        if (evidenceFile.size > 5 * 1024 * 1024) {
-          alert('File is too large. Please upload a file smaller than 5MB.');
-          setIsUploading(false);
-          return;
-        }
-        const dataUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.readAsDataURL(evidenceFile);
-        });
-
-        finalEvidenceUrl = await compressImage(dataUrl, 800, 0.6);
-      }
-
-      submitReport({
-        reportedPlayer,
-        type,
-        description,
-        evidenceLink: finalEvidenceUrl
-      });
-
-      setReportedPlayer('');
-      setType('Exploiting');
-      setDescription('');
-      setEvidenceFile(null);
-      setSuccessMsg('Player report submitted successfully. Admin review is pending.');
-      setActiveTab('active');
-      setTimeout(() => setSuccessMsg(''), 4000);
-    } catch (err) {
-      console.error('Error uploading evidence:', err);
-      alert('Failed to upload evidence. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
+    setReportedPlayer('');
+    setType('Exploiting');
+    setDescription('');
+    setSeverity('Medium');
+    setIsModalOpen(false);
+    
+    setSuccessMsg('Player report submitted successfully.');
+    setTimeout(() => setSuccessMsg(''), 4000);
   };
 
   const handleAddComment = (reportId, e) => {
@@ -101,6 +78,16 @@ export default function Reports() {
         return <span className="badge badge-pending">Pending</span>;
     }
   };
+  
+  const getSeverityBadge = (sev) => {
+    switch(sev) {
+      case 'Critical': return <span style={{color: '#ef4444', fontWeight: 'bold', fontSize: '0.8rem'}}>CRITICAL</span>;
+      case 'High': return <span style={{color: '#f97316', fontWeight: 'bold', fontSize: '0.8rem'}}>HIGH</span>;
+      case 'Medium': return <span style={{color: '#eab308', fontWeight: 'bold', fontSize: '0.8rem'}}>MEDIUM</span>;
+      case 'Low': return <span style={{color: '#34d399', fontWeight: 'bold', fontSize: '0.8rem'}}>LOW</span>;
+      default: return null;
+    }
+  };
 
   const formatDate = (isoStr) => {
     return new Date(isoStr).toLocaleDateString(undefined, {
@@ -111,34 +98,56 @@ export default function Reports() {
     });
   };
 
+  const safeReports = Array.isArray(reports) ? reports : [];
+  
+  // Sort reports (newest first)
+  const sortedReports = [...safeReports].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  // "Outgoing" -> All reports
+  const outgoingReports = sortedReports;
+  // "My Reports" -> Reports created by currentUser
+  const myReports = sortedReports.filter(r => r.reporterEmail === currentUser.email);
+
+  const displayedReports = activeTab === 'outgoing' ? outgoingReports : myReports;
+
   return (
     <div style={styles.container}>
-      <div style={styles.tabHeader}>
-        <button
-          onClick={() => setActiveTab('active')}
-          className="btn-secondary"
-          style={{
-            ...styles.tabBtn,
-            background: activeTab === 'active' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
-            borderColor: activeTab === 'active' ? '#2563eb' : 'transparent',
-            color: activeTab === 'active' ? 'var(--color-text-main)' : '#9ca3af',
-          }}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={styles.tabHeader}>
+          <button
+            onClick={() => setActiveTab('outgoing')}
+            className="btn-secondary"
+            style={{
+              ...styles.tabBtn,
+              background: activeTab === 'outgoing' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
+              borderColor: activeTab === 'outgoing' ? '#2563eb' : 'transparent',
+              color: activeTab === 'outgoing' ? 'var(--color-text-main)' : '#9ca3af',
+            }}
+          >
+            <AlertTriangle size={16} />
+            Outgoing ({outgoingReports.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('myReports')}
+            className="btn-secondary"
+            style={{
+              ...styles.tabBtn,
+              background: activeTab === 'myReports' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
+              borderColor: activeTab === 'myReports' ? '#2563eb' : 'transparent',
+              color: activeTab === 'myReports' ? 'var(--color-text-main)' : '#9ca3af',
+            }}
+          >
+            <Shield size={16} />
+            My Reports ({myReports.length})
+          </button>
+        </div>
+        <button 
+          onClick={() => setIsModalOpen(true)} 
+          className="btn-primary" 
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
         >
-          <AlertTriangle size={16} />
-          Active Incident Reports ({reports.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('submit')}
-          className="btn-secondary"
-          style={{
-            ...styles.tabBtn,
-            background: activeTab === 'submit' ? 'rgba(37, 99, 235, 0.15)' : 'transparent',
-            borderColor: activeTab === 'submit' ? '#2563eb' : 'transparent',
-            color: activeTab === 'submit' ? 'var(--color-text-main)' : '#9ca3af',
-          }}
-        >
-          <Send size={16} />
-          Log Player Report
+          <Plus size={18} />
+          Log New Report
         </button>
       </div>
 
@@ -148,209 +157,196 @@ export default function Reports() {
         </div>
       )}
 
-      {activeTab === 'submit' ? (
-        <form onSubmit={handleSubmit} style={styles.form} className="glass-panel">
-          <h3 style={styles.sectionTitle}>File Player Infraction Report</h3>
-          <p style={styles.subtitle}>
-            Report players exploiting, violating rules, or causing disruption in Oxton servers.
-          </p>
-
-          <div style={styles.row}>
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Offender Roblox Username *</label>
-              <input
-                type="text"
-                required
-                value={reportedPlayer}
-                onChange={(e) => setReportedPlayer(e.target.value)}
-                placeholder="e.g. HackerGuy123"
-                className="input-field"
-              />
-            </div>
-
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Violation Category</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="input-field"
-              >
-                <option value="Exploiting">Exploiting / Cheating</option>
-                <option value="Toxicity">Toxicity / Harassment</option>
-                <option value="Glitching">Glitching / Bug Abuse</option>
-                <option value="FRP">Fail Roleplay</option>
-                <option value="LTA">Leaving to Avoid</option>
-              </select>
-            </div>
+      {/* Reports Feed */}
+      <div style={styles.feed}>
+        {displayedReports.length === 0 ? (
+          <div style={styles.emptyGrid}>
+            <Shield size={48} color="rgba(255,255,255,0.1)" style={{ margin: '0 auto 16px auto', display: 'block' }} />
+            <p style={styles.emptyText}>No reports found in this section.</p>
           </div>
-
-          <div style={styles.inputWrapper}>
-            <label style={styles.label}>Evidence File (Image/Video)</label>
-            <label style={{ ...styles.inputInner, cursor: 'pointer', padding: '10px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', display: 'flex', justifyContent: 'center', gap: '8px', border: '1px solid var(--color-border)' }}>
-              <Upload size={16} />
-              <span>{evidenceFile ? evidenceFile.name : 'Choose File'}</span>
-              <input 
-                type="file" 
-                accept="image/*,video/*"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    setEvidenceFile(e.target.files[0]);
-                  }
-                }} 
-                style={{ display: 'none' }} 
-              />
-            </label>
-            {evidenceFile && (
-              <button type="button" onClick={() => setEvidenceFile(null)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem', marginTop: '4px', textAlign: 'left' }}>
-                Remove file
-              </button>
-            )}
-          </div>
-
-          <div style={styles.inputWrapper}>
-            <label style={styles.label}>Incident Details & Explanation *</label>
-            <textarea
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what occurred, what warning was issued, and the player response..."
-              className="input-field"
-              style={styles.textarea}
-              rows={4}
-            />
-          </div>
-
-          <button type="submit" disabled={isUploading} className="btn-primary" style={{ ...styles.submitBtn, opacity: isUploading ? 0.7 : 1 }}>
-            <Send size={16} />
-            <span>{isUploading ? 'Uploading & Filing...' : 'File Incident Report'}</span>
-          </button>
-        </form>
-      ) : (
-        <div style={styles.reportsContainer}>
-          {reports.length === 0 ? (
-            <div style={styles.emptyState}>
-              <AlertTriangle size={48} color="rgba(255,255,255,0.15)" />
-              <p style={styles.emptyText}>No reports have been submitted yet.</p>
-            </div>
-          ) : (
-            <div style={styles.reportsList}>
-              {reports.map((report) => {
-                const isExpanded = expandedReports[report.id];
-                return (
-                  <div key={report.id} style={styles.reportCard} className="glass-panel">
-                    <div style={styles.cardHeader}>
-                      <div style={styles.headerInfo}>
-                        <h4 style={styles.targetPlayer}>Player: {report.reportedPlayer}</h4>
-                        <span style={styles.violationType}>{report.type}</span>
-                      </div>
-                      <div style={styles.headerRight}>
-                        {getStatusBadge(report.status)}
-                        <span style={styles.reportTime}>{formatDate(report.timestamp)}</span>
-                      </div>
-                    </div>
-
-                    <div style={styles.reportContent}>
-                      <p style={styles.descriptionText}>{report.description}</p>
-                      
-                      {report.evidenceLink && (
-                        <a
-                          href={report.evidenceLink}
-                          rel="noreferrer"
-                          style={styles.evidenceBtn}
-                          className="btn-secondary"
-                        >
-                          <ExternalLink size={12} />
-                          <span>View Evidence Link</span>
-                        </a>
-                      )}
-                    </div>
-
-                    <div style={styles.reportFooter}>
-                      <span style={styles.reporterInfo}>
-                        Reporter: <strong>{report.reporterName}</strong>
-                      </span>
-
-                      <div style={styles.footerActions}>
-                        {currentUser.isAdmin && (
-                          <div style={styles.adminActionDropdown}>
-                            <Shield size={12} color="#06b6d4" />
-                            <select
-                              value={report.status}
-                              onChange={(e) => updateReportStatus(report.id, e.target.value)}
-                              style={styles.statusSelect}
-                            >
-                              <option value="Pending">Pending</option>
-                              <option value="Under Review">Under Review</option>
-                              <option value="Actioned">Actioned</option>
-                              <option value="Dismissed">Dismissed</option>
-                            </select>
-                          </div>
-                        )}
-
-                        <button
-                          onClick={() => toggleExpand(report.id)}
-                          className="btn-secondary"
-                          style={styles.discussBtn}
-                        >
-                          <MessageSquare size={14} />
-                          <span>Discussion ({report.comments?.length || 0})</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Expandable comments thread */}
-                    {isExpanded && (
-                      <div style={styles.discussionThread}>
-                        <h5 style={styles.threadTitle}>Case Discussion & Admin Inquiry</h5>
-                        
-                        <div style={styles.commentsList}>
-                          {!report.comments || report.comments.length === 0 ? (
-                            <p style={styles.emptyThreadText}>No messages logged. Admin replies or inquiries will appear here.</p>
-                          ) : (
-                            report.comments.map(c => (
-                              <div
-                                key={c.id}
-                                style={{
-                                  ...styles.commentBubble,
-                                  alignSelf: c.isAdmin ? 'flex-start' : 'flex-end',
-                                  background: c.isAdmin ? 'rgba(6, 182, 212, 0.08)' : 'rgba(255, 255, 255, 0.03)',
-                                  borderColor: c.isAdmin ? 'rgba(6, 182, 212, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                                }}
-                              >
-                                <div style={styles.commentHeader}>
-                                  <span style={styles.commentAuthor}>
-                                    {c.authorName}
-                                    {c.isAdmin && <span className="badge badge-admin" style={styles.miniAdminBadge}>Admin</span>}
-                                  </span>
-                                  <span style={styles.commentTime}>{formatDate(c.timestamp)}</span>
-                                </div>
-                                <p style={styles.commentText}>{c.text}</p>
-                              </div>
-                            ))
-                          )}
-                          <div ref={commentsEndRef} />
-                        </div>
-
-                        <form onSubmit={(e) => handleAddComment(report.id, e)} style={styles.commentForm}>
-                          <input
-                            type="text"
-                            value={commentText[report.id] || ''}
-                            onChange={(e) => setCommentText(prev => ({ ...prev, [report.id]: e.target.value }))}
-                            placeholder={currentUser.isAdmin ? "Reply to report or request more information..." : "Reply to admin inquiry..."}
-                            className="input-field"
-                            style={styles.commentInput}
-                          />
-                          <button type="submit" className="btn-primary" style={styles.commentSendBtn}>
-                            <Send size={14} />
-                          </button>
-                        </form>
-                      </div>
-                    )}
+        ) : (
+          displayedReports.map(report => (
+            <div key={report.id} style={styles.reportCard} className="glass-panel hover-card">
+              <div style={styles.cardHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={styles.avatar}>
+                    {report.reporterName.charAt(0)}
                   </div>
-                );
-              })}
+                  <div>
+                    <strong style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-main)' }}>
+                      {report.reporterName}
+                      {getStatusBadge(report.status)}
+                    </strong>
+                    <div style={styles.cardMeta}>
+                      <Clock size={12} />
+                      {formatDate(report.timestamp)}
+                    </div>
+                  </div>
+                </div>
+                {currentUser.isAdmin && report.status === 'Pending' && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => updateReportStatus(report.id, 'Under Review')} className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>Review</button>
+                    <button onClick={() => updateReportStatus(report.id, 'Actioned')} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>Action</button>
+                    <button onClick={() => updateReportStatus(report.id, 'Dismissed')} className="btn-danger" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>Dismiss</button>
+                  </div>
+                )}
+                {currentUser.isAdmin && report.status === 'Under Review' && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => updateReportStatus(report.id, 'Actioned')} className="btn-primary" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>Action</button>
+                    <button onClick={() => updateReportStatus(report.id, 'Dismissed')} className="btn-danger" style={{ padding: '6px 12px', fontSize: '0.85rem' }}>Dismiss</button>
+                  </div>
+                )}
+              </div>
+
+              <div style={styles.cardBody}>
+                <div style={styles.reportDetailGrid}>
+                  <div style={styles.detailBox}>
+                    <span style={styles.detailLabel}>Reported Player</span>
+                    <strong style={{ color: '#fff', fontSize: '1.1rem' }}>{report.reportedPlayer}</strong>
+                  </div>
+                  <div style={styles.detailBox}>
+                    <span style={styles.detailLabel}>Type</span>
+                    <span style={{ color: '#fff' }}>{report.type}</span>
+                  </div>
+                  <div style={styles.detailBox}>
+                    <span style={styles.detailLabel}>Severity</span>
+                    {getSeverityBadge(report.severity || 'Medium')}
+                  </div>
+                </div>
+                
+                <div style={{ marginTop: '16px' }}>
+                  <span style={styles.detailLabel}>Reason / Description</span>
+                  <p style={{ color: '#d1d5db', lineHeight: '1.6', marginTop: '4px' }}>{report.description}</p>
+                </div>
+              </div>
+
+              <div style={styles.cardFooter}>
+                <button 
+                  onClick={() => toggleExpand(report.id)}
+                  style={{
+                    background: 'transparent', border: 'none', color: '#9ca3af',
+                    display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
+                    fontSize: '0.9rem', padding: '4px 0'
+                  }}
+                >
+                  <MessageSquare size={16} />
+                  {report.comments ? report.comments.length : 0} Comments
+                </button>
+              </div>
+
+              {expandedReports[report.id] && (
+                <div style={styles.commentsSection}>
+                  <div style={styles.commentsList}>
+                    {report.comments && report.comments.map(c => (
+                      <div key={c.id} style={styles.comment}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <strong style={{ color: '#fff', fontSize: '0.85rem' }}>{c.authorName}</strong>
+                          <span style={{ color: '#6b7280', fontSize: '0.75rem' }}>{formatDate(c.timestamp)}</span>
+                        </div>
+                        <div style={{ color: '#d1d5db', fontSize: '0.9rem' }}>{c.text}</div>
+                      </div>
+                    ))}
+                    <div ref={commentsEndRef} />
+                  </div>
+                  
+                  <form onSubmit={(e) => handleAddComment(report.id, e)} style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                    <input
+                      type="text"
+                      placeholder="Add a comment..."
+                      value={commentText[report.id] || ''}
+                      onChange={e => setCommentText({...commentText, [report.id]: e.target.value})}
+                      style={styles.commentInput}
+                    />
+                    <button type="submit" className="btn-primary" style={{ padding: '0 16px', borderRadius: '8px' }}>Send</button>
+                  </form>
+                </div>
+              )}
             </div>
-          )}
+          ))
+        )}
+      </div>
+
+      {/* Log New Report Modal */}
+      {isModalOpen && (
+        <div style={styles.overlay}>
+          <div className="glass-panel" style={styles.modal}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.5rem', margin: 0, color: 'var(--color-text-main)' }}>Log New Report</h2>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} style={styles.form}>
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Username *</label>
+                <input
+                  type="text"
+                  required
+                  value={reportedPlayer}
+                  onChange={e => setReportedPlayer(e.target.value)}
+                  className="input-field"
+                  placeholder="Roblox Username"
+                />
+              </div>
+
+              <div style={styles.row}>
+                <div style={styles.inputWrapper}>
+                  <label style={styles.label}>Type *</label>
+                  <select
+                    value={type}
+                    onChange={e => setType(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="Exploiting">Exploiting / Hacking</option>
+                    <option value="Trolling">Trolling / Disruption</option>
+                    <option value="Bypassing">Bypassing Chat Filter</option>
+                    <option value="Glitching">Glitching / Bug Abuse</option>
+                    <option value="Staff Abuse">Staff Abuse</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                
+                <div style={styles.inputWrapper}>
+                  <label style={styles.label}>Severity *</label>
+                  <select
+                    value={severity}
+                    onChange={e => setSeverity(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={styles.inputWrapper}>
+                <label style={styles.label}>Reason *</label>
+                <textarea
+                  required
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  className="input-field"
+                  rows="4"
+                  placeholder="Provide a detailed reason and context for this report..."
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn-secondary" style={{ padding: '12px 24px' }}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" style={{ padding: '12px 24px' }}>
+                  Submit Report
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
@@ -359,97 +355,53 @@ export default function Reports() {
 
 const styles = {
   container: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
+    maxWidth: '900px',
+    margin: '0 auto',
+    padding: '24px 0',
   },
   tabHeader: {
     display: 'flex',
     gap: '12px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-    paddingBottom: '12px',
+    background: 'rgba(0,0,0,0.2)',
+    padding: '8px',
+    borderRadius: '16px',
+    border: '1px solid rgba(255,255,255,0.05)',
   },
   tabBtn: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '10px 18px',
-    borderRadius: '8px',
-    fontSize: '0.85rem',
+    padding: '10px 20px',
+    borderRadius: '10px',
+    border: '1px solid transparent',
+    fontSize: '0.95rem',
+    fontWeight: '600',
     cursor: 'pointer',
+    transition: 'all 0.2s ease',
   },
   form: {
-    padding: '32px',
-    borderRadius: '16px',
     display: 'flex',
     flexDirection: 'column',
     gap: '20px',
   },
-  sectionTitle: {
-    fontSize: '1.25rem',
-    fontWeight: '700',
-    color: 'var(--color-text-main)',
-  },
-  subtitle: {
-    fontSize: '0.875rem',
-    color: '#9ca3af',
-    marginTop: '-12px',
-    marginBottom: '8px',
-  },
   row: {
-    display: 'flex',
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
     gap: '20px',
   },
   inputWrapper: {
-    flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
+    gap: '8px',
   },
   label: {
-    fontSize: '0.85rem',
-    fontWeight: '500',
-    color: '#d1d5db',
-  },
-  textarea: {
-    resize: 'vertical',
-  },
-  submitBtn: {
-    padding: '12px 20px',
-    borderRadius: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    cursor: 'pointer',
-    alignSelf: 'flex-start',
-    marginTop: '10px',
-  },
-  successAlert: {
-    background: 'rgba(16, 185, 129, 0.15)',
-    border: '1px solid rgba(16, 185, 129, 0.3)',
-    borderRadius: '8px',
-    padding: '12px 16px',
-    fontSize: '0.9rem',
-    color: '#a7f3d0',
-  },
-  reportsContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  emptyState: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '12px',
-    padding: '60px 0',
-  },
-  emptyText: {
     color: '#9ca3af',
-    fontSize: '1rem',
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
   },
-  reportsList: {
+  feed: {
     display: 'flex',
     flexDirection: 'column',
     gap: '24px',
@@ -457,186 +409,136 @@ const styles = {
   reportCard: {
     padding: '24px',
     borderRadius: '16px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '18px',
+    background: 'rgba(30, 41, 59, 0.4)',
+    border: '1px solid rgba(255,255,255,0.05)',
   },
   cardHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     borderBottom: '1px solid rgba(255,255,255,0.05)',
-    paddingBottom: '12px',
-    flexWrap: 'wrap',
-    gap: '12px',
+    paddingBottom: '16px',
+    marginBottom: '16px',
   },
-  headerInfo: {
+  avatar: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
+    background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: '1.2rem',
+  },
+  cardMeta: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    color: '#6b7280',
+    fontSize: '0.8rem',
+    marginTop: '4px',
+  },
+  cardBody: {
+    marginBottom: '16px',
+  },
+  reportDetailGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    gap: '16px',
+    background: 'rgba(0,0,0,0.2)',
+    padding: '16px',
+    borderRadius: '12px',
+  },
+  detailBox: {
     display: 'flex',
     flexDirection: 'column',
     gap: '4px',
   },
-  targetPlayer: {
-    fontSize: '1.15rem',
-    fontWeight: '700',
-    color: 'var(--color-text-main)',
-  },
-  violationType: {
-    fontSize: '0.75rem',
-    color: '#f59e0b',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-  },
-  headerRight: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: '6px',
-  },
-  reportTime: {
-    fontSize: '0.75rem',
+  detailLabel: {
     color: '#9ca3af',
-  },
-  reportContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-  },
-  descriptionText: {
-    fontSize: '0.9rem',
-    color: '#e5e7eb',
-    lineHeight: '1.45',
-  },
-  evidenceBtn: {
-    alignSelf: 'flex-start',
-    padding: '6px 12px',
-    borderRadius: '6px',
     fontSize: '0.75rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    textDecoration: 'none',
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: '0.05em',
   },
-  reportFooter: {
+  cardFooter: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTop: '1px solid rgba(255,255,255,0.03)',
-    paddingTop: '12px',
-    flexWrap: 'wrap',
-    gap: '12px',
-  },
-  reporterInfo: {
-    fontSize: '0.8rem',
-    color: '#9ca3af',
-  },
-  footerActions: {
-    display: 'flex',
-    gap: '12px',
-    alignItems: 'center',
-  },
-  adminActionDropdown: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    background: 'rgba(0,0,0,0.2)',
-    border: '1px solid rgba(255,255,255,0.05)',
-    padding: '4px 10px',
-    borderRadius: '6px',
-  },
-  statusSelect: {
-    background: 'transparent',
-    border: 'none',
-    color: '#06b6d4',
-    fontSize: '0.8rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    outline: 'none',
-  },
-  discussBtn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '8px 12px',
-    borderRadius: '6px',
-    fontSize: '0.8rem',
-    cursor: 'pointer',
-  },
-  discussionThread: {
-    borderTop: '1px dashed rgba(255,255,255,0.08)',
     paddingTop: '16px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
+    borderTop: '1px solid rgba(255,255,255,0.05)',
   },
-  threadTitle: {
-    fontSize: '0.85rem',
-    fontWeight: '600',
-    color: 'var(--color-text-main)',
+  commentsSection: {
+    marginTop: '16px',
+    padding: '16px',
+    background: 'rgba(0,0,0,0.2)',
+    borderRadius: '12px',
+    border: '1px solid rgba(255,255,255,0.05)',
   },
   commentsList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    maxHeight: '200px',
+    maxHeight: '300px',
     overflowY: 'auto',
-    paddingRight: '6px',
-  },
-  emptyThreadText: {
-    fontSize: '0.8rem',
-    color: '#9ca3af',
-    fontStyle: 'italic',
-  },
-  commentBubble: {
-    width: 'fit-content',
-    maxWidth: '85%',
-    padding: '10px 14px',
-    borderRadius: '12px',
-    border: '1px solid transparent',
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
+    gap: '12px',
+    paddingRight: '8px',
   },
-  commentHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: '16px',
-  },
-  commentAuthor: {
-    fontSize: '0.75rem',
-    fontWeight: '600',
-    color: 'var(--color-text-main)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  miniAdminBadge: {
-    fontSize: '0.6rem',
-    padding: '1px 6px',
-  },
-  commentTime: {
-    fontSize: '0.65rem',
-    color: '#9ca3af',
-  },
-  commentText: {
-    fontSize: '0.85rem',
-    color: '#d1d5db',
-    lineHeight: '1.4',
-  },
-  commentForm: {
-    display: 'flex',
-    gap: '8px',
-    marginTop: '6px',
+  comment: {
+    background: 'rgba(255,255,255,0.03)',
+    padding: '12px',
+    borderRadius: '8px',
   },
   commentInput: {
     flex: 1,
-    padding: '8px 12px',
-    fontSize: '0.8rem',
+    background: 'rgba(0,0,0,0.3)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '8px',
+    padding: '10px 14px',
+    color: '#fff',
+    outline: 'none',
   },
-  commentSendBtn: {
-    padding: '0 12px',
-    borderRadius: '6px',
-    cursor: 'pointer',
+  successAlert: {
+    background: 'rgba(16, 185, 129, 0.1)',
+    border: '1px solid rgba(16, 185, 129, 0.3)',
+    color: '#34d399',
+    padding: '16px',
+    borderRadius: '12px',
+    marginBottom: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '500',
   },
+  emptyGrid: {
+    textAlign: 'center',
+    padding: '60px 0',
+  },
+  emptyText: {
+    color: '#9ca3af',
+    margin: 0,
+    fontSize: '1.1rem',
+  },
+  overlay: {
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(0,0,0,0.75)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    padding: '24px',
+  },
+  modal: {
+    width: '100%',
+    maxWidth: '600px',
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    background: '#1e293b',
+    padding: '32px',
+    borderRadius: '24px',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+  }
 };

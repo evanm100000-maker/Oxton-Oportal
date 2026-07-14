@@ -4,7 +4,7 @@ import { Users, User, Trophy, ShieldAlert, Award, FileText, Send, X, Trash2, Med
 
 export default function AllStaff() {
   const { 
-    activeUsers, 
+    users,
     onlineUsers, 
     flightLogs, 
     currentUser, 
@@ -22,6 +22,8 @@ export default function AllStaff() {
   const [noteType, setNoteType] = useState('Performance');
   const [noteText, setNoteText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  const displayUsers = users ? users.filter(u => u?.approved && u?.role !== 'passenger') : [];
 
   const calculateBadge = (email) => {
     const flightsCount = flightLogs.filter(log => log.submitterEmail === email && log.status === 'Approved').length;
@@ -48,7 +50,7 @@ export default function AllStaff() {
         </div>
         <div style={styles.statsBadge}>
           <Users size={16} />
-          <span>{activeUsers.length} Total Staff</span>
+          <span>{displayUsers.length} Total Staff</span>
         </div>
       </div>
       
@@ -64,7 +66,7 @@ export default function AllStaff() {
       </div>
 
       <div style={styles.grid}>
-        {activeUsers.filter(user => `${user.firstName} ${user.lastName} ${user.robloxUsername}`.toLowerCase().includes(searchQuery.toLowerCase())).map(user => {
+        {displayUsers.filter(user => `${user.firstName} ${user.lastName} ${user.robloxUsername}`.toLowerCase().includes(searchQuery.toLowerCase())).map(user => {
           const isOnline = user.email && onlineUsers[user.email.replace(/\./g, ',')];
           const badge = calculateBadge(user.email);
           const goldMedals = user.goldMedals || 0;

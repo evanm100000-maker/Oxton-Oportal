@@ -104,8 +104,9 @@ const initialTasks = [];
 const initialTickets = [];
 const initialStaffNotes = [];
 const initialAnnouncements = [];
-const initialPrivateChats = [];
+
 const initialEvents = [];
+const initialMeetings = [];
 const initialApplications = [];
 const initialApplicationConfig = {
   isActive: true,
@@ -139,6 +140,8 @@ const initialPageConfig = {
 };
 
 const STORAGE_KEYS = {
+  events: 'oxton_events',
+  meetings: 'oxton_meetings',
   users: 'oxton_users',
   flights: 'oxton_flights',
   flightLogs: 'oxton_flight_logs',
@@ -161,7 +164,6 @@ const STORAGE_KEYS = {
   chatMessages: 'oxton_chat_messages',
   announcements: 'oxton_announcements',
   bypassConfig: 'oxton_bypass',
-  privateChats: 'oxton_private_chats',
 };
 
 const isActiveStaff = (user) => (
@@ -342,10 +344,11 @@ export const AppProvider = ({ children }) => {
   const [chatMessages, setChatMessages] = useFirebaseArray('chatMessages', EMPTY_ARRAY, isLoggedIn, 200);
   const [announcements, setAnnouncements] = useFirebaseArray('announcements', initialAnnouncements, true, 50);
   const [bypassConfig, setBypassConfig] = useFirebaseObject('bypassConfig', initialBypassConfig);
-  const [privateChats, setPrivateChats] = useFirebaseArray('privateChats', initialPrivateChats, isLoggedIn, 50);
+
   const [informalSanctions, setInformalSanctions] = useFirebaseArray('informalSanctions', EMPTY_ARRAY, isLoggedIn, 50);
   const [pointLogs, setPointLogs] = useFirebaseArray('pointLogs', EMPTY_ARRAY, isLoggedIn, 500);
   const [events, setEvents] = useFirebaseArray('events', initialEvents, true, 50);
+  const [meetings, setMeetings] = useFirebaseArray('meetings', initialMeetings, true, 50);
   const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn, 50);
   const [applicationConfig, setApplicationConfig] = useFirebaseObject('applicationConfig', initialApplicationConfig);
   const [pageConfig, setPageConfig] = useFirebaseObject('pageConfig', initialPageConfig);
@@ -386,20 +389,13 @@ export const AppProvider = ({ children }) => {
   const visibleChatMessages = useMemo(() => {
     if (!currentUser) return [];
     const safeMessages = Array.isArray(chatMessages) ? chatMessages : [];
-    const safePrivateChats = Array.isArray(privateChats) ? privateChats : [];
     
     return safeMessages.filter(m => {
       if (m.channel === 'Staff Chat' || m.channel === 'Global') return true;
       if (m.channel === 'Security') return !!currentUser.isAdmin;
-      
-      const pChat = safePrivateChats.find(c => c.id === m.channel);
-      if (pChat) {
-        if (currentUser.isAdmin) return true;
-        return pChat.participants?.includes(currentUser.email);
-      }
       return true;
     });
-  }, [chatMessages, privateChats, currentUser]);
+  }, [chatMessages, currentUser]);
 
   // Removed one-time script that was causing excessive Firebase writes and downloads
 
@@ -471,6 +467,9 @@ export const AppProvider = ({ children }) => {
        updates[id] = newNotif;
        update(ref(db, `userNotifications/${safeEmail}`), updates).catch(err => console.error('Failed to save notification:', err));
     }
+    
+    const audio = new Audio('/notificationsound.mp3');
+    audio.play().catch(e => console.error("Could not play notification sound", e));
   };
 
   const removeNotification = (id) => {
@@ -538,8 +537,8 @@ export const AppProvider = ({ children }) => {
         set(ref(db, 'maintenanceConfig'), initialMaintenanceConfig);
         set(ref(db, 'announcements'), initialAnnouncements);
         set(ref(db, 'bypassConfig'), initialBypassConfig);
-        set(ref(db, 'privateChats'), initialPrivateChats);
         set(ref(db, 'events'), initialEvents);
+        set(ref(db, 'meetings'), initialMeetings);
         set(ref(db, 'applications'), initialApplications);
         set(ref(db, 'applicationConfig'), initialApplicationConfig);
         set(ref(db, 'siteVersion'), initialVersion);
@@ -682,33 +681,40 @@ export const AppProvider = ({ children }) => {
 
   // Notifications Watchers
   const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null, tasks: null });
+  const initialLoadRef = useRef({ chatMessages: true, infractions: true, loaRequests: true, tickets: true, tasks: true });
 
   useEffect(() => {
     if (!currentUser) return;
-    if (prevDataRef.current.chatMessages && visibleChatMessages.length > prevDataRef.current.chatMessages.length) {
+    if (!initialLoadRef.current.chatMessages && prevDataRef.current.chatMessages && visibleChatMessages.length > prevDataRef.current.chatMessages.length) {
       const newMsg = visibleChatMessages.find(m => !prevDataRef.current.chatMessages.some(pm => pm.id === m.id));
       if (newMsg && newMsg.senderEmail !== currentUser.email) {
         const text = newMsg.text || '';
         addNotification(`New message from ${newMsg.senderName}`, text.length > 40 ? text.substring(0, 40) + '...' : text, 'info');
       }
     }
+    if (visibleChatMessages.length > 0 || prevDataRef.current.chatMessages !== null) {
+       initialLoadRef.current.chatMessages = false;
+    }
     prevDataRef.current.chatMessages = visibleChatMessages;
   }, [visibleChatMessages, currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
-    if (prevDataRef.current.infractions && infractions.length > prevDataRef.current.infractions.length) {
+    if (!initialLoadRef.current.infractions && prevDataRef.current.infractions && infractions.length > prevDataRef.current.infractions.length) {
       const newInf = infractions.find(i => !prevDataRef.current.infractions.some(pi => pi.id === i.id));
       if (newInf && newInf.staffEmail === currentUser.email) {
         addNotification(`New Consequence: ${newInf.type}`, `You received a ${newInf.type}. Check your dashboard.`, 'danger');
       }
+    }
+    if (infractions.length > 0 || prevDataRef.current.infractions !== null) {
+       initialLoadRef.current.infractions = false;
     }
     prevDataRef.current.infractions = infractions;
   }, [infractions, currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
-    if (prevDataRef.current.loaRequests) {
+    if (!initialLoadRef.current.loaRequests && prevDataRef.current.loaRequests) {
       loaRequests.forEach(loa => {
         const prevLoa = prevDataRef.current.loaRequests.find(p => p.id === loa.id);
         if (prevLoa && prevLoa.status !== loa.status && loa.userEmail === currentUser.email) {
@@ -716,12 +722,15 @@ export const AppProvider = ({ children }) => {
         }
       });
     }
+    if (loaRequests.length > 0 || prevDataRef.current.loaRequests !== null) {
+       initialLoadRef.current.loaRequests = false;
+    }
     prevDataRef.current.loaRequests = loaRequests;
   }, [loaRequests, currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
-    if (prevDataRef.current.tickets) {
+    if (!initialLoadRef.current.tickets && prevDataRef.current.tickets) {
       tickets.forEach(ticket => {
         const prevTicket = prevDataRef.current.tickets.find(p => p.id === ticket.id);
         if (prevTicket && ticket.comments && (!prevTicket.comments || ticket.comments.length > prevTicket.comments.length)) {
@@ -734,16 +743,22 @@ export const AppProvider = ({ children }) => {
         }
       });
     }
+    if (tickets.length > 0 || prevDataRef.current.tickets !== null) {
+       initialLoadRef.current.tickets = false;
+    }
     prevDataRef.current.tickets = tickets;
   }, [tickets, currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
-    if (prevDataRef.current.tasks && tasks.length > prevDataRef.current.tasks.length) {
+    if (!initialLoadRef.current.tasks && prevDataRef.current.tasks && tasks.length > prevDataRef.current.tasks.length) {
       const newTask = tasks.find(t => !prevDataRef.current.tasks.some(pt => pt.id === t.id));
       if (newTask && newTask.assignedToEmail === currentUser.email) {
         addNotification(`New Task Assigned`, `You have a new task: ${newTask.title}`, 'info');
       }
+    }
+    if (tasks.length > 0 || prevDataRef.current.tasks !== null) {
+       initialLoadRef.current.tasks = false;
     }
     prevDataRef.current.tasks = tasks;
   }, [tasks, currentUser]);
@@ -859,7 +874,7 @@ export const AppProvider = ({ children }) => {
           lastLoginDate: now, 
           loginStreak: newStreak, 
           last5DayBonusDate,
-          points: (user.points || 0) + pointsToAdd,
+          points: Number(user.points || 0) + pointsToAdd,
           rememberMeExpiry: rememberMe ? Date.now() + 10 * 24 * 60 * 60 * 1000 : null
         };
         setUsers(prev => prev.map(u => u.email === updatedUser.email ? updatedUser : u));
@@ -997,7 +1012,7 @@ export const AppProvider = ({ children }) => {
   const addPoints = (email, amount, reason) => {
     setUsers(prev => prev.map(u => {
       if (u.email === email) {
-        return { ...u, points: (u.points || 0) + amount };
+        return { ...u, points: Number(u.points || 0) + amount };
       }
       return u;
     }));
@@ -1010,8 +1025,8 @@ export const AppProvider = ({ children }) => {
     if (!canTakeAction(currentUser, targetUser)) return;
 
     const suspendedUntil = new Date(Date.now() + hours * 3600000).toISOString();
-    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil, points: (u.points || 0) - 20 } : u));
-    logPointsAction(email, -20, 'Account Suspended');
+    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil, points: Number(u.points || 0) - 12 } : u));
+    logPointsAction(email, -12, 'Account Suspended');
     logAction('user_suspended', `Suspended ${email} for ${hours} hours. Reason: ${reason}`, { email, hours, reason, suspendedUntil });
     
     addInfraction({
@@ -1036,7 +1051,7 @@ export const AppProvider = ({ children }) => {
       timestamp: new Date().toISOString()
     };
     setInformalSanctions(prev => [newSanction, ...prev]);
-    setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: (u.points || 0) - 2 } : u));
+    setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: Number(u.points || 0) - 2 } : u));
     logPointsAction(staffEmail, -2, `Informal Sanction: ${reason}`);
     logAction('informal_sanction_added', `Issued informal sanction to ${staffEmail}`, { staffEmail, reason });
     return true;
@@ -1046,7 +1061,7 @@ export const AppProvider = ({ children }) => {
     if (!staffEmail) return;
     const isOnLoa = loaRequests.some(loa => loa.userEmail === staffEmail && loa.status === 'Approved');
     if (!isOnLoa) {
-      setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: (u.points || 0) - 2 } : u));
+      setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: Number(u.points || 0) - 2 } : u));
       logPointsAction(staffEmail, -2, 'Missed Flight');
       logAction('missed_flight_logged', `Logged missed flight for ${staffEmail}`, { staffEmail });
     }
@@ -1258,7 +1273,7 @@ export const AppProvider = ({ children }) => {
     let logToApprove = null;
     const db = getDatabase(firebaseApp);
     setFlightLogs(prev => prev.map(log => {
-      if (log.id === logId) {
+      if (log.id === logId && log.status !== 'Approved') {
         logToApprove = log;
         update(ref(db, `flightLogs/${logId}`), { status: 'Approved' }).catch(e => console.error(e));
         return { ...log, status: 'Approved' };
@@ -1274,11 +1289,11 @@ export const AppProvider = ({ children }) => {
       const copilotUser = users.find(u => u.robloxUsername === logToApprove.coPilot);
       
       if (submitterUser) {
-        setUsers(prev => prev.map(u => u.email === submitterUser.email ? { ...u, points: (u.points || 0) + 7 } : u));
+        setUsers(prev => prev.map(u => u.email === submitterUser.email ? { ...u, points: Number(u.points || 0) + 7 } : u));
         logPointsAction(submitterUser.email, 7, `Flight Log Approved: ${logToApprove.flightCode}`);
       }
       if (copilotUser && copilotUser.email !== logToApprove.submitterEmail) {
-        setUsers(prev => prev.map(u => u.email === copilotUser.email ? { ...u, points: (u.points || 0) + 7 } : u));
+        setUsers(prev => prev.map(u => u.email === copilotUser.email ? { ...u, points: Number(u.points || 0) + 7 } : u));
         logPointsAction(copilotUser.email, 7, `Flight Log Approved (Co-Pilot): ${logToApprove.flightCode}`);
       }
     }
@@ -1366,7 +1381,7 @@ export const AppProvider = ({ children }) => {
   const updateReportStatus = (reportId, status) => {
     const rep = reports.find(r => r.id === reportId);
     if (rep && status === 'Actioned' && rep.status !== 'Actioned') {
-       setUsers(prev => prev.map(u => u.email === rep.reporterEmail ? { ...u, points: (u.points || 0) + 2 } : u));
+       setUsers(prev => prev.map(u => u.email === rep.reporterEmail ? { ...u, points: Number(u.points || 0) + 2 } : u));
        logPointsAction(rep.reporterEmail, 2, 'Report Actioned');
     }
     setReports(prev => prev.map(r => 
@@ -1416,7 +1431,7 @@ export const AppProvider = ({ children }) => {
     setInfractions(prev => [newInfraction, ...prev]);
     
     if (infData.type !== 'Suspension') {
-      setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: (u.points || 0) - 10, lastInfractionDate: new Date().toISOString() } : u));
+      setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, points: Number(u.points || 0) - 10, lastInfractionDate: new Date().toISOString() } : u));
       logPointsAction(staffEmail, -10, `Infraction: ${mainMessage}`);
     } else {
       setUsers(prev => prev.map(u => u.email === staffEmail ? { ...u, lastInfractionDate: new Date().toISOString() } : u));
@@ -1462,7 +1477,7 @@ export const AppProvider = ({ children }) => {
     }
 
     if (shouldReturnPoints) {
-      setUsers(prev => prev.map(u => u.email === sanction.staffEmail ? { ...u, points: (u.points || 0) + 2 } : u));
+      setUsers(prev => prev.map(u => u.email === sanction.staffEmail ? { ...u, points: Number(u.points || 0) + 2 } : u));
       logPointsAction(sanction.staffEmail, 2, 'Informal Sanction Cancelled');
     }
 
@@ -1725,18 +1740,32 @@ useEffect(() => {
   const addEvent = (eventData) => {
     const newEvent = {
       id: makeId('event'),
-      title: eventData.title,
-      description: eventData.description,
-      date: eventData.date,
-      timestamp: new Date().toISOString()
+      ...eventData,
+      timestamp: Date.now()
     };
     setEvents(prev => [...prev, newEvent]);
-    logAction('event_added', `Added event: ${eventData.title}`);
+    logAction('event_created', `Scheduled event: ${eventData.title}`);
   };
 
   const deleteEvent = (eventId) => {
     setEvents(prev => prev.filter(e => e.id !== eventId));
-    logAction('event_deleted', `Deleted event`);
+    logAction('event_deleted', `Deleted event: ${eventId}`);
+  };
+
+  // Meetings Operations
+  const addMeeting = (meetingData) => {
+    const newMeeting = {
+      id: makeId('meeting'),
+      ...meetingData,
+      timestamp: Date.now()
+    };
+    setMeetings(prev => [...prev, newMeeting]);
+    logAction('meeting_created', `Scheduled meeting: ${meetingData.title}`);
+  };
+
+  const deleteMeeting = (meetingId) => {
+    setMeetings(prev => prev.filter(m => m.id !== meetingId));
+    logAction('meeting_deleted', `Deleted meeting: ${meetingId}`);
   };
 
   // --- Staff Notes Operations ---
@@ -1798,6 +1827,34 @@ useEffect(() => {
     ));
     logAction('application_reviewed', `Reviewed application ${appId} - ${status}`);
   };
+
+  // Meeting Notifications
+  useEffect(() => {
+    if (!currentUser || !meetings || meetings.length === 0) return;
+    
+    const interval = setInterval(() => {
+      const now = Date.now();
+      meetings.forEach(meeting => {
+        const meetingTime = new Date(meeting.date).getTime();
+        const timeDiff = meetingTime - now;
+        
+        // If within 30 minutes (1800000 ms) and haven't notified yet
+        if (timeDiff > 0 && timeDiff <= 30 * 60 * 1000) {
+          const notifiedKey = `oxton_notified_meeting_${meeting.id}`;
+          if (!localStorage.getItem(notifiedKey)) {
+            addNotification({
+              title: 'Meeting Reminder',
+              message: `${meeting.title} is starting in 30 minutes!`,
+              type: 'info'
+            });
+            localStorage.setItem(notifiedKey, 'true');
+          }
+        }
+      });
+    }, 60000); // Check every minute
+    
+    return () => clearInterval(interval);
+  }, [currentUser, meetings, addNotification]);
 
   return (
     <AppContext.Provider
@@ -1907,28 +1964,7 @@ useEffect(() => {
           setBypassConfig(prev => ({ ...prev, isActive: false }));
           logAction('bypass_announcement_cleared', `Cleared bypass announcement`);
         },
-        privateChats,
-        createPrivateChat: (participantEmails, groupName = '') => {
-          const newChat = {
-            id: makeId('pchat'),
-            participants: participantEmails,
-            name: groupName,
-            createdBy: currentUser.email,
-            createdAt: new Date().toISOString(),
-            isSuspended: false
-          };
-          setPrivateChats(prev => [...prev, newChat]);
-          logAction('create_private_chat', `Created a private chat`, { participants: participantEmails, name: groupName });
-          return newChat.id;
-        },
-        deletePrivateChat: (chatId) => {
-          setPrivateChats(prev => prev.filter(c => c.id !== chatId));
-          logAction('delete_private_chat', `Deleted private chat`, { chatId });
-        },
-        toggleSuspendPrivateChat: (chatId) => {
-          setPrivateChats(prev => prev.map(c => c.id === chatId ? { ...c, isSuspended: !c.isSuspended } : c));
-          logAction('toggle_suspend_private_chat', `Toggled suspension for private chat`, { chatId });
-        },
+
         applications,
         applicationConfig,
         informalSanctions,
@@ -1938,6 +1974,9 @@ useEffect(() => {
         events,
         addEvent,
         deleteEvent,
+        meetings,
+        addMeeting,
+        deleteMeeting,
         submitApplication,
         updateApplicationConfig,
         updateApplicationStatus,

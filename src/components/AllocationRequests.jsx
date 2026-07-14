@@ -187,7 +187,7 @@ export default function AllocationRequests() {
         </div>
       ) : (
         <div style={styles.flightGrid}>
-          {flights.map((flight) => {
+          {[...flights].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`)).map((flight) => {
             const myStatus = getMyStatus(flight, currentUser.email);
             const currentSelected = selectedStatuses[flight.id] !== undefined
               ? selectedStatuses[flight.id]
@@ -240,7 +240,7 @@ export default function AllocationRequests() {
                   </div>
                   <div style={styles.detailRow}>
                     <Clock size={16} color="#3b82f6" />
-                    <span>{formatFlightTimeLocal(flight.date, flight.time) || `${flight.time} UTC`}</span>
+                    <span>{flight.time} BST</span>
                   </div>
                 </div>
 

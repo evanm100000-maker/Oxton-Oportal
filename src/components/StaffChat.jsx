@@ -5,7 +5,7 @@ import { storage } from "../firebase";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 export default function StaffChat() {
-  const { currentUser, chatMessages, addChatMessage, deleteChatMessage, addMessageReaction, submitReport, setCustomRole, privateChats, createPrivateChat, users } = useApp();
+  const { currentUser, chatMessages, addChatMessage, deleteChatMessage, addMessageReaction, submitReport, setCustomRole, users } = useApp();
   const [activeChannel, setActiveChannel] = useState('Staff Chat');
   const [inputText, setInputText] = useState('');
   const [rolePromptTarget, setRolePromptTarget] = useState(null);
@@ -17,15 +17,7 @@ export default function StaffChat() {
   const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // New Chat Modal State
-  const [showNewChatModal, setShowNewChatModal] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState([]);
-  const [newChatName, setNewChatName] = useState('');
-
   const safeChatMessages = Array.isArray(chatMessages) ? chatMessages : [];
-  const safePrivateChats = Array.isArray(privateChats) ? privateChats : [];
-  
-  const myPrivateChats = safePrivateChats.filter(chat => chat.participants?.includes(currentUser.email));
   const filteredMessages = safeChatMessages.filter(m => m.channel === activeChannel);
 
   // Scroll to the newest messages when opening a channel or when new messages are added
@@ -41,12 +33,6 @@ export default function StaffChat() {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!inputText.trim() && !attachment) return;
-    
-    const pchat = safePrivateChats.find(c => c.id === activeChannel);
-    if (pchat && pchat.isSuspended && !currentUser.isAdmin) {
-      alert("This chat is suspended by an administrator.");
-      return;
-    }
     
     let replyData = null;
     if (replyingTo) {
@@ -110,35 +96,11 @@ export default function StaffChat() {
     setNewRoleInput('');
   };
 
-  const handleCreatePrivateChat = (e) => {
-    e.preventDefault();
-    if (selectedUsers.length === 0) return;
-    const participants = [currentUser.email, ...selectedUsers];
-    const newChatId = createPrivateChat(participants, selectedUsers.length > 1 ? newChatName : '');
-    setShowNewChatModal(false);
-    setSelectedUsers([]);
-    setNewChatName('');
-    setActiveChannel(newChatId);
-  };
 
-  const toggleUserSelection = (email) => {
-    setSelectedUsers(prev => prev.includes(email) ? prev.filter(e => e !== email) : [...prev, email]);
-  };
 
   const getChannelName = () => {
     if (['Staff Chat', 'Security', 'Global'].includes(activeChannel)) {
       return `# ${activeChannel.toLowerCase().replace(' ', '-')}`;
-    }
-    const pchat = safePrivateChats.find(c => c.id === activeChannel);
-    if (pchat) {
-      if (pchat.name) return pchat.name;
-      const otherUsers = pchat.participants.filter(e => e !== currentUser.email);
-      if (otherUsers.length === 0) return 'Just You';
-      const names = otherUsers.map(email => {
-        const u = Array.isArray(users) ? users.find(user => user.email === email) : null;
-        return u ? u.firstName : email.split('@')[0];
-      });
-      return names.join(', ');
     }
     return '# unknown';
   };
@@ -181,44 +143,6 @@ export default function StaffChat() {
         >
           <Globe size={16} /> Global
         </button>
-
-        <div style={{ ...styles.sidebarTitle, marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Users size={16} /> Private Messages</span>
-          <button onClick={() => setShowNewChatModal(true)} style={{ background: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.4)', borderRadius: '4px', color: '#3b82f6', cursor: 'pointer', display: 'flex', padding: '2px' }} title="New Message">
-            <Plus size={14} />
-          </button>
-        </div>
-        {myPrivateChats.map(chat => {
-          let chatName = chat.name;
-          if (!chatName) {
-            const others = chat.participants.filter(e => e !== currentUser.email);
-            if (others.length === 0) chatName = 'Just You';
-            else {
-              chatName = others.map(email => {
-                const u = Array.isArray(users) ? users.find(user => user.email === email) : null;
-                return u ? u.firstName : email.split('@')[0];
-              }).join(', ');
-            }
-          }
-          return (
-            <button 
-              key={chat.id}
-              onClick={() => setActiveChannel(chat.id)}
-              style={{
-                ...styles.channelBtn,
-                background: activeChannel === chat.id ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
-                borderColor: activeChannel === chat.id ? '#8b5cf6' : 'transparent',
-                color: activeChannel === chat.id ? 'var(--color-text-main)' : '#9ca3af',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis'
-              }}
-              title={chatName}
-            >
-              <Users size={16} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatName}</span>
-            </button>
-          )
-        })}
       </div>
 
       {/* Main Chat Area */}
@@ -228,7 +152,7 @@ export default function StaffChat() {
           <span style={styles.channelDesc}>
             {activeChannel === 'Security' ? 'Restricted security operations channel.' : 
              activeChannel === 'Staff Chat' ? 'General staff communication channel.' : 
-             activeChannel === 'Global' ? 'Global announcements channel.' : 'Private, end-to-end communication.'}
+             activeChannel === 'Global' ? 'Global announcements channel.' : ''}
           </span>
         </div>
 
@@ -457,39 +381,6 @@ export default function StaffChat() {
               <div style={{display: 'flex', gap: '12px', justifyContent: 'flex-end'}}>
                 <button type="button" onClick={() => setRolePromptTarget(null)} className="btn-secondary">Cancel</button>
                 <button type="submit" className="btn-primary">Save Role</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* New Private Chat Modal */}
-      {showNewChatModal && (
-        <div style={styles.modalOverlay}>
-          <div className="glass-panel" style={{...styles.modalContent, width: '500px'}}>
-            <h3>New Message</h3>
-            <p style={{fontSize: '0.85rem', color: '#9ca3af', marginBottom: '16px'}}>Select one or more staff members to start a private conversation.</p>
-            <form onSubmit={handleCreatePrivateChat} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px' }}>
-                {Array.isArray(users) && users.filter(u => u.email !== currentUser.email).map(u => (
-                  <label key={u.email} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', cursor: 'pointer', borderRadius: '8px', background: selectedUsers.includes(u.email) ? 'rgba(59, 130, 246, 0.1)' : 'transparent' }}>
-                    <input type="checkbox" checked={selectedUsers.includes(u.email)} onChange={() => toggleUserSelection(u.email)} style={{ cursor: 'pointer' }} />
-                    <span style={{ color: 'var(--color-text-main)', fontWeight: '500' }}>{u.firstName} {u.lastName}</span>
-                    <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>({u.email})</span>
-                  </label>
-                ))}
-              </div>
-              
-              {selectedUsers.length > 1 && (
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', color: '#9ca3af', fontSize: '0.85rem' }}>Group Name (Optional)</label>
-                  <input type="text" value={newChatName} onChange={e => setNewChatName(e.target.value)} className="input-field" placeholder="e.g. Security Task Force" />
-                </div>
-              )}
-
-              <div style={{display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px'}}>
-                <button type="button" onClick={() => { setShowNewChatModal(false); setSelectedUsers([]); setNewChatName(''); }} className="btn-secondary">Cancel</button>
-                <button type="submit" className="btn-primary" disabled={selectedUsers.length === 0}>Create Chat</button>
               </div>
             </form>
           </div>

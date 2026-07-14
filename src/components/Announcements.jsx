@@ -286,15 +286,6 @@ export default function Announcements() {
                     <span style={styles.timestamp}>{new Date(ann.timestamp).toLocaleString()}</span>
                   </div>
                 </div>
-                {currentUser?.isAdmin && (
-                  <button 
-                    onClick={() => deleteAnnouncement(ann.id)} 
-                    className="btn-danger" 
-                    style={styles.deleteBtn}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
               </div>
               <div style={styles.cardBody}>
                 {ann.title && <h3 style={styles.annTitle}>{ann.title}</h3>}
@@ -308,6 +299,15 @@ export default function Announcements() {
                   <span style={{...styles.badge, marginLeft: '8px', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa'}}>
                     {ann.targetAudience}
                   </span>
+                )}
+                {currentUser?.isAdmin && (
+                  <button 
+                    onClick={() => deleteAnnouncement(ann.id)} 
+                    className="btn-danger" 
+                    style={{...styles.deleteBtn, marginLeft: '12px'}}
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 )}
               </div>
             </motion.div>
