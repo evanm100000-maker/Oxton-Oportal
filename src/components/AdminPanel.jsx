@@ -1295,13 +1295,18 @@ export default function AdminPanel() {
               </div>
               <div style={styles.inputWrapper}>
                 <label style={styles.label}>Action Level</label>
-                <select value={infType} onChange={e => setInfType(e.target.value)} className="input-field">
-                  <option value="Warning">Official Warning</option>
-                  <option value="Informal Sanction">Informal Sanction</option>
-                  <option value="Strike 1">Strike 1</option>
-                  <option value="Strike 2">Strike 2</option>
+                <select value={infType} onChange={e => {
+                  if (e.target.value === 'Suspension') {
+                    setShowInfractionModal(false);
+                    setActiveSubTab('staffManagement');
+                    return;
+                  }
+                  setInfType(e.target.value);
+                }} className="input-field">
+                  <option value="Informal Sanction">Informal sanction</option>
+                  <option value="Infraction">Infraction</option>
                   <option value="Suspension">Suspension</option>
-                  <option value="Final Warning">Final Warning</option>
+                  <option value="Warning">Warning</option>
                 </select>
               </div>
 
