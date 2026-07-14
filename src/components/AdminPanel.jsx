@@ -1499,8 +1499,6 @@ export default function AdminPanel() {
 
       </div>
 
-      {/* Password Prompt Modal */}
-      {passwordPromptChatId && (
     </div>
   );
 }
