@@ -141,7 +141,7 @@ export default function AllStaff() {
       </div>
 
       {selectedStaff && currentUser.isAdmin && (() => {
-        const currentStaff = activeUsers.find(u => u.email === selectedStaff.email) || selectedStaff;
+        const currentStaff = users.find(u => u.email === selectedStaff.email) || selectedStaff;
         return (
           <div style={styles.modalOverlay}>
             <div className="glass-panel" style={styles.modalContent}>
