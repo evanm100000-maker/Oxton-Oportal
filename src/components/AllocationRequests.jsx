@@ -113,11 +113,17 @@ export default function AllocationRequests() {
                       
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#374151', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.1)' }}>
-                           <img 
-                            src={`https://tr.rbxcdn.com/38c6edcb50633730ff4cf39ac8859840/150/150/AvatarHeadshot/Png`} 
-                            alt="PFP" 
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
-                          />
+                          {user.profilePicture ? (
+                             <img 
+                              src={user.profilePicture} 
+                              alt="PFP" 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }}
+                            />
+                          ) : (
+                             <span style={{ fontSize: '1.2rem', color: '#fff', fontWeight: 'bold' }}>
+                               {user.firstName ? user.firstName.charAt(0) : '?'}
+                             </span>
+                          )}
                         </div>
                         <div>
                           <div style={{ fontWeight: '600', color: '#f3f4f6', fontSize: '1.05rem' }}>{user.firstName} {user.lastName}</div>
@@ -125,7 +131,7 @@ export default function AllocationRequests() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', gap: '10px' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         {['Present', 'Late', 'Absent'].map(mark => {
                           const isActive = currentMark === mark;
                           const activeColor = mark === 'Present' ? '#10b981' : mark === 'Late' ? '#f59e0b' : '#ef4444';
@@ -158,6 +164,30 @@ export default function AllocationRequests() {
                             </button>
                           );
                         })}
+                        <input
+                           type="text"
+                           placeholder="Other..."
+                           maxLength={10}
+                           value={['Present', 'Late', 'Absent', 'Pending'].includes(currentMark) ? '' : currentMark}
+                           onChange={(e) => {
+                                const val = e.target.value;
+                                const newRecord = { ...(flight.attendanceRecord || {}) };
+                                newRecord[escapeEmail(email)] = val;
+                                editFlight(flight.id, { attendanceRecord: newRecord });
+                                flight.attendanceRecord = newRecord;
+                                setActiveRegisterFlight({...flight});
+                           }}
+                           style={{
+                               padding: '8px',
+                               fontSize: '0.9rem',
+                               borderRadius: '8px',
+                               border: !['Present', 'Late', 'Absent', 'Pending'].includes(currentMark) && currentMark ? '1px solid #a855f7' : '1px solid rgba(255,255,255,0.1)',
+                               background: 'rgba(255,255,255,0.03)',
+                               color: '#fff',
+                               width: '100px',
+                               outline: 'none'
+                           }}
+                        />
                       </div>
 
                     </div>
@@ -267,9 +297,12 @@ export default function AllocationRequests() {
                               Attending ({attending.length})
                             </div>
                             <div style={styles.crewList}>
-                              {attending.map((email) => (
+                              {attending.map((email) => {
+                                const mark = flight.attendanceRecord && flight.attendanceRecord[escapeEmail(email)];
+                                const markDisplay = mark && mark !== 'Pending' ? ` - ${mark}` : '';
+                                return (
                                 <div key={`att-${email}`} style={styles.crewBadge}>
-                                  <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}</span>
+                                  <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}{markDisplay}</span>
                                   {currentUser.isAdmin && !flight.locked && (
                                     <button
                                       type="button"
@@ -281,7 +314,8 @@ export default function AllocationRequests() {
                                     </button>
                                   )}
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}
@@ -293,11 +327,15 @@ export default function AllocationRequests() {
                               Absent ({absent.length})
                             </div>
                             <div style={styles.crewList}>
-                              {absent.map((email) => (
+                              {absent.map((email) => {
+                                const mark = flight.attendanceRecord && flight.attendanceRecord[escapeEmail(email)];
+                                const markDisplay = mark && mark !== 'Pending' ? ` - ${mark}` : '';
+                                return (
                                 <div key={`abs-${email}`} style={{...styles.crewBadge, background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)'}}>
-                                  <span style={{...styles.crewBadgeText, color: '#fca5a5'}}>{getStaffNameByEmail(email)}</span>
+                                  <span style={{...styles.crewBadgeText, color: '#fca5a5'}}>{getStaffNameByEmail(email)}{markDisplay}</span>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}
