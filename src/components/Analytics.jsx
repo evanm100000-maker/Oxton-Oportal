@@ -11,8 +11,16 @@ export default function Analytics() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      const count = flightLogs.filter(l => l.timestamp && l.timestamp.startsWith(dateStr)).length;
+      
+      const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
+      
+      const count = flightLogs.filter(l => {
+        if (!l.timestamp) return false;
+        const logTime = new Date(l.timestamp).getTime();
+        return logTime >= startOfDay && logTime < endOfDay;
+      }).length;
+      
       data.push({ date: d.toLocaleDateString('en-US', { weekday: 'short' }), count });
     }
     return data;
@@ -38,6 +46,18 @@ export default function Analytics() {
     return data;
   }, [reports]);
   const maxReports = Math.max(...reportsPerWeekData.map(d => d.count), 1);
+
+  // Compute total historical allocations based on unique flight codes
+  const totalAllocations = useMemo(() => {
+    const codes = new Set();
+    flights.forEach(f => {
+      if (f.flightCode) codes.add(f.flightCode);
+    });
+    flightLogs.forEach(l => {
+      if (l.flightCode) codes.add(l.flightCode);
+    });
+    return Math.max(codes.size, flights.length); // Ensure it's at least the current active count
+  }, [flights, flightLogs]);
 
   return (
     <div style={styles.container}>
@@ -73,8 +93,8 @@ export default function Analytics() {
         <div className="glass-panel" style={styles.statCard}>
           <div style={{...styles.statIcon, background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24'}}><Server size={24}/></div>
           <div style={styles.statInfo}>
-            <span style={styles.statLabel}>Flight Allocations</span>
-            <strong style={styles.statValue}>{flights.length}</strong>
+            <span style={styles.statLabel}>Total Allocations</span>
+            <strong style={styles.statValue}>{totalAllocations}</strong>
           </div>
         </div>
       </div>

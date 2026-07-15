@@ -32,9 +32,22 @@ export default function Performance() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      const logsToday = userFlightLogs.filter(l => l.timestamp && l.timestamp.startsWith(dateStr)).length;
-      const reportsToday = userReports.filter(r => r.timestamp && r.timestamp.startsWith(dateStr)).length;
+      
+      const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      const endOfDay = startOfDay + 24 * 60 * 60 * 1000;
+      
+      const logsToday = userFlightLogs.filter(l => {
+        if (!l.timestamp) return false;
+        const logTime = new Date(l.timestamp).getTime();
+        return logTime >= startOfDay && logTime < endOfDay;
+      }).length;
+      
+      const reportsToday = userReports.filter(r => {
+        if (!r.timestamp) return false;
+        const repTime = new Date(r.timestamp).getTime();
+        return repTime >= startOfDay && repTime < endOfDay;
+      }).length;
+      
       data.push({ date: d.toLocaleDateString('en-US', { weekday: 'short' }), count: logsToday + reportsToday });
     }
     return data;
