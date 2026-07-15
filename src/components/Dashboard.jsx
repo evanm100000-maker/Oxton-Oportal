@@ -480,7 +480,7 @@ export default function Dashboard() {
         </div>
 
         {showClockBattery && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: '32px', display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-main)', fontSize: '0.95rem', fontWeight: '600', letterSpacing: '-0.2px', border: '1px solid rgba(255, 255, 255, 0.08)', background: 'rgba(255, 255, 255, 0.05)', padding: '8px 16px', borderRadius: '12px', zIndex: 10, backdropFilter: 'blur(20px)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-main)', fontSize: '0.95rem', fontWeight: '600', letterSpacing: '-0.2px', border: '1px solid rgba(255, 255, 255, 0.08)', background: 'rgba(255, 255, 255, 0.05)', padding: '8px 16px', borderRadius: '12px', zIndex: 10, backdropFilter: 'blur(20px)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Clock size={18} />
               <span>

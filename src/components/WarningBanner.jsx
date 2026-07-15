@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { AlertTriangle, AlertOctagon, CheckCircle } from 'lucide-react';
+import { AlertTriangle, AlertOctagon, CheckCircle, X } from 'lucide-react';
 
 export default function WarningBanner() {
   const { warningConfig } = useApp();
   const [timeLeft, setTimeLeft] = useState({ minutes: 0, seconds: 0, isExpired: false });
+  const [isClosed, setIsClosed] = useState(false);
 
   useEffect(() => {
     if (!warningConfig?.countdownEnabled || !warningConfig?.countdownTarget) return;
@@ -34,7 +35,7 @@ export default function WarningBanner() {
     return () => clearInterval(timer);
   }, [warningConfig?.countdownEnabled, warningConfig?.countdownTarget]);
 
-  if (!warningConfig?.isActive) return null;
+  if (!warningConfig?.isActive || isClosed) return null;
 
   const type = warningConfig.type || 'warning';
 
@@ -44,7 +45,13 @@ export default function WarningBanner() {
 
   return (
     <div className="warning-banner-container slam-element">
-      <div className={`warning-box ${type}`}>
+      <div className={`warning-box ${type}`} style={{ position: 'relative' }}>
+        <button 
+          onClick={() => setIsClosed(true)} 
+          style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'inherit', opacity: 0.7 }}
+        >
+          <X size={20} />
+        </button>
         <div className="warning-icon-container">
           <Icon size={48} color="#1f2937" />
         </div>
