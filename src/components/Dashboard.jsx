@@ -29,9 +29,40 @@ import Events from './Events';
 import Meetings from './Meetings';
 import { formatCustomLongDate } from '../utils/timeUtils';
 
+const tabToPath = {
+  home: '/',
+  announcements: '/announcements',
+  events: '/events',
+  meetings: '/meetings',
+  performance: '/performance',
+  tasks: '/tasks',
+  tickets: '/tickets',
+  staffChat: '/staff-chat',
+  leaderboard: '/leaderboard',
+  allStaff: '/all-staff',
+  reports: '/reports',
+  logs: '/logs',
+  allocation: '/allocation-requests',
+  loa: '/loa',
+  documents: '/documents',
+  analytics: '/analytics',
+  infractions: '/infractions',
+  admin: '/admin'
+};
+const pathToTab = Object.fromEntries(Object.entries(tabToPath).map(([k, v]) => [v, k]));
+
 export default function Dashboard() {
   const { currentUser, logout, chatMessages, infractions, flights, pageConfig, superAdminEmail, tasks, announcements, documents, reports, showClockBattery, use24HourClock, useLongDateFormat } = useApp();
   const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) return tabParam;
+    
+    const currentPath = window.location.pathname;
+    if (pathToTab[currentPath]) {
+      return pathToTab[currentPath];
+    }
+    
     return sessionStorage.getItem('oxton_activeTab') || 'home';
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -138,7 +169,31 @@ export default function Dashboard() {
   React.useEffect(() => {
     sessionStorage.setItem('oxton_activeTab', activeTab);
     window.scrollTo(0, 0);
+    
+    const newPath = tabToPath[activeTab] || '/';
+    if (window.location.pathname !== newPath) {
+      const url = new URL(window.location.href);
+      url.pathname = newPath;
+      if (activeTab !== 'allocation') {
+         url.searchParams.delete('flightId');
+         url.searchParams.delete('tab');
+      }
+      window.history.pushState({}, '', url.toString());
+    }
   }, [activeTab]);
+
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const currentPath = window.location.pathname;
+      if (pathToTab[currentPath]) {
+        setActiveTab(pathToTab[currentPath]);
+      } else {
+        setActiveTab('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const safeChatMessages = Array.isArray(chatMessages) ? chatMessages : [];
   const unreadChatCount = Math.max(0, safeChatMessages.length - lastReadChatCount);

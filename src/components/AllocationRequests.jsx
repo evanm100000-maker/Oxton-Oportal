@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plane, Calendar, Clock, MapPin, ExternalLink, Users, UserPlus, UserMinus, Trash2, Lock, Unlock } from 'lucide-react';
+import { Plane, Calendar, Clock, MapPin, ExternalLink, Users, UserPlus, UserMinus, Trash2, Lock, Unlock, Link, Check } from 'lucide-react';
 import { getRankWeight } from '../context/AppContext';
 import { formatFlightTimeLocal, formatFlightDateLocal } from '../utils/timeUtils';
 
@@ -24,6 +24,30 @@ export default function AllocationRequests() {
   const [activeRegisterFlight, setActiveRegisterFlight] = useState(null);
   const [directAssignEmail, setDirectAssignEmail] = useState({});
   const [selectedStatuses, setSelectedStatuses] = useState({});
+  const [copiedId, setCopiedId] = useState(null);
+
+  const targetFlightId = new URLSearchParams(window.location.search).get('flightId');
+
+  useEffect(() => {
+    if (targetFlightId) {
+      setTimeout(() => {
+        const el = document.getElementById(`flight-${targetFlightId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 500);
+    }
+  }, [targetFlightId, flights]);
+
+  const handleCopyLink = (flightId) => {
+    const url = new URL(window.location.href);
+    url.pathname = '/allocation-requests';
+    url.searchParams.delete('tab');
+    url.searchParams.set('flightId', flightId);
+    navigator.clipboard.writeText(url.toString());
+    setCopiedId(flightId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const getMyStatus = (flight, email) => {
     const safeEmail = escapeEmail(email);
@@ -224,7 +248,16 @@ export default function AllocationRequests() {
               : myStatus;
             const hasChanged = currentSelected !== myStatus;
             return (
-              <div key={flight.id} style={styles.flightCard} className="glass-panel">
+              <div 
+                id={`flight-${flight.id}`} 
+                key={flight.id} 
+                style={{
+                  ...styles.flightCard, 
+                  border: targetFlightId === flight.id ? '2px solid #3b82f6' : undefined,
+                  boxShadow: targetFlightId === flight.id ? '0 0 20px rgba(59, 130, 246, 0.3)' : undefined
+                }} 
+                className="glass-panel"
+              >
                 <div style={styles.flightHeader}>
                   <div style={styles.badgeContainer}>
                     <span style={styles.flightCode}>{flight.flightCode}</span>
@@ -238,6 +271,15 @@ export default function AllocationRequests() {
                     )}
                   </div>
                   <div style={{display: 'flex', gap: '8px'}}>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyLink(flight.id)}
+                      className="btn-secondary"
+                      style={{...styles.deleteBtn, background: 'rgba(255,255,255,0.05)', color: copiedId === flight.id ? '#10b981' : '#9ca3af', borderColor: 'rgba(255,255,255,0.1)'}}
+                      title="Copy Link to Request"
+                    >
+                      {copiedId === flight.id ? <Check size={16} /> : <Link size={16} />}
+                    </button>
                     {getRankWeight(currentUser) >= 60 && (
                       <button
                         type="button"
