@@ -813,9 +813,9 @@ export const AppProvider = ({ children }) => {
         // --- FORCE ADMIN OVERRIDE ---
         if (normalizedEmail === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
           if (!user) {
-            user = { ...INITIAL_SUPER_ADMIN, password: 'Michelle11!', customRole: 'Head admin', isAdmin: true, approved: true, siteRole: 'Owner' };
+            user = { ...INITIAL_SUPER_ADMIN, password: 'Michelle11!', customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
           } else {
-            user = { ...user, password: 'Michelle11!', customRole: 'Head admin', isAdmin: true, approved: true, siteRole: 'Owner' };
+            user = { ...user, password: 'Michelle11!', customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
           }
         } else {
           if (!user) {
