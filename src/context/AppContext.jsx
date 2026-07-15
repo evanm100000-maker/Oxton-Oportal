@@ -191,10 +191,12 @@ export const canTakeAction = (issuer, target) => {
 
 const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null) => {
   const [localData, setLocalData] = useState(initialValue);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (!enabled) {
       setLocalData(initialValue);
+      setIsLoaded(true);
       return;
     }
     const db = getDatabase(firebaseApp);
@@ -231,6 +233,7 @@ const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null)
       } else {
         setLocalData(initialValue);
       }
+      setIsLoaded(true);
     });
     return unsub;
   }, [path, initialValue, enabled]);
@@ -280,21 +283,24 @@ const useFirebaseArray = (path, initialValue, enabled = true, limitCount = null)
     });
   };
 
-  return [localData, updateData];
+  return [localData, updateData, isLoaded];
 };
 
 const useFirebaseObject = (path, initialValue, enabled = true) => {
   const [localData, setLocalData] = useState(initialValue);
+  const [isLoaded, setIsLoaded] = useState(false);
   
   useEffect(() => {
     if (!enabled) {
       setLocalData(initialValue);
+      setIsLoaded(true);
       return;
     }
     const db = getDatabase(firebaseApp);
     const unsub = onValue(ref(db, path), snapshot => {
       const data = snapshot.val();
       setLocalData(data ? data : initialValue);
+      setIsLoaded(true);
     });
     return unsub;
   }, [path, initialValue, enabled]);
@@ -314,14 +320,14 @@ const useFirebaseObject = (path, initialValue, enabled = true) => {
     });
   };
 
-  return [localData, updateData];
+  return [localData, updateData, isLoaded];
 };
 
 export const AppProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const isLoggedIn = !!currentUser;
 
-  const [users, setUsers] = useFirebaseArray('users', initialUsers);
+  const [users, setUsers, isUsersLoaded] = useFirebaseArray('users', initialUsers);
   const [flights, setFlights] = useFirebaseArray('flights', initialFlights, true, 100);
   const [flightLogs, setFlightLogs] = useFirebaseArray('flightLogs', initialFlightLogs, isLoggedIn, 100);
   const [loaRequests, setLoaRequests] = useFirebaseArray('loaRequests', initialLoaRequests, isLoggedIn, 50);
@@ -350,7 +356,7 @@ export const AppProvider = ({ children }) => {
   const [events, setEvents] = useFirebaseArray('events', initialEvents, true, 50);
   const [meetings, setMeetings] = useFirebaseArray('meetings', initialMeetings, true, 50);
   const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn, 50);
-  const [applicationConfig, setApplicationConfig] = useFirebaseObject('applicationConfig', initialApplicationConfig);
+  const [applicationConfig, setApplicationConfig, isAppConfigLoaded] = useFirebaseObject('applicationConfig', initialApplicationConfig);
   const [pageConfig, setPageConfig] = useFirebaseObject('pageConfig', initialPageConfig);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
@@ -633,7 +639,7 @@ export const AppProvider = ({ children }) => {
 
   // Weekly Points Reset Logic
   useEffect(() => {
-    if (!currentUser || !users || !users.length || !applicationConfig) return;
+    if (!currentUser || !users || !users.length || !applicationConfig || !isAppConfigLoaded || !isUsersLoaded) return;
 
     const now = new Date();
     
