@@ -6,7 +6,23 @@ import { Calendar, ChevronLeft, ChevronRight, X, Plane, Calendar as CalendarIcon
 export default function CalendarPage() {
   const { flights = [], events = [], meetings = [], unavailableDates = [] } = useApp();
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(new Date().getMonth());
+  const [viewMode, setViewMode] = useState('month'); // 'month' or 'year'
   const [selectedDate, setSelectedDate] = useState(null);
+
+  const handleNavigateToActivity = (type, item) => {
+    const url = new URL(window.location.href);
+    if (type === 'flight') {
+      url.pathname = '/allocation-requests';
+      url.searchParams.set('flightId', item.id);
+    } else if (type === 'event') {
+      url.pathname = '/events';
+    } else if (type === 'meeting') {
+      url.pathname = '/meetings';
+    }
+    window.history.pushState({}, '', url.toString());
+    window.dispatchEvent(new Event('popstate'));
+  };
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -156,11 +172,50 @@ export default function CalendarPage() {
           </div>
         </div>
         <div style={styles.yearSelector}>
-          <button onClick={() => setCurrentYear(y => y - 1)} className="btn-secondary" style={styles.yearBtn}>
+          <div style={{ display: 'flex', gap: '8px', marginRight: '16px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '8px' }}>
+            <button 
+              onClick={() => setViewMode('month')}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: viewMode === 'month' ? 'rgba(245, 158, 11, 0.2)' : 'transparent', color: viewMode === 'month' ? '#f59e0b' : '#9ca3af', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s' }}
+            >
+              Month
+            </button>
+            <button 
+              onClick={() => setViewMode('year')}
+              style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: viewMode === 'year' ? 'rgba(245, 158, 11, 0.2)' : 'transparent', color: viewMode === 'year' ? '#f59e0b' : '#9ca3af', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s' }}
+            >
+              Year
+            </button>
+          </div>
+
+          <button onClick={() => {
+            if (viewMode === 'year') {
+              setCurrentYear(y => y - 1);
+            } else {
+              if (currentMonthIndex === 0) {
+                setCurrentMonthIndex(11);
+                setCurrentYear(y => y - 1);
+              } else {
+                setCurrentMonthIndex(m => m - 1);
+              }
+            }
+          }} className="btn-secondary" style={styles.yearBtn}>
             <ChevronLeft size={20} />
           </button>
-          <span style={styles.yearText}>{currentYear}</span>
-          <button onClick={() => setCurrentYear(y => y + 1)} className="btn-secondary" style={styles.yearBtn}>
+          <span style={styles.yearText}>
+            {viewMode === 'month' ? `${months[currentMonthIndex]} ${currentYear}` : currentYear}
+          </span>
+          <button onClick={() => {
+            if (viewMode === 'year') {
+              setCurrentYear(y => y + 1);
+            } else {
+              if (currentMonthIndex === 11) {
+                setCurrentMonthIndex(0);
+                setCurrentYear(y => y + 1);
+              } else {
+                setCurrentMonthIndex(m => m + 1);
+              }
+            }
+          }} className="btn-secondary" style={styles.yearBtn}>
             <ChevronRight size={20} />
           </button>
         </div>
@@ -177,12 +232,16 @@ export default function CalendarPage() {
       </div>
 
       <motion.div 
+        key={`${viewMode}-${currentYear}-${currentMonthIndex}`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        style={styles.yearGrid}
+        transition={{ duration: 0.3 }}
+        style={viewMode === 'year' ? styles.yearGrid : styles.monthGrid}
       >
-        {months.map((_, index) => renderMonth(index))}
+        {viewMode === 'year' 
+          ? months.map((_, index) => renderMonth(index))
+          : renderMonth(currentMonthIndex)
+        }
       </motion.div>
 
       <AnimatePresence>
@@ -222,7 +281,7 @@ export default function CalendarPage() {
                     <h4 style={{...styles.sectionTitle, color: '#3b82f6'}}><Plane size={16} /> Scheduled Flights</h4>
                     <div style={styles.activityList}>
                       {selectedData.flights.map(f => (
-                        <div key={f.id} style={styles.activityCard}>
+                        <div key={f.id} onClick={() => handleNavigateToActivity('flight', f)} style={{...styles.activityCard, cursor: 'pointer'}}>
                           <div style={styles.activityTop}>
                             <span style={{fontWeight: 'bold', color: '#fff'}}>{f.flightCode}</span>
                             <span style={{fontSize: '0.85rem', color: '#9ca3af'}}>{f.time}</span>
@@ -240,7 +299,7 @@ export default function CalendarPage() {
                     <h4 style={{...styles.sectionTitle, color: '#10b981'}}><CalendarIcon size={16} /> Special Events</h4>
                     <div style={styles.activityList}>
                       {selectedData.events.map(e => (
-                        <div key={e.id} style={styles.activityCard}>
+                        <div key={e.id} onClick={() => handleNavigateToActivity('event', e)} style={{...styles.activityCard, cursor: 'pointer'}}>
                           <div style={styles.activityTop}>
                             <span style={{fontWeight: 'bold', color: '#fff'}}>{e.title}</span>
                           </div>
@@ -256,7 +315,7 @@ export default function CalendarPage() {
                     <h4 style={{...styles.sectionTitle, color: '#8b5cf6'}}><Users size={16} /> Meetings</h4>
                     <div style={styles.activityList}>
                       {selectedData.meetings.map(m => (
-                        <div key={m.id} style={styles.activityCard}>
+                        <div key={m.id} onClick={() => handleNavigateToActivity('meeting', m)} style={{...styles.activityCard, cursor: 'pointer'}}>
                           <div style={styles.activityTop}>
                             <span style={{fontWeight: 'bold', color: '#fff'}}>{m.title}</span>
                           </div>
@@ -361,12 +420,20 @@ const styles = {
     gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
     gap: '20px',
   },
+  monthGrid: {
+    display: 'flex',
+    justifyContent: 'center',
+    width: '100%',
+    maxWidth: '800px',
+    margin: '0 auto',
+  },
   monthCard: {
     padding: '20px',
     borderRadius: '16px',
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
+    width: '100%',
   },
   monthTitle: {
     fontSize: '1.1rem',
