@@ -59,7 +59,10 @@ export default function AdminPanel() {
     informalSanctions = [],
     deleteInformalSanction,
     logMissedFlight,
-    pointLogs
+    pointLogs,
+    unavailableDates,
+    addUnavailableDate,
+    removeUnavailableDate
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
@@ -96,6 +99,8 @@ export default function AdminPanel() {
   const [meetingTitle, setMeetingTitle] = useState('');
   const [meetingDescription, setMeetingDescription] = useState('');
   const [meetingDate, setMeetingDate] = useState('');
+
+  const [newUnavailableDate, setNewUnavailableDate] = useState('');
 
   // LOA Review comments
   const [loaComments, setLoaComments] = useState({});
@@ -1180,6 +1185,54 @@ export default function AdminPanel() {
                     </label>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div style={{ padding: '20px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)', marginTop: '8px' }}>
+              <h4 style={{ color: '#f59e0b', marginBottom: '8px' }}>Calendar Management</h4>
+              <p style={{fontSize: '0.85rem', color: '#94a3b8', marginBottom: '16px'}}>Manage dates that are completely unavailable for flights. These will be highlighted in the calendar.</p>
+              
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                <input
+                  type="date"
+                  value={newUnavailableDate}
+                  onChange={(e) => setNewUnavailableDate(e.target.value)}
+                  className="input-field"
+                  style={{ flex: 1 }}
+                />
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    if (newUnavailableDate) {
+                      addUnavailableDate(newUnavailableDate);
+                      setNewUnavailableDate('');
+                    }
+                  }} 
+                  className="btn-primary" 
+                  style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', borderColor: 'rgba(245, 158, 11, 0.4)' }}
+                >
+                  <Plus size={16} /> Add Date
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto' }}>
+                {unavailableDates && unavailableDates.length > 0 ? (
+                  unavailableDates.map((dateObj) => (
+                    <div key={dateObj.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <span style={{ color: '#e5e7eb', fontSize: '0.9rem' }}>{dateObj.date}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => removeUnavailableDate(dateObj.date)} 
+                        style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                        title="Remove Date"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ color: '#9ca3af', fontSize: '0.85rem', fontStyle: 'italic' }}>No unavailable dates set.</div>
+                )}
               </div>
             </div>
 

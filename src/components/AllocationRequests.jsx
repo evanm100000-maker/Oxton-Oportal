@@ -25,6 +25,18 @@ export default function AllocationRequests() {
   const [directAssignEmail, setDirectAssignEmail] = useState({});
   const [selectedStatuses, setSelectedStatuses] = useState({});
   const [copiedId, setCopiedId] = useState(null);
+  const [viewMode, setViewMode] = useState('upcoming'); // 'upcoming' or 'previous'
+
+  // Calculate today's date in local time for fair comparison
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const todayStr = `${year}-${month}-${day}`;
+  
+  const upcomingFlights = flights.filter(f => f.date >= todayStr);
+  const previousFlights = flights.filter(f => f.date < todayStr);
+  const displayedFlights = viewMode === 'upcoming' ? upcomingFlights : previousFlights;
 
   const targetFlightId = new URLSearchParams(window.location.search).get('flightId');
 
@@ -228,20 +240,37 @@ export default function AllocationRequests() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.introHeader}>
+      <div style={{ ...styles.introHeader, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <p style={styles.introText}>
           Review scheduled flights, request crew allocation, or launch server instances.
         </p>
+        <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <button 
+            onClick={() => setViewMode('upcoming')}
+            style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: viewMode === 'upcoming' ? 'rgba(59, 130, 246, 0.2)' : 'transparent', color: viewMode === 'upcoming' ? '#60a5fa' : '#9ca3af', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s' }}
+          >
+            Upcoming Flights
+          </button>
+          <button 
+            onClick={() => setViewMode('previous')}
+            style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', background: viewMode === 'previous' ? 'rgba(59, 130, 246, 0.2)' : 'transparent', color: viewMode === 'previous' ? '#60a5fa' : '#9ca3af', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s' }}
+          >
+            Previous Flights
+          </button>
+        </div>
       </div>
 
-      {flights.length === 0 ? (
+      {displayedFlights.length === 0 ? (
         <div style={styles.emptyState}>
           <Plane size={48} color="rgba(255,255,255,0.15)" />
-          <p style={styles.emptyText}>No flights currently scheduled.</p>
+          <p style={styles.emptyText}>No {viewMode === 'upcoming' ? 'upcoming' : 'previous'} flights found.</p>
         </div>
       ) : (
         <div style={styles.flightGrid}>
-          {[...flights].sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`)).map((flight) => {
+          {[...displayedFlights].sort((a, b) => {
+             const diff = new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`);
+             return viewMode === 'upcoming' ? diff : -diff;
+          }).map((flight) => {
             const myStatus = getMyStatus(flight, currentUser.email);
             const currentSelected = selectedStatuses[flight.id] !== undefined
               ? selectedStatuses[flight.id]

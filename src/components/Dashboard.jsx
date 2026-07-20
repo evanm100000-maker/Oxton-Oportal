@@ -27,10 +27,12 @@ import StaffChat from './StaffChat';
 import AllStaff from './AllStaff';
 import Events from './Events';
 import Meetings from './Meetings';
+import CalendarPage from './CalendarPage';
 import { formatCustomLongDate } from '../utils/timeUtils';
 
 const tabToPath = {
   home: '/',
+  calendar: '/calendar',
   announcements: '/announcements',
   events: '/events',
   meetings: '/meetings',
@@ -317,6 +319,14 @@ export default function Dashboard() {
     },
 
     // Row 3
+    {
+      id: 'calendar',
+      title: 'Calendar Overview',
+      description: 'View upcoming flights, events, and meetings for the year.',
+      icon: Calendar,
+      color: '#f59e0b',
+      component: CalendarPage
+    },
     {
       id: 'logs',
       title: 'Flight Logs',

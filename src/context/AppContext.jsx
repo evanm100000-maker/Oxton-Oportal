@@ -106,6 +106,7 @@ const initialStaffNotes = [];
 const initialAnnouncements = [];
 
 const initialEvents = [];
+const initialUnavailableDates = [];
 const initialMeetings = [];
 const initialApplications = [];
 const initialApplicationConfig = {
@@ -354,6 +355,7 @@ export const AppProvider = ({ children }) => {
   const [informalSanctions, setInformalSanctions] = useFirebaseArray('informalSanctions', EMPTY_ARRAY, isLoggedIn, 50);
   const [pointLogs, setPointLogs] = useFirebaseArray('pointLogs', EMPTY_ARRAY, isLoggedIn, 500);
   const [events, setEvents] = useFirebaseArray('events', initialEvents, true, 50);
+  const [unavailableDates, setUnavailableDates] = useFirebaseArray('unavailableDates', initialUnavailableDates, true, 200);
   const [meetings, setMeetings] = useFirebaseArray('meetings', initialMeetings, true, 50);
   const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn, 50);
   const [applicationConfig, setApplicationConfig, isAppConfigLoaded] = useFirebaseObject('applicationConfig', initialApplicationConfig);
@@ -1742,6 +1744,19 @@ useEffect(() => {
     ));
   };
 
+  // --- Unavailable Dates Operations ---
+  const addUnavailableDate = (dateStr) => {
+    if (!unavailableDates.some(d => d.date === dateStr)) {
+      setUnavailableDates(prev => [...prev, { id: dateStr, date: dateStr }]);
+      logAction('unavailable_date_added', `Marked ${dateStr} as unavailable`);
+    }
+  };
+
+  const removeUnavailableDate = (dateStr) => {
+    setUnavailableDates(prev => prev.filter(d => d.date !== dateStr));
+    logAction('unavailable_date_removed', `Removed ${dateStr} from unavailable`);
+  };
+
   // --- Events Operations ---
   const addEvent = (eventData) => {
     const newEvent = {
@@ -1978,8 +1993,11 @@ useEffect(() => {
         deleteInformalSanction,
         logMissedFlight,
         events,
+        unavailableDates,
         addEvent,
         deleteEvent,
+        addUnavailableDate,
+        removeUnavailableDate,
         meetings,
         addMeeting,
         deleteMeeting,
