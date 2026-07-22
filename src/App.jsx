@@ -10,7 +10,6 @@ import NotificationOverlay from './components/NotificationOverlay';
 import LoaBanner from './components/LoaBanner';
 import BypassOverlay from './components/BypassOverlay';
 import LandingPage from './components/LandingPage';
-import PassengerPortal from './components/PassengerPortal';
 import { useState } from 'react';
 import UpdateNotifier from './components/UpdateNotifier';
 
@@ -67,18 +66,6 @@ function MainApp() {
     );
   }
 
-  // Passenger Portal
-  if (portalType === 'passenger' || currentUser?.role === 'passenger') {
-    return (
-      <>
-        <WarningBanner />
-        <UpdateBanner />
-        <LoaBanner />
-        <PassengerPortal onBack={() => setPortalType(null)} />
-        <NotificationOverlay />
-      </>
-    );
-  }
 
   // Staff Portal (Dashboard or Login)
   return (

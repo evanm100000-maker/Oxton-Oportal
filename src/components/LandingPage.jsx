@@ -2,25 +2,21 @@ import React, { useState } from 'react';
 import { Plane, Users, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
+import SecretTimer from './SecretTimer';
 
 export default function LandingPage({ onSelectPortal }) {
   const [selectedCard, setSelectedCard] = useState(null);
-  const { pageConfig } = useApp();
 
   const handleSelect = (portal) => {
-    if (portal === 'passenger' && pageConfig && !pageConfig.passengerPortal) {
-      return; // disabled
-    }
     setSelectedCard(portal);
     setTimeout(() => {
       onSelectPortal(portal);
     }, 700);
   };
 
-  const passengerDisabled = pageConfig && !pageConfig.passengerPortal;
-
   return (
     <div style={styles.container}>
+      <SecretTimer />
       {/* Background layer */}
       <div style={styles.background} />
       <div style={styles.gridOverlay} />
@@ -43,41 +39,6 @@ export default function LandingPage({ onSelectPortal }) {
         </motion.div>
 
         <div style={styles.cardsContainer}>
-          {/* Passenger Card */}
-          <motion.button
-            layout
-            initial={{ opacity: 0, y: 30 }}
-            animate={
-              selectedCard === 'passenger' 
-                ? { scale: 1.05, opacity: 0, y: -20, zIndex: 100 } 
-                : selectedCard 
-                  ? { opacity: 0, scale: 0.95, y: 10 } 
-                  : { opacity: passengerDisabled ? 0.5 : 1, y: 0, scale: 1 }
-            }
-            whileHover={selectedCard || passengerDisabled ? {} : { scale: 1.02, y: -5 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
-            onClick={() => handleSelect('passenger')}
-            style={{
-              ...styles.card, 
-              background: passengerDisabled ? 'rgba(30, 41, 59, 0.4)' : 'rgba(59, 130, 246, 0.08)', 
-              borderColor: passengerDisabled ? 'rgba(255,255,255,0.05)' : 'rgba(59, 130, 246, 0.3)',
-              cursor: passengerDisabled ? 'not-allowed' : 'pointer'
-            }}
-            disabled={passengerDisabled}
-          >
-            <div style={styles.cardInner}>
-              <div style={{...styles.iconWrapper, background: passengerDisabled ? 'rgba(255,255,255,0.05)' : 'rgba(59, 130, 246, 0.15)'}}>
-                {passengerDisabled ? <Lock size={32} color="#94a3b8" /> : <Users size={32} color="#60a5fa" />}
-              </div>
-              <div style={styles.textContainer}>
-                <h2 style={{...styles.cardTitle, color: passengerDisabled ? '#94a3b8' : '#ffffff'}}>Passenger</h2>
-                <p style={styles.cardDesc}>
-                  {passengerDisabled ? 'Temporarily Unavailable' : 'Access your boarding passes and flights'}
-                </p>
-              </div>
-            </div>
-          </motion.button>
-
           {/* Staff Card */}
           <motion.button
             layout

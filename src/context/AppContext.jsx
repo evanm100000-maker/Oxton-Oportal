@@ -639,6 +639,36 @@ export const AppProvider = ({ children }) => {
     }
   }, [users, currentUser, setUsers, setCurrentUser]);
 
+  // Auto-remove expired items (LOAs, Announcements)
+  useEffect(() => {
+    if (!isAppConfigLoaded) return; // Wait until initial load
+
+    const cleanupExpiredItems = () => {
+      const now = new Date();
+      const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      
+      setLoaRequests(prev => {
+        if (!prev) return prev;
+        const active = prev.filter(loa => loa.endDate >= localTodayStr);
+        return active.length !== prev.length ? active : prev;
+      });
+
+      setAnnouncements(prev => {
+        if (!prev) return prev;
+        const active = prev.filter(ann => {
+          if (!ann.countdownDate) return true;
+          // For announcements with countdown
+          return now.getTime() <= new Date(ann.countdownDate).getTime();
+        });
+        return active.length !== prev.length ? active : prev;
+      });
+    };
+
+    cleanupExpiredItems();
+    const interval = setInterval(cleanupExpiredItems, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [isAppConfigLoaded, setLoaRequests, setAnnouncements]);
+
   // Weekly Points Reset Logic
   useEffect(() => {
     if (!currentUser || !users || !users.length || !applicationConfig || !isAppConfigLoaded || !isUsersLoaded) return;
