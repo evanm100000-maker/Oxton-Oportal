@@ -244,7 +244,7 @@ export default function CalendarPage() {
         }
       </motion.div>
 
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {selectedDate && (
           <div style={styles.modalOverlay} onClick={() => setSelectedDate(null)}>
             <motion.div 
@@ -426,14 +426,17 @@ const styles = {
     width: '100%',
     maxWidth: '800px',
     margin: '0 auto',
+    overflowX: 'auto',
+    paddingBottom: '10px',
   },
   monthCard: {
-    padding: '20px',
+    padding: 'clamp(10px, 3vw, 20px)',
     borderRadius: '16px',
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
     width: '100%',
+    minWidth: '320px',
   },
   monthTitle: {
     fontSize: '1.1rem',

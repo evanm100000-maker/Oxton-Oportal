@@ -67,7 +67,7 @@ export default function UpdateNotifier() {
   };
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isVisible && (
         <motion.div
           initial={{ opacity: 0, y: 50, scale: 0.9, x: 20 }}

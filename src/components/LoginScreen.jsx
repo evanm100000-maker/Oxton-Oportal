@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { LogIn, UserPlus, Key, Mail, User, ShieldAlert, Award, ChevronLeft, Eye, EyeOff, Plane, Star, Heart, Cloud, Moon, Sun, Camera, Bell, Zap } from 'lucide-react';
-import SecretTimer from './SecretTimer';
 
 export default function LoginScreen({ onBack }) {
   const { login, signup, requestPasswordReset } = useApp();
@@ -96,7 +95,6 @@ export default function LoginScreen({ onBack }) {
 
   return (
     <div style={styles.container}>
-      <SecretTimer />
       <div className="glass-panel-glow" style={styles.card}>
         {onBack && (
           <button 

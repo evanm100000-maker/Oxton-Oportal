@@ -41,7 +41,7 @@ export default function BypassOverlay() {
   }
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

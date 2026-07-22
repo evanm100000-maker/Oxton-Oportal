@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Plane, Users, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../context/AppContext';
-import SecretTimer from './SecretTimer';
 
 export default function LandingPage({ onSelectPortal }) {
   const [selectedCard, setSelectedCard] = useState(null);
@@ -16,7 +15,6 @@ export default function LandingPage({ onSelectPortal }) {
 
   return (
     <div style={styles.container}>
-      <SecretTimer />
       {/* Background layer */}
       <div style={styles.background} />
       <div style={styles.gridOverlay} />

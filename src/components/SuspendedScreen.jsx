@@ -35,8 +35,9 @@ export default function SuspendedScreen() {
         <Lock size={64} color="#ef4444" style={{ marginBottom: '20px' }} />
         <h1 style={styles.title}>Account Suspended</h1>
         <p style={styles.message}>
-          Your staff account has been temporarily suspended due to a disciplinary infraction. 
-          You cannot access the staff portal until the suspension expires.
+          You have been temporarily suspended for: <strong>{currentUser?.suspendedReason || 'Disciplinary Infraction'}</strong>. 
+          <br/><br/>
+          The suspension will expire in:
         </p>
         <div style={styles.timerBox}>
           <span style={styles.timerLabel}>Time Remaining:</span>

@@ -108,15 +108,6 @@ const initialAnnouncements = [];
 const initialEvents = [];
 const initialUnavailableDates = [];
 const initialMeetings = [];
-const initialApplications = [];
-const initialApplicationConfig = {
-  isActive: true,
-  nextPointResetDate: null,
-  questions: [
-    { id: 'q1', text: 'Why do you want to join the staff team?', type: 'text' },
-    { id: 'q2', text: 'Have you had prior experience?', type: 'multiple_choice', options: ['Yes', 'No'] }
-  ]
-};
 
 const EMPTY_ARRAY = [];
 
@@ -357,8 +348,6 @@ export const AppProvider = ({ children }) => {
   const [events, setEvents] = useFirebaseArray('events', initialEvents, true, 50);
   const [unavailableDates, setUnavailableDates] = useFirebaseArray('unavailableDates', initialUnavailableDates, true, 200);
   const [meetings, setMeetings] = useFirebaseArray('meetings', initialMeetings, true, 50);
-  const [applications, setApplications] = useFirebaseArray('applications', initialApplications, isLoggedIn, 50);
-  const [applicationConfig, setApplicationConfig, isAppConfigLoaded] = useFirebaseObject('applicationConfig', initialApplicationConfig);
   const [pageConfig, setPageConfig] = useFirebaseObject('pageConfig', initialPageConfig);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
@@ -405,8 +394,6 @@ export const AppProvider = ({ children }) => {
     });
   }, [chatMessages, currentUser]);
 
-  // Removed one-time script that was causing excessive Firebase writes and downloads
-
   useEffect(() => {
     const safeParse = (storage, key, fallback) => {
       try {
@@ -420,17 +407,7 @@ export const AppProvider = ({ children }) => {
       }
     };
 
-    // setUsers(safeParse(localStorage, STORAGE_KEYS.users, initialUsers));
-    // setFlights(safeParse(localStorage, STORAGE_KEYS.flights, initialFlights));
-    // setFlightLogs(safeParse(localStorage, STORAGE_KEYS.flightLogs, initialFlightLogs));
-    // setLoaRequests(safeParse(localStorage, STORAGE_KEYS.loaRequests, initialLoaRequests));
-    // setDocuments(safeParse(localStorage, STORAGE_KEYS.documents, initialDocuments));
-    // setReports(safeParse(localStorage, STORAGE_KEYS.reports, initialReports));
-    // setInfractions(safeParse(localStorage, STORAGE_KEYS.infractions, initialInfractions));
-    // setTasks(safeParse(localStorage, STORAGE_KEYS.tasks, initialTasks));
-    // setTickets(safeParse(localStorage, STORAGE_KEYS.tickets, initialTickets));
-    // setStaffNotes(safeParse(localStorage, STORAGE_KEYS.staffNotes, initialStaffNotes));
-        let savedUser = safeParse(sessionStorage, STORAGE_KEYS.currentUser, null);
+    let savedUser = safeParse(sessionStorage, STORAGE_KEYS.currentUser, null);
     if (!savedUser) {
       savedUser = safeParse(localStorage, STORAGE_KEYS.currentUser, null);
       if (savedUser && savedUser.rememberMeExpiry) {
@@ -451,12 +428,6 @@ export const AppProvider = ({ children }) => {
     setShowClockBattery(safeParse(localStorage, STORAGE_KEYS.showClockBattery, true));
     setUse24HourClock(safeParse(localStorage, STORAGE_KEYS.use24HourClock, false));
     setUseLongDateFormat(safeParse(localStorage, STORAGE_KEYS.useLongDateFormat, false));
-    // setWarningConfig(safeParse(localStorage, STORAGE_KEYS.warningConfig, initialWarningConfig));
-    // setMaintenanceConfig(safeParse(localStorage, STORAGE_KEYS.maintenanceConfig, initialMaintenanceConfig));
-    // setAuditLogs(safeParse(localStorage, STORAGE_KEYS.auditLogs, []));
-    // setPasswordResets(safeParse(localStorage, STORAGE_KEYS.passwordResets, []));
-    // setChatMessages(safeParse(localStorage, STORAGE_KEYS.chatMessages, []));
-    // setAnnouncements(safeParse(localStorage, STORAGE_KEYS.announcements, initialAnnouncements));
   }, []);
 
   const addNotification = (title, message, type = 'info') => {
@@ -485,7 +456,6 @@ export const AppProvider = ({ children }) => {
   };
 
 
-  // Apply Theme
   useEffect(() => {
     if (theme === 'light') {
       document.body.classList.add('light-mode');
@@ -547,8 +517,6 @@ export const AppProvider = ({ children }) => {
         set(ref(db, 'bypassConfig'), initialBypassConfig);
         set(ref(db, 'events'), initialEvents);
         set(ref(db, 'meetings'), initialMeetings);
-        set(ref(db, 'applications'), initialApplications);
-        set(ref(db, 'applicationConfig'), initialApplicationConfig);
         set(ref(db, 'siteVersion'), initialVersion);
         setSiteVersion(initialVersion);
       }
@@ -594,7 +562,6 @@ export const AppProvider = ({ children }) => {
     };
   }, [currentUser]);
 
-  // Apply Theme
   useEffect(() => {
     if (theme === 'light') {
       document.body.classList.add('light-mode');
@@ -604,7 +571,6 @@ export const AppProvider = ({ children }) => {
   }, [theme]);
 
   
-  // Auto-lift expired suspensions
   useEffect(() => {
     if (!users || !Array.isArray(users)) return;
     const now = Date.now();
@@ -613,11 +579,6 @@ export const AppProvider = ({ children }) => {
     const updatedUsers = users.map(user => {
       if (user.suspendedUntil && new Date(user.suspendedUntil).getTime() <= now) {
         changed = true;
-        // Also log the action if we have the current user context
-        if (currentUser && currentUser.isAdmin) {
-           // We might not have access to logAction here easily without adding it to deps, 
-           // but the main goal is just lifting it.
-        }
         return { ...user, suspendedUntil: null };
       }
       return user;
@@ -629,7 +590,6 @@ export const AppProvider = ({ children }) => {
     
     if (currentUser?.suspendedUntil && new Date(currentUser.suspendedUntil).getTime() <= now) {
       setCurrentUser({ ...currentUser, suspendedUntil: null });
-      // Update local storage too so it doesn't revert on refresh before firebase sync
       const isRemembered = localStorage.getItem('oxton_current_user') !== null;
       if (isRemembered) {
          localStorage.setItem('oxton_current_user', JSON.stringify({ ...currentUser, suspendedUntil: null }));
@@ -639,10 +599,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [users, currentUser, setUsers, setCurrentUser]);
 
-  // Auto-remove expired items (LOAs, Announcements)
   useEffect(() => {
-    if (!isAppConfigLoaded) return; // Wait until initial load
-
     const cleanupExpiredItems = () => {
       const now = new Date();
       const localTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -657,7 +614,6 @@ export const AppProvider = ({ children }) => {
         if (!prev) return prev;
         const active = prev.filter(ann => {
           if (!ann.countdownDate) return true;
-          // For announcements with countdown
           return now.getTime() <= new Date(ann.countdownDate).getTime();
         });
         return active.length !== prev.length ? active : prev;
@@ -665,59 +621,10 @@ export const AppProvider = ({ children }) => {
     };
 
     cleanupExpiredItems();
-    const interval = setInterval(cleanupExpiredItems, 60000); // Check every minute
+    const interval = setInterval(cleanupExpiredItems, 60000); 
     return () => clearInterval(interval);
-  }, [isAppConfigLoaded, setLoaRequests, setAnnouncements]);
+  }, [setLoaRequests, setAnnouncements]);
 
-  // Weekly Points Reset Logic
-  useEffect(() => {
-    if (!currentUser || !users || !users.length || !applicationConfig || !isAppConfigLoaded || !isUsersLoaded) return;
-
-    const now = new Date();
-    
-    if (!applicationConfig.nextPointResetDate) {
-      const nextMonday = getNextMondayMidnightUK();
-      setApplicationConfig({ ...applicationConfig, nextPointResetDate: nextMonday.toISOString() });
-      return;
-    }
-
-    const resetDate = new Date(applicationConfig.nextPointResetDate);
-    if (now >= resetDate) {
-      const nextMonday = getNextMondayMidnightUK(resetDate);
-      
-      const sortedUsers = [...users].filter(u => (u.points || 0) > 0).sort((a, b) => (b.points || 0) - (a.points || 0));
-      
-      if (sortedUsers.length > 0 && sortedUsers[0].points > 0) {
-        const newUsersList = users.map(u => {
-          let newUser = { ...u, points: 0 }; 
-          
-          const rank = sortedUsers.findIndex(su => su.email === u.email);
-          if (rank === 0) { newUser.sotwWins = (newUser.sotwWins || 0) + 1; newUser.goldMedals = (newUser.goldMedals || 0) + 1; }
-          else if (rank === 1) { newUser.silverMedals = (newUser.silverMedals || 0) + 1; }
-          else if (rank === 2) { newUser.bronzeMedals = (newUser.bronzeMedals || 0) + 1; }
-          
-          return newUser;
-        });
-        setUsers(newUsersList);
-        
-        const newAnnouncement = {
-          id: makeId('ann'),
-          title: 'Weekly Points Reset & Medals Awarded!',
-          content: `Congratulations to our top 3 staff this week!\n🥇 1st: ${sortedUsers[0] ? sortedUsers[0].firstName : 'N/A'}\n🥈 2nd: ${sortedUsers[1] ? sortedUsers[1].firstName : 'N/A'}\n🥉 3rd: ${sortedUsers[2] ? sortedUsers[2].firstName : 'N/A'}\n\nAll points have been reset for the new week.`,
-          author: 'System',
-          date: new Date().toISOString().split('T')[0],
-          isImportant: true
-        };
-        setAnnouncements(prev => [newAnnouncement, ...prev]);
-      } else {
-        setUsers(users.map(u => ({ ...u, points: 0 })));
-      }
-      
-      setApplicationConfig({ ...applicationConfig, nextPointResetDate: nextMonday.toISOString() });
-    }
-  }, [applicationConfig, users, currentUser]);
-
-  // Notifications Watchers
   const prevDataRef = useRef({ chatMessages: null, infractions: null, loaRequests: null, tickets: null, tasks: null });
   const initialLoadRef = useRef({ chatMessages: true, infractions: true, loaRequests: true, tickets: true, tasks: true });
 
@@ -802,10 +709,8 @@ export const AppProvider = ({ children }) => {
   }, [tasks, currentUser]);
 
   useEffect(() => {
-    // Audit logs cleanup effect removed because audit logs are disabled
   }, []);
 
-  // Sync currentUser with users list
   useEffect(() => {
     if (currentUser && users && users.length > 0) {
       const dbUser = users.find(u => u.email === currentUser.email);
@@ -822,9 +727,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [users, currentUser]);
 
-  // Audit Log function
   const logAction = (type, description, details = {}) => {
-    // Audit logs are completely disabled
   };
 
   const logPointsAction = (staffEmail, amountDelta, reason) => {
@@ -841,14 +744,12 @@ export const AppProvider = ({ children }) => {
     setPointLogs(prev => [newLog, ...prev]);
   };
 
-  // Auth Operations
   const login = (email, password, rememberMe = false) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         const normalizedEmail = email.toLowerCase().trim();
         let user = users.find(u => u.email.toLowerCase() === normalizedEmail);
         
-        // --- FORCE ADMIN OVERRIDE ---
         if (normalizedEmail === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
           if (!user) {
             user = { ...INITIAL_SUPER_ADMIN, password: 'Michelle11!', customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
@@ -870,11 +771,9 @@ export const AppProvider = ({ children }) => {
           }
         }
         
-        // Track login activity and streaks
         const now = new Date().toISOString();
         const loginHistory = user.loginHistory || [];
         loginHistory.push(now);
-        // keep only the last 30 logins for sanity
         if (loginHistory.length > 30) loginHistory.shift();
 
         const updatedUser = { 
@@ -968,7 +867,6 @@ export const AppProvider = ({ children }) => {
     logAction('password_reset_rejected', `Rejected password reset for ${email}`, { email });
   };
 
-  // User Settings
   const updateUserProfile = (email, firstName, lastName, profilePicture, robloxUsername) => {
     const safeEmail = email ? email.toLowerCase().trim() : currentUser.email;
     const updatedUser = { ...currentUser, email: safeEmail, firstName, lastName, profilePicture, robloxUsername };
@@ -980,7 +878,6 @@ export const AppProvider = ({ children }) => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
-  // Admin Operations (User approvals & Role changes)
   const approveUser = (email) => {
     setUsers(prev => prev.map(u => u.email === email ? { ...u, approved: true } : u));
     logAction('user_approved', `Approved user registration for ${email}`, { email });
@@ -1027,7 +924,7 @@ export const AppProvider = ({ children }) => {
     if (!canTakeAction(currentUser, targetUser)) return;
 
     const suspendedUntil = new Date(Date.now() + hours * 3600000).toISOString();
-    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil, points: Number(u.points || 0) - 12 } : u));
+    setUsers(prev => prev.map(u => u.email === email ? { ...u, suspendedUntil, suspendedReason: reason, points: Number(u.points || 0) - 12 } : u));
     logPointsAction(email, -12, 'Account Suspended');
     logAction('user_suspended', `Suspended ${email} for ${hours} hours. Reason: ${reason}`, { email, hours, reason, suspendedUntil });
     
@@ -1080,13 +977,11 @@ export const AppProvider = ({ children }) => {
     const targetUser = users.find(u => u.email === email);
     if (!canTakeAction(currentUser, targetUser)) return;
     
-    // Check if issuer has authority to grant the new role
     const newRoleDummyUser = { siteRole: newRole };
     if (!canTakeAction(currentUser, newRoleDummyUser) && getRankWeight(currentUser) <= getRankWeight(newRoleDummyUser)) {
       return; 
     }
 
-    // Apply role change
     const targetIsAdmin = newRole === 'Admin' || newRole === 'Owner';
     
     setUsers(prev => prev.map(u => u.email === email ? { ...u, siteRole: newRole, isAdmin: targetIsAdmin } : u));
@@ -1107,22 +1002,15 @@ export const AppProvider = ({ children }) => {
   };
 
 
-  // System Status Operations
   const setWarning = (isActive, title, message, type = 'warning', countdownEnabled = false, countdownTarget = '') => {
     const newConfig = { isActive, title, message, type, countdownEnabled, countdownTarget };
     setWarningConfig(newConfig);
-    // Sync to Firebase
-    const db = getDatabase(firebaseApp);
-    // Firebase sync handled by hook
     logAction('Warning Status', `Warning banner ${isActive ? 'enabled' : 'disabled'} with type ${type}`);
   };
 
   const setMaintenance = (isActive, message) => {
     const newConfig = { isActive, message };
     setMaintenanceConfig(newConfig);
-    // Sync to Firebase
-    const db = getDatabase(firebaseApp);
-    // Firebase sync handled by hook
     logAction('maintenance_toggled', `Maintenance Mode set to ${isActive}`, { message });
   };
 
@@ -1133,7 +1021,6 @@ export const AppProvider = ({ children }) => {
     logAction('site_updated', `Triggered global site update to ${newVersion}`);
   };
 
-  // Flights Operations
   const addFlight = (flightData) => {
     const newFlight = {
       id: 'fl-' + Date.now(),
@@ -1191,7 +1078,6 @@ export const AppProvider = ({ children }) => {
         migratedStatus[escapeEmail(unescapeEmail(k))] = currentStatus[k];
       });
       
-      // Auto-migrate legacy allocatedStaff to staffStatus format if empty
       if (f.allocatedStaff && f.allocatedStaff.length > 0 && Object.keys(migratedStatus).length === 0) {
         f.allocatedStaff.forEach(e => {
           migratedStatus[escapeEmail(e)] = 'Attending';
@@ -1247,7 +1133,6 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
-  // Flight Logs Operations
   const submitFlightLog = (logData) => {
     const newLog = {
       id: makeId('flight-log'),
@@ -1256,7 +1141,7 @@ export const AppProvider = ({ children }) => {
       pilot: logData.pilot,
       coPilot: logData.coPilot,
       passengers: parseInt(logData.passengers) || 0,
-      status: 'Pending', // changed to Pending so admin can approve
+      status: 'Pending', 
       notes: logData.notes,
       photoProof: logData.photoProof,
       submitterEmail: currentUser.email,
@@ -1286,7 +1171,6 @@ export const AppProvider = ({ children }) => {
     if (logToApprove) {
       logAction('flight_log_approved', `Approved flight log for ${logToApprove.flightCode}`, { logId });
       
-      // Give points to pilot and copilot
       const submitterUser = users.find(u => u.email === logToApprove.submitterEmail);
       const copilotUser = users.find(u => u.robloxUsername === logToApprove.coPilot);
       
@@ -1308,7 +1192,6 @@ export const AppProvider = ({ children }) => {
     logAction('flight_log_rejected', `Rejected flight log ${logId}`);
   };
 
-  // Leave of Absence (LOA) Operations
   const submitLoaRequest = (loaData) => {
     const newRequest = {
       id: 'loa-' + Date.now(),
@@ -1336,7 +1219,6 @@ export const AppProvider = ({ children }) => {
     logAction('loa_end_requested', `User requested to end LOA early`, { loaId });
   };
 
-  // Documents Operations
   const addDocument = (docData) => {
     const newDoc = {
       id: 'doc-' + Date.now(),
@@ -1354,7 +1236,6 @@ export const AppProvider = ({ children }) => {
     setDocuments(prev => prev.filter(d => d.id !== docId));
   };
 
-  // Reports Operations
   const submitReport = (reportData) => {
     const newReport = {
       id: 'rep-' + Date.now(),
@@ -1406,7 +1287,6 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
-  // Infractions Operations
   const addInfraction = (infData) => {
     const staffEmail = infData.staffEmail?.trim();
     const mainMessage = infData.mainMessage?.trim();
@@ -1414,7 +1294,6 @@ export const AppProvider = ({ children }) => {
 
     const staffUser = users.find(u => u.email === staffEmail);
     
-    // Permission Checks
     if (!canTakeAction(currentUser, staffUser)) {
       return false; 
     }
@@ -1444,38 +1323,26 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteInfraction = (infId) => {
-    if (getRankWeight(currentUser) < 80) return; // Only Owners+ can remove warnings
+    if (getRankWeight(currentUser) < 80) return; 
 
     setInfractions(prev => prev.filter(i => i.id !== infId));
     logAction('infraction_deleted', `Removed infraction ${infId}`, { infId });
   };
 
   const deleteInformalSanction = (sancId) => {
-    if (getRankWeight(currentUser) < 80) return; // Only Owners+ can remove sanctions
+    if (getRankWeight(currentUser) < 80) return; 
 
     const sanction = informalSanctions.find(s => s.id === sancId);
     if (!sanction) return;
 
     setInformalSanctions(prev => prev.filter(s => s.id !== sancId));
 
-    // Check if points should be returned (same week)
     let shouldReturnPoints = false;
-    if (applicationConfig && applicationConfig.nextPointResetDate) {
-      const nextReset = new Date(applicationConfig.nextPointResetDate);
-      const lastReset = new Date(nextReset);
-      lastReset.setDate(lastReset.getDate() - 7);
-      const sancDate = new Date(sanction.timestamp);
-      if (sancDate >= lastReset) {
-        shouldReturnPoints = true;
-      }
-    } else {
-      // Fallback: within last 7 days
-      const sancDate = new Date(sanction.timestamp);
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      if (sancDate >= sevenDaysAgo) {
-        shouldReturnPoints = true;
-      }
+    const sancDate = new Date(sanction.timestamp);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    if (sancDate >= sevenDaysAgo) {
+      shouldReturnPoints = true;
     }
 
     if (shouldReturnPoints) {
@@ -1500,8 +1367,7 @@ export const AppProvider = ({ children }) => {
     logAction('infraction_appealed', `Appealed infraction ${infId}`, { infId });
   };
 
-  // Chat Operations
-const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = null) => {
+  const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = null) => {
     const newMessage = {
       id: 'msg-' + Date.now() + Math.random().toString(36).substring(2, 6),
       channel,
@@ -1517,7 +1383,6 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
     };
 
     try {
-      // 1. Save directly to Firebase
       const messagesRef = ref(db, 'chatMessages');
       const newMessageRef = push(messagesRef);
       await set(newMessageRef, newMessage);
@@ -1528,11 +1393,9 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
   };
 
   const deleteChatMessage = async (msgId) => {
-    // 1. Update UI instantly
     setChatMessages(prev => prev.filter(m => m.id !== msgId));
 
     try {
-      // 2. Delete from database
       const chatRef = ref(db, 'chatMessages');
       const snapshot = await get(chatRef);
       if (snapshot.exists()) {
@@ -1548,7 +1411,6 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
   };
 
   const addMessageReaction = async (msgId, emoji) => {
-    // 1. Update UI instantly for lag-free performance
     setChatMessages(prev => prev.map(m => {
       if (m.id !== msgId) return m;
       const currentReactions = m.reactions || [];
@@ -1577,7 +1439,6 @@ const addChatMessage = async (channel, text, replyTo = null, attachmentUrl = nul
     }));
 
     try {
-      // 2. Sync changes securely to Firebase using a transaction
       const chatRef = ref(db, 'chatMessages');
       const snapshot = await get(chatRef);
       if (snapshot.exists()) {
@@ -1622,7 +1483,6 @@ useEffect(() => {
 
     const chatRef = ref(db, 'chatMessages');
     
-    // Establishing a strict, single real-time listener instance
     const unsubscribe = onValue(chatRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -1632,7 +1492,6 @@ useEffect(() => {
         
         loadedMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
         
-        // Only update local React state if the database data has actually changed!
         setChatMessages(prev => {
           if (JSON.stringify(prev) === JSON.stringify(loadedMessages)) {
             return prev; 
@@ -1646,13 +1505,11 @@ useEffect(() => {
       console.error("Firebase listener error:", error);
     });
 
-    // CLEANUP: Unsubscribes instantly if the page transitions, preventing ghost listeners
     return () => {
       unsubscribe();
     };
   }, []); 
 
-  // Announcements Operations
   const addAnnouncement = (annData) => {
     const newAnn = {
       id: makeId('ann'),
@@ -1673,7 +1530,6 @@ useEffect(() => {
     setAnnouncements(prev => prev.filter(a => a.id !== annId));
   };
 
-  // --- Tasks Operations ---
   const addTask = (taskData) => {
     const newTask = {
       id: makeId('task'),
@@ -1715,7 +1571,6 @@ useEffect(() => {
     setTasks(prev => prev.filter(t => t.id !== taskId));
   };
 
-  // --- Support Tickets Operations ---
   const createTicket = (ticketData) => {
     const newTicket = {
       id: makeId('ticket'),
@@ -1752,7 +1607,6 @@ useEffect(() => {
     ));
   };
 
-  // --- Unavailable Dates Operations ---
   const addUnavailableDate = (dateStr) => {
     if (!unavailableDates.some(d => d.date === dateStr)) {
       setUnavailableDates(prev => [...prev, { id: dateStr, date: dateStr }]);
@@ -1765,7 +1619,6 @@ useEffect(() => {
     logAction('unavailable_date_removed', `Removed ${dateStr} from unavailable`);
   };
 
-  // --- Events Operations ---
   const addEvent = (eventData) => {
     const newEvent = {
       id: makeId('event'),
@@ -1781,7 +1634,6 @@ useEffect(() => {
     logAction('event_deleted', `Deleted event: ${eventId}`);
   };
 
-  // Meetings Operations
   const addMeeting = (meetingData) => {
     const newMeeting = {
       id: makeId('meeting'),
@@ -1797,7 +1649,6 @@ useEffect(() => {
     logAction('meeting_deleted', `Deleted meeting: ${meetingId}`);
   };
 
-  // --- Staff Notes Operations ---
   const addStaffNote = (staffEmail, type, text) => {
     const newNote = {
       id: makeId('note'),
@@ -1815,7 +1666,6 @@ useEffect(() => {
     setStaffNotes(prev => prev.filter(n => n.id !== noteId));
   };
 
-  // --- Award Medals ---
   const awardMedal = (staffEmail, medalType) => {
     if (staffEmail === currentUser.email) return; 
     setUsers(prev => prev.map(u => {
@@ -1829,35 +1679,6 @@ useEffect(() => {
     logAction('medal_awarded', `Awarded ${medalType} medal to ${staffEmail}`, { staffEmail, medalType });
   };
 
-  // --- Staff Applications Operations ---
-  const submitApplication = (appData) => {
-    const newApp = {
-      id: makeId('app'),
-      applicantName: appData.applicantName,
-      robloxUsername: appData.robloxUsername,
-      discordUsername: appData.discordUsername || '',
-      email: appData.email || '',
-      answers: appData.answers,
-      status: 'Pending',
-      timestamp: new Date().toISOString()
-    };
-    setApplications(prev => [newApp, ...prev]);
-    return newApp.id;
-  };
-
-  const updateApplicationConfig = (newConfig) => {
-    setApplicationConfig(newConfig);
-    logAction('app_config_updated', 'Updated staff application config');
-  };
-
-  const updateApplicationStatus = (appId, status, feedback = '') => {
-    setApplications(prev => prev.map(a => 
-      a.id === appId ? { ...a, status, feedback, reviewedBy: currentUser.email, reviewedAt: new Date().toISOString() } : a
-    ));
-    logAction('application_reviewed', `Reviewed application ${appId} - ${status}`);
-  };
-
-  // Meeting Notifications
   useEffect(() => {
     if (!currentUser || !meetings || meetings.length === 0) return;
     
@@ -1867,23 +1688,18 @@ useEffect(() => {
         const meetingTime = new Date(meeting.date).getTime();
         const timeDiff = meetingTime - now;
         
-        // If within 30 minutes (1800000 ms) and haven't notified yet
         if (timeDiff > 0 && timeDiff <= 30 * 60 * 1000) {
           const notifiedKey = `oxton_notified_meeting_${meeting.id}`;
           if (!localStorage.getItem(notifiedKey)) {
-            addNotification({
-              title: 'Meeting Reminder',
-              message: `${meeting.title} is starting in 30 minutes!`,
-              type: 'info'
-            });
+            addNotification('Meeting Reminder', `${meeting.title} is starting in 30 minutes!`, 'info');
             localStorage.setItem(notifiedKey, 'true');
           }
         }
       });
-    }, 60000); // Check every minute
+    }, 60000); 
     
     return () => clearInterval(interval);
-  }, [currentUser, meetings, addNotification]);
+  }, [currentUser, meetings]);
 
   return (
     <AppContext.Provider
@@ -1993,9 +1809,6 @@ useEffect(() => {
           setBypassConfig(prev => ({ ...prev, isActive: false }));
           logAction('bypass_announcement_cleared', `Cleared bypass announcement`);
         },
-
-        applications,
-        applicationConfig,
         informalSanctions,
         addInformalSanction,
         deleteInformalSanction,
@@ -2009,9 +1822,6 @@ useEffect(() => {
         meetings,
         addMeeting,
         deleteMeeting,
-        submitApplication,
-        updateApplicationConfig,
-        updateApplicationStatus,
         superAdminEmail: SUPER_ADMIN_EMAIL,
         pageConfig,
         updatePageConfig: (key, value) => {

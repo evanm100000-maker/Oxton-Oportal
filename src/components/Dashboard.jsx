@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Plane, ClipboardList, Calendar, FileText, 
   AlertTriangle, Slash, Settings, LogOut, ArrowLeft, User, Trophy, Medal, Award, MessageSquare, Eye,
@@ -28,7 +28,6 @@ import AllStaff from './AllStaff';
 import Events from './Events';
 import Meetings from './Meetings';
 import CalendarPage from './CalendarPage';
-import SecretTimer from './SecretTimer';
 import { formatCustomLongDate } from '../utils/timeUtils';
 
 const tabToPath = {
@@ -441,7 +440,6 @@ export default function Dashboard() {
 
   return (
     <div style={styles.appWrapper}>
-      <SecretTimer />
       {/* Navbar */}
       <nav className="glass-panel dashboard-navbar" style={styles.navbar}>
         <div className="dashboard-nav-brand" style={styles.navBrand} onClick={() => setActiveTab('home')}>
@@ -555,8 +553,16 @@ export default function Dashboard() {
 
       {/* Main Area */}
       <main className="dashboard-main-content" style={styles.mainContent}>
-        {activeTab === 'home' ? (
-          <div style={styles.homeContainer}>
+        <AnimatePresence mode="wait">
+          {activeTab === 'home' ? (
+            <motion.div 
+              key="home"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
+              style={styles.homeContainer}
+            >
             {/* Header Greeting */}
             <motion.div
               initial={{ y: -80, opacity: 0 }}
@@ -656,10 +662,16 @@ export default function Dashboard() {
                 </motion.div>
               )}
             </motion.div>
-          </div>
-        ) : (
+          </motion.div>
+          ) : (
           /* Sub-pages Container */
-          <div>
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+          >
             <div style={styles.backBar}>
               <button onClick={() => setActiveTab('home')} className="btn-secondary" style={styles.backBtn}>
                 <ArrowLeft size={16} />
@@ -681,8 +693,9 @@ export default function Dashboard() {
             >
               {renderActiveComponent()}
             </motion.div>
-          </div>
-        )}
+          </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />

@@ -39,10 +39,6 @@ export default function AdminPanel() {
     rejectPasswordReset,
     chatMessages,
     addChatMessage,
-    applications = [],
-    applicationConfig,
-    updateApplicationStatus,
-    updateApplicationConfig,
     events,
     addEvent,
     deleteEvent,
@@ -242,12 +238,18 @@ export default function AdminPanel() {
       }
     }
 
+    const targetedUser = users.find(u => u.email === infStaffEmail);
+
     setInfStaffEmail('');
     setInfType('Warning');
     setInfMainMessage('');
     setInfConfidentialMessage('');
     setShowInfractionModal(false);
     displaySuccess('Consequence successfully logged against staff member.');
+
+    if (targetedUser) {
+      setSuspendModalUser(targetedUser);
+    }
   };
 
   const handleSaveSystemStatus = (e) => {
@@ -316,7 +318,6 @@ export default function AdminPanel() {
   const activeLoas = loaRequests.filter(req => req.status === 'Approved' || req.status === 'End Requested');
   const pendingFlightLogs = flightLogs.filter(log => log.status === 'Pending');
   const pendingPasswords = passwordResets.filter(r => r.status === 'Pending');
-  const pendingApplications = applications.filter(a => a.status === 'Pending');
 
   const groupedInfractions = Object.values([...infractions, ...informalSanctions].reduce((acc, inf) => {
     if (!acc[inf.staffEmail]) acc[inf.staffEmail] = { 
@@ -377,10 +378,6 @@ export default function AdminPanel() {
         </button>
         <button type="button" onClick={() => setActiveSubTab('status')} style={getTabStyle(activeSubTab === 'status')}>
           <Settings size={16} /> System Status
-        </button>
-
-        <button type="button" onClick={() => setActiveSubTab('applications')} style={getTabStyle(activeSubTab === 'applications')}>
-          <FileText size={16} /> Applications ({pendingApplications.length})
         </button>
 
         <button type="button" onClick={() => setActiveSubTab('pointLogs')} style={getTabStyle(activeSubTab === 'pointLogs')}>
@@ -1406,154 +1403,6 @@ export default function AdminPanel() {
         </div>
       )}
 
-
-
-      {/* APPLICATIONS SECTION */}
-      {activeSubTab === 'applications' && (
-        <div id="section-applications" style={styles.panelSection}>
-          <div>
-            <h2 style={styles.panelTitle}>Staff Applications Management</h2>
-            <p style={styles.panelSubtitle}>Review submitted applications and configure the application questions.</p>
-          </div>
-
-          <div style={{...styles.panelSection, marginTop: '20px'}}>
-            <h3 style={{...styles.panelTitle, fontSize: '1.1rem'}}>Pending Applications</h3>
-            <div style={styles.tableWrapper} className="glass-panel">
-              <table style={styles.table}>
-                <thead>
-                  <tr style={styles.trHead}>
-                    <th style={styles.th}>Applicant</th>
-                    <th style={styles.th}>Roblox Username</th>
-                    <th style={styles.th}>Submitted At</th>
-                    <th style={styles.th}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingApplications.length === 0 ? (
-                    <tr><td colSpan="4" style={{...styles.td, textAlign: 'center'}}>No pending applications.</td></tr>
-                  ) : (
-                    pendingApplications.map(app => (
-                      <React.Fragment key={app.id}>
-                        <tr style={styles.trBody}>
-                          <td style={styles.td}><strong>{app.applicantName}</strong></td>
-                          <td style={styles.td}>{app.robloxUsername}</td>
-                          <td style={styles.td}>{new Date(app.timestamp).toLocaleString()}</td>
-                          <td style={styles.td}>
-                            <div style={styles.actionRow}>
-                              <button onClick={() => updateApplicationStatus(app.id, 'Approved')} className="btn-primary" style={{...styles.actionMiniBtn, background: 'rgba(16, 185, 129, 0.2)', color: '#10b981'}}>Approve</button>
-                              <button onClick={() => updateApplicationStatus(app.id, 'Rejected')} className="btn-danger" style={styles.actionMiniBtn}>Reject</button>
-                            </div>
-                          </td>
-                        </tr>
-                        <tr style={styles.trBody}>
-                          <td colSpan="4" style={{ padding: '0 16px 16px 16px' }}>
-                            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '8px' }}>
-                              <h4 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', color: '#9ca3af' }}>Questionnaire Answers:</h4>
-                              {app.answers.map(ans => (
-                                <div key={ans.questionId} style={{ marginBottom: '12px' }}>
-                                  <div style={{ fontWeight: '600', color: '#d1d5db', fontSize: '0.9rem' }}>Q: {ans.questionText}</div>
-                                  <div style={{ color: '#fff', fontSize: '0.95rem', marginTop: '4px', whiteSpace: 'pre-wrap' }}>A: {ans.answer || <span style={{color: '#6b7280', fontStyle: 'italic'}}>No answer provided</span>}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </td>
-                        </tr>
-                      </React.Fragment>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div style={{...styles.panelSection, marginTop: '40px'}}>
-            <h3 style={{...styles.panelTitle, fontSize: '1.1rem'}}>Configure Questionnaire</h3>
-            <div className="glass-panel" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <span style={{ fontSize: '1rem', fontWeight: '500', color: '#d1d5db' }}>Applications are currently: <strong style={{ color: applicationConfig?.isActive ? '#10b981' : '#ef4444' }}>{applicationConfig?.isActive ? 'OPEN' : 'CLOSED'}</strong></span>
-                <button 
-                  onClick={() => updateApplicationConfig({ ...applicationConfig, isActive: !applicationConfig?.isActive })}
-                  className={applicationConfig?.isActive ? "btn-danger" : "btn-primary"}
-                  style={{ padding: '8px 16px', borderRadius: '8px', fontWeight: '600' }}
-                >
-                  {applicationConfig?.isActive ? 'Close Applications' : 'Open Applications'}
-                </button>
-              </div>
-
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', marginBottom: '24px' }}>
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: '#fff' }}>Current Questions</h4>
-                {applicationConfig?.questions?.length === 0 ? (
-                  <div style={{ color: '#9ca3af', fontStyle: 'italic' }}>No questions configured.</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {applicationConfig?.questions?.map((q, idx) => (
-                      <div key={q.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px' }}>
-                        <div>
-                          <div style={{ color: '#fff', fontWeight: '500' }}>{idx + 1}. {q.text}</div>
-                          <div style={{ color: '#9ca3af', fontSize: '0.8rem', marginTop: '4px' }}>Type: {q.type === 'text' ? 'Text Answer' : 'Multiple Choice'} {q.type === 'multiple_choice' && `(${q.options?.join(', ')})`}</div>
-                        </div>
-                        <button 
-                          onClick={() => {
-                            const newQuestions = applicationConfig.questions.filter(item => item.id !== q.id);
-                            updateApplicationConfig({ ...applicationConfig, questions: newQuestions });
-                          }}
-                          className="btn-danger"
-                          style={{ padding: '6px', borderRadius: '6px', background: 'transparent' }}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '20px', borderRadius: '12px' }}>
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: '#60a5fa' }}>Add New Question</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={styles.inputWrapper}>
-                    <label style={styles.label}>Question Text</label>
-                    <input type="text" value={newQuestionText} onChange={e => setNewQuestionText(e.target.value)} className="input-field" placeholder="e.g. Why do you want to be staff?" />
-                  </div>
-                  <div style={styles.formRow}>
-                    <div style={styles.inputWrapper}>
-                      <label style={styles.label}>Answer Type</label>
-                      <select value={newQuestionType} onChange={e => setNewQuestionType(e.target.value)} className="input-field">
-                        <option value="text">Text Answer (Paragraph)</option>
-                        <option value="multiple_choice">Multiple Choice</option>
-                      </select>
-                    </div>
-                    {newQuestionType === 'multiple_choice' && (
-                      <div style={styles.inputWrapper}>
-                        <label style={styles.label}>Options (comma separated)</label>
-                        <input type="text" value={newQuestionOptions} onChange={e => setNewQuestionOptions(e.target.value)} className="input-field" placeholder="e.g. Yes, No, Maybe" />
-                      </div>
-                    )}
-                  </div>
-                  <button 
-                    onClick={() => {
-                      if (!newQuestionText) return;
-                      const newQuestion = {
-                        id: 'q_' + Date.now().toString(36),
-                        text: newQuestionText,
-                        type: newQuestionType,
-                        ...(newQuestionType === 'multiple_choice' ? { options: newQuestionOptions.split(',').map(s => s.trim()).filter(Boolean) } : {})
-                      };
-                      updateApplicationConfig({ ...applicationConfig, questions: [...(applicationConfig?.questions || []), newQuestion] });
-                      setNewQuestionText('');
-                      setNewQuestionOptions('');
-                    }}
-                    className="btn-primary" 
-                    style={{ alignSelf: 'flex-start', padding: '10px 20px', borderRadius: '8px' }}
-                  >
-                    Add Question
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       </div>
 
