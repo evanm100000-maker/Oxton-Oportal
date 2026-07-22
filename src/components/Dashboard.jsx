@@ -28,6 +28,7 @@ import AllStaff from './AllStaff';
 import Events from './Events';
 import Meetings from './Meetings';
 import CalendarPage from './CalendarPage';
+import SecretTimer from './SecretTimer';
 import { formatCustomLongDate } from '../utils/timeUtils';
 
 const tabToPath = {
@@ -440,6 +441,7 @@ export default function Dashboard() {
 
   return (
     <div style={styles.appWrapper}>
+      <SecretTimer />
       {/* Navbar */}
       <nav className="glass-panel dashboard-navbar" style={styles.navbar}>
         <div className="dashboard-nav-brand" style={styles.navBrand} onClick={() => setActiveTab('home')}>
