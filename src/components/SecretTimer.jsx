@@ -35,179 +35,151 @@ export default function SecretTimer() {
     <>
       <style>
         {`
-          @keyframes intenseFlameFlicker {
-            0% { transform: scale(1) translateY(0) rotate(-45deg); opacity: 0.9; background: #fff700; box-shadow: 0 0 15px #ff9900, 0 0 30px #ff0000; }
-            50% { transform: scale(1.5) translateY(-6px) rotate(-45deg); opacity: 1; background: #ff4500; box-shadow: 0 0 25px #ff4500, 0 0 50px #ff0000; }
-            100% { transform: scale(0.8) translateY(-12px) rotate(-45deg); opacity: 0; background: #ff0000; box-shadow: 0 0 10px #ff0000; }
+          @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
           }
-          @keyframes textGlitchExtreme {
-            0% { text-shadow: 4px 0 red, -4px 0 blue; transform: skewX(0deg); }
-            5% { text-shadow: -4px 0 red, 4px 0 blue; transform: skewX(-10deg); }
-            10% { text-shadow: 4px 0 red, -4px 0 blue; transform: skewX(10deg); }
-            15% { text-shadow: -4px 0 red, 4px 0 blue; transform: skewX(0deg); }
-            100% { text-shadow: 2px 0 red, -2px 0 blue; transform: skewX(0deg); }
+          @keyframes screenFlicker {
+            0% { opacity: 0.95; }
+            5% { opacity: 0.8; }
+            10% { opacity: 0.95; }
+            15% { opacity: 1; }
+            50% { opacity: 0.95; }
+            55% { opacity: 0.7; }
+            60% { opacity: 1; }
+            100% { opacity: 0.95; }
           }
-          @keyframes crackGlow {
-            0% { filter: drop-shadow(0 0 5px #ff4500); opacity: 0.6; }
-            50% { filter: drop-shadow(0 0 15px #ff0000); opacity: 1; }
-            100% { filter: drop-shadow(0 0 5px #ff4500); opacity: 0.6; }
-          }
-          @keyframes pulsingCore {
-            0% { box-shadow: 0 0 30px #ff0000, inset 0 0 40px #ff4500; }
-            50% { box-shadow: 0 0 60px #ff0000, inset 0 0 80px #ff9900; }
-            100% { box-shadow: 0 0 30px #ff0000, inset 0 0 40px #ff4500; }
-          }
-          @keyframes emberFloat {
-            0% { transform: translateY(0) scale(1); opacity: 1; }
-            100% { transform: translateY(-100px) scale(0); opacity: 0; }
-          }
-          
-          .flame-particle {
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            border-radius: 50% 0 50% 50%;
-            animation: intenseFlameFlicker 0.5s infinite alternate;
-            mix-blend-mode: screen;
-          }
-          
-          .ember {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: #ffcc00;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #ff4500, 0 0 20px #ff0000;
-            animation: emberFloat 2s linear infinite;
-          }
-
-          .smash-cracks {
-            position: fixed;
-            bottom: -50px;
-            right: -50px;
-            width: 500px;
-            height: 500px;
-            z-index: 9998;
-            pointer-events: none;
-            opacity: 0.8;
-          }
-
-          .timer-core {
-            position: fixed;
-            bottom: -20px;
-            right: -20px;
-            background: linear-gradient(135deg, #1a0505 0%, #300 50%, #111 100%);
-            border: 4px solid #ff3333;
-            padding: 30px 50px 40px 40px;
-            text-align: center;
-            z-index: 9999;
-            min-width: 350px;
-            clip-path: polygon(10% 0, 95% 10%, 100% 90%, 90% 100%, 0 95%, 5% 10%); /* Jagged concrete shape */
-            animation: pulsingCore 2s infinite alternate;
-            transform: rotate(-12deg);
-          }
-          
-          .timer-core::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: repeating-linear-gradient(
-              -45deg,
-              transparent,
-              transparent 10px,
-              rgba(0, 0, 0, 0.4) 10px,
-              rgba(0, 0, 0, 0.4) 20px
-            );
-            z-index: 1;
-            pointer-events: none;
-          }
-          
-          .shatter-hole {
+          .shattered-glass {
             position: fixed;
             bottom: -50px;
             right: -50px;
             width: 400px;
-            height: 350px;
-            background: radial-gradient(circle at center, #000 30%, transparent 70%);
+            height: 400px;
             z-index: 9997;
             pointer-events: none;
-            box-shadow: inset 0 0 100px rgba(0,0,0,1);
+          }
+          .glass-crack {
+            stroke: rgba(255, 255, 255, 0.3);
+            stroke-width: 1.5;
+            fill: none;
+            filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.8));
+          }
+          .glass-crack-dark {
+            stroke: rgba(0, 0, 0, 0.6);
+            stroke-width: 2;
+            fill: none;
+          }
+          .timer-screen-casing {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #111;
+            border: 8px solid #222;
+            border-radius: 12px;
+            padding: 15px 25px;
+            z-index: 9999;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,1);
+            transform: rotate(-3deg);
+            /* Smashed corner effect */
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 90% 90%, 85% 100%, 0 100%);
+          }
+          .timer-screen {
+            position: relative;
+            background: #050505;
+            border: 2px solid #000;
+            padding: 15px 20px;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(0,0,0,1);
+            animation: screenFlicker 4s infinite;
+          }
+          .timer-screen::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(
+              rgba(18, 16, 16, 0) 50%, 
+              rgba(0, 0, 0, 0.25) 50%), 
+              linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            z-index: 2;
+            pointer-events: none;
+          }
+          .scanline {
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 10%;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.1), transparent);
+            animation: scanline 3s linear infinite;
+            z-index: 3;
+            pointer-events: none;
+          }
+          .screen-text {
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.7);
           }
         `}
       </style>
-      
-      {/* Background hole shadow */}
-      <div className="shatter-hole" />
 
-      {/* SVG Cracks radiating outward */}
-      <svg className="smash-cracks" viewBox="0 0 500 500">
-        <g style={{ animation: 'crackGlow 3s infinite alternate', stroke: '#ff2200', strokeWidth: 3, fill: 'none', strokeLinecap: 'round', strokeLinejoin: 'round' }}>
-          <path d="M 250 250 L 50 100 L 20 80 M 50 100 L 10 130" />
-          <path d="M 250 250 L 100 300 L 20 320 M 100 300 L 80 400" />
-          <path d="M 250 250 L 200 50 L 180 10" />
-          <path d="M 250 250 L 350 30 L 400 10 M 350 30 L 320 0" />
-          <path d="M 250 250 L 80 200 L 10 180" />
-          <path d="M 250 250 L 220 450 L 200 480" />
-          <path d="M 250 250 L 380 400 L 450 450" />
-          {/* Secondary smaller cracks */}
-          <path d="M 150 175 L 120 120" strokeWidth="1.5" stroke="#ff5500" />
-          <path d="M 180 270 L 130 250" strokeWidth="1.5" stroke="#ff5500" />
-          <path d="M 270 150 L 230 100" strokeWidth="1.5" stroke="#ff5500" />
+      {/* Shattered Glass SVG overlaying the background */}
+      <svg className="shattered-glass" viewBox="0 0 400 400">
+        <g className="glass-crack-dark">
+          <path d="M 200 200 L 0 50" />
+          <path d="M 200 200 L 80 0" />
+          <path d="M 200 200 L 350 0" />
+          <path d="M 200 200 L 400 150" />
+          <path d="M 200 200 L 0 250" />
+          
+          <path d="M 80 120 L 120 70 L 180 50" />
+          <path d="M 250 80 L 290 120 L 320 70" />
+          <path d="M 120 180 L 60 160" />
         </g>
+        <g className="glass-crack">
+          <path d="M 198 198 L -2 48" />
+          <path d="M 198 198 L 78 -2" />
+          <path d="M 198 198 L 348 -2" />
+          <path d="M 198 198 L 398 148" />
+          <path d="M 198 198 L -2 248" />
+          
+          <path d="M 78 118 L 118 68 L 178 48" />
+          <path d="M 248 78 L 288 118 L 318 68" />
+          <path d="M 118 178 L 58 158" />
+          <path d="M 220 180 L 260 140 L 280 160" />
+        </g>
+        
+        {/* Central impact point shattering */}
+        <path d="M 180 190 L 210 180 L 220 210 L 190 220 Z" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.2)" />
+        <path d="M 210 180 L 240 160 L 250 190 Z" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.2)" />
+        <path d="M 180 190 L 150 170 L 160 200 Z" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" />
       </svg>
 
       <motion.div 
-        initial={{ scale: 0.1, opacity: 0, rotate: 180 }}
-        animate={{ scale: 1, opacity: 1, rotate: -12 }}
-        transition={{ type: "spring", stiffness: 300, damping: 15 }}
-        className="timer-core"
+        initial={{ scale: 0.8, opacity: 0, x: 50 }}
+        animate={{ scale: 1, opacity: 1, x: 0 }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
+        className="timer-screen-casing"
       >
-        {/* Intense Flames */}
-        <div style={{ position: 'absolute', top: '10px', left: '20px', width: '90%', height: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 4 }}>
-          {[...Array(12)].map((_, i) => (
-            <div key={i} className="flame-particle" style={{ left: `${i * 8}%`, animationDelay: `${Math.random() * 0.4}s`, transform: `scale(${0.8 + Math.random() * 0.7})` }} />
-          ))}
-        </div>
-
-        {/* Flying Embers */}
-        <div style={{ position: 'absolute', top: '50%', left: '0', width: '100%', height: '100%', zIndex: 5, pointerEvents: 'none' }}>
-          {[...Array(15)].map((_, i) => (
-            <div key={`ember-${i}`} className="ember" style={{ 
-              left: `${Math.random() * 100}%`, 
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 2}s`,
-              animationDuration: `${1 + Math.random()}s` 
-            }} />
-          ))}
-        </div>
-
-        <div style={{ position: 'relative', zIndex: 10 }}>
-          <div style={{ 
-            color: '#fff', 
+        <div className="timer-screen">
+          <div className="scanline" />
+          
+          <div className="screen-text" style={{ 
+            color: '#ff3333', 
             fontWeight: '900', 
-            letterSpacing: '8px', 
-            fontSize: '1.8rem', 
-            marginBottom: '15px', 
+            letterSpacing: '6px', 
+            fontSize: '1.2rem', 
+            marginBottom: '10px', 
             fontFamily: 'Impact, sans-serif',
-            textTransform: 'uppercase',
-            animation: 'textGlitchExtreme 2s infinite',
-            textShadow: '0 0 10px #ff0000, 0 0 20px #ff4500'
+            textAlign: 'center'
           }}>
-            TOP SECRET
+            SYSTEM LOCKDOWN
           </div>
           
-          <div style={{ 
-            color: '#ffdd00', 
+          <div className="screen-text" style={{ 
+            color: '#ff1111', 
             fontFamily: '"Courier New", Courier, monospace', 
-            fontSize: '2rem', 
-            fontWeight: '900', 
-            letterSpacing: '4px',
-            textShadow: '0 0 15px rgba(255, 69, 0, 1), 0 0 30px rgba(255, 0, 0, 0.8)',
-            background: 'rgba(0,0,0,0.8)',
-            padding: '12px 15px',
-            borderRadius: '8px',
-            border: '2px solid rgba(255,0,0,0.5)',
-            boxShadow: 'inset 0 0 20px rgba(255,0,0,0.5)'
+            fontSize: '1.6rem', 
+            fontWeight: 'bold', 
+            letterSpacing: '2px',
+            textAlign: 'center'
           }}>
             {timeLeft || '00d 00h 00m 00s'}
           </div>
