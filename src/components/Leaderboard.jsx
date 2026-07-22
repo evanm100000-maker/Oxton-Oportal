@@ -149,9 +149,10 @@ export default function Leaderboard() {
               <h4 style={{ margin: 0 }}>Earning Points</h4>
             </div>
             <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--color-text-muted)', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <li><strong>+7</strong> for an approved flight log</li>
-              <li><strong>+5</strong> for every 3 consecutive days of logging in</li>
-              <li><strong>+2</strong> for your report being actioned</li>
+              <li><strong>+7</strong> for attending a flight (approved flight log)</li>
+              <li><strong>+3</strong> for completing an assigned task</li>
+              <li><strong>+2</strong> for your report being accepted</li>
+              <li>Points can also be awarded directly by Admins</li>
             </ul>
           </div>
           
