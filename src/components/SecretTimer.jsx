@@ -129,7 +129,7 @@ export default function SecretTimer() {
         {/* Flames container */}
         <div style={{ position: 'absolute', top: '2px', left: '10px', width: '90%', height: '15px', display: 'flex', justifyContent: 'space-between', zIndex: 4 }}>
           {[...Array(8)].map((_, i) => (
-            <div key={i} className="flame-particle" style={{ left: \`\${i * 12}%\`, animationDelay: \`\${Math.random() * 0.5}s\`, transform: \`scale(\${0.8 + Math.random() * 0.5})\` }} />
+            <div key={i} className="flame-particle" style={{ left: `${i * 12}%`, animationDelay: `${Math.random() * 0.5}s`, transform: `scale(${0.8 + Math.random() * 0.5})` }} />
           ))}
         </div>
 
