@@ -36,7 +36,7 @@ export default function SecretTimer() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       style={{
-        position: 'absolute',
+        position: 'fixed',
         top: '20px',
         left: '50%',
         transform: 'translateX(-50%)',

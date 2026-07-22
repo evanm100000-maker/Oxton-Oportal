@@ -877,49 +877,13 @@ export const AppProvider = ({ children }) => {
         // keep only the last 30 logins for sanity
         if (loginHistory.length > 30) loginHistory.shift();
 
-        const todayStr = new Date().toDateString();
-        const lastLoginStr = user.lastLoginDate ? new Date(user.lastLoginDate).toDateString() : null;
-        let newStreak = user.loginStreak || 0;
-        let pointsToAdd = 0;
-        
-        if (todayStr !== lastLoginStr) {
-           const yesterday = new Date();
-           yesterday.setDate(yesterday.getDate() - 1);
-           if (lastLoginStr === yesterday.toDateString()) {
-              newStreak += 1;
-           } else {
-              newStreak = 1;
-           }
-           if (newStreak > 0 && newStreak % 3 === 0) {
-              pointsToAdd += 5;
-           }
-        }
-        
-        let last5DayBonusDate = user.last5DayBonusDate;
-        const lastInf = user.lastInfractionDate ? new Date(user.lastInfractionDate) : new Date(user.createdAt || now);
-        const lastBonus = user.last5DayBonusDate ? new Date(user.last5DayBonusDate) : lastInf;
-        const daysSinceLastBonus = Math.floor((new Date(now) - lastBonus) / (1000 * 60 * 60 * 24));
-        const daysSinceLastInf = Math.floor((new Date(now) - lastInf) / (1000 * 60 * 60 * 24));
-        
-        if (daysSinceLastBonus >= 5 && daysSinceLastInf >= 5) {
-          pointsToAdd += 10;
-          last5DayBonusDate = now;
-        }
-
         const updatedUser = { 
           ...user, 
           loginHistory, 
           lastLoginDate: now, 
-          loginStreak: newStreak, 
-          last5DayBonusDate,
-          points: Number(user.points || 0) + pointsToAdd,
           rememberMeExpiry: rememberMe ? Date.now() + 10 * 24 * 60 * 60 * 1000 : null
         };
         setUsers(prev => prev.map(u => u.email === updatedUser.email ? updatedUser : u));
-        
-        if (pointsToAdd > 0) {
-          logPointsAction(user.email, pointsToAdd, 'Automated Streak/Bonus Reward');
-        }
         
         setCurrentUser(updatedUser);
         resolve(updatedUser);
@@ -1726,11 +1690,25 @@ useEffect(() => {
   };
 
   const updateTaskStatus = (taskId, status) => {
-    setTasks(prev => prev.map(t => 
-      t.id === taskId 
-        ? { ...t, status, completedAt: status === 'Completed' ? new Date().toISOString() : null } 
-        : t
-    ));
+    let taskAssignedTo = null;
+    let isCompleted = status === 'Completed';
+
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        taskAssignedTo = t.assignedToEmail;
+        return { ...t, status, completedAt: isCompleted ? new Date().toISOString() : null };
+      }
+      return t;
+    }));
+
+    if (isCompleted && taskAssignedTo) {
+      setUsers(prev => prev.map(u => 
+        u.email === taskAssignedTo 
+          ? { ...u, points: Number(u.points || 0) + 3 } 
+          : u
+      ));
+      logPointsAction(taskAssignedTo, 3, 'Completed a Task');
+    }
   };
 
   const deleteTask = (taskId) => {
