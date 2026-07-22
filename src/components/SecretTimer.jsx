@@ -170,7 +170,7 @@ export default function SecretTimer() {
             fontFamily: 'Impact, sans-serif',
             textAlign: 'center'
           }}>
-            SYSTEM LOCKDOWN
+            Coming Soon...
           </div>
           
           <div className="screen-text" style={{ 
