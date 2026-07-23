@@ -1066,7 +1066,7 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
-  const setAllocationStatus = (flightId, email, status) => {
+  const setAllocationStatus = (flightId, email, status, reason = null) => {
     const safeEmail = escapeEmail(email);
     setFlights(prev => prev.map(f => {
       if (f.id !== flightId) return f;
@@ -1085,7 +1085,15 @@ export const AppProvider = ({ children }) => {
       }
       
       const newStatus = { ...migratedStatus, [safeEmail]: status };
-      return { ...f, staffStatus: newStatus };
+      
+      let newAbsenceReasons = f.absenceReasons ? { ...f.absenceReasons } : {};
+      if (status === 'Absent' && reason) {
+        newAbsenceReasons[safeEmail] = reason;
+      } else if (status !== 'Absent') {
+        delete newAbsenceReasons[safeEmail];
+      }
+
+      return { ...f, staffStatus: newStatus, absenceReasons: newAbsenceReasons };
     }));
   };
 

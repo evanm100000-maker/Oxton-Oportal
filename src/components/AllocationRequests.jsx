@@ -27,6 +27,10 @@ export default function AllocationRequests() {
   const [copiedId, setCopiedId] = useState(null);
   const [viewMode, setViewMode] = useState('upcoming'); // 'upcoming' or 'previous'
 
+  const [absenceModal, setAbsenceModal] = useState({ show: false, flightId: null, email: null, currentSelected: null });
+  const [absenceReason, setAbsenceReason] = useState('');
+  const [viewReasonModal, setViewReasonModal] = useState({ show: false, email: null, reason: null });
+
   // Calculate today's date in local time for fair comparison
   const today = new Date();
   const year = today.getFullYear();
@@ -402,7 +406,15 @@ export default function AllocationRequests() {
                                 const mark = flight.attendanceRecord && flight.attendanceRecord[escapeEmail(email)];
                                 const markDisplay = mark && mark !== 'Pending' ? ` - ${mark}` : '';
                                 return (
-                                <div key={`abs-${email}`} style={{...styles.crewBadge, background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)'}}>
+                                <div 
+                                  key={`abs-${email}`} 
+                                  style={{...styles.crewBadge, background: 'rgba(239, 68, 68, 0.1)', borderColor: 'rgba(239, 68, 68, 0.2)', cursor: 'pointer'}}
+                                  onClick={() => {
+                                    const reason = flight.absenceReasons ? flight.absenceReasons[escapeEmail(email)] : null;
+                                    setViewReasonModal({ show: true, email, reason });
+                                  }}
+                                  title="Click to view absence reason"
+                                >
                                   <span style={{...styles.crewBadgeText, color: '#fca5a5'}}>{getStaffNameByEmail(email)}{markDisplay}</span>
                                 </div>
                                 );
@@ -467,12 +479,16 @@ export default function AllocationRequests() {
                       type="button"
                       disabled={!hasChanged || flight.locked}
                       onClick={() => {
-                        setAllocationStatus(flight.id, currentUser.email, currentSelected);
-                        setSelectedStatuses(prev => {
-                          const updated = { ...prev };
-                          delete updated[flight.id];
-                          return updated;
-                        });
+                        if (currentSelected === 'Absent') {
+                          setAbsenceModal({ show: true, flightId: flight.id, email: currentUser.email, currentSelected });
+                        } else {
+                          setAllocationStatus(flight.id, currentUser.email, currentSelected);
+                          setSelectedStatuses(prev => {
+                            const updated = { ...prev };
+                            delete updated[flight.id];
+                            return updated;
+                          });
+                        }
                       }}
                       style={{
                         ...styles.acceptBtn,
@@ -528,6 +544,79 @@ export default function AllocationRequests() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Absence Reason Input Modal */}
+      {absenceModal.show && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(5px)', padding: '20px' }}>
+          <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', width: '100%', maxWidth: '400px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            <h3 style={{ marginTop: 0, color: '#f3f4f6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#ef4444' }}>●</span> Absence Reason
+            </h3>
+            <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '16px' }}>Please provide a reason for your absence.</p>
+            <textarea
+              value={absenceReason}
+              onChange={(e) => setAbsenceReason(e.target.value)}
+              placeholder="E.g., I have an exam, I am out of town..."
+              style={{ width: '100%', height: '100px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', color: '#fff', fontSize: '0.95rem', resize: 'none', outline: 'none', marginBottom: '16px' }}
+            />
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => {
+                  setAbsenceModal({ show: false, flightId: null, email: null, currentSelected: null });
+                  setAbsenceReason('');
+                }}
+                className="btn-secondary"
+                style={{ padding: '8px 16px', borderRadius: '8px' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  if (!absenceReason.trim()) return alert("Please enter a reason.");
+                  setAllocationStatus(absenceModal.flightId, absenceModal.email, absenceModal.currentSelected, absenceReason.trim());
+                  setSelectedStatuses(prev => {
+                    const updated = { ...prev };
+                    delete updated[absenceModal.flightId];
+                    return updated;
+                  });
+                  setAbsenceModal({ show: false, flightId: null, email: null, currentSelected: null });
+                  setAbsenceReason('');
+                }}
+                className="btn-primary"
+                style={{ background: '#ef4444', borderColor: '#dc2626', color: '#fff', padding: '8px 16px', borderRadius: '8px', border: '1px solid #dc2626', cursor: 'pointer' }}
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Reason Modal */}
+      {viewReasonModal.show && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(5px)', padding: '20px' }}>
+          <div style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', width: '100%', maxWidth: '400px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            <h3 style={{ marginTop: 0, color: '#f3f4f6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: '#ef4444' }}>●</span> Absence Reason
+            </h3>
+            <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '8px' }}>
+              Reason given by <strong>{getStaffNameByEmail(viewReasonModal.email)}</strong>:
+            </p>
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', padding: '16px', borderRadius: '8px', color: '#e5e7eb', marginBottom: '20px', minHeight: '60px' }}>
+              {viewReasonModal.reason ? viewReasonModal.reason : <span style={{ fontStyle: 'italic', color: '#6b7280' }}>No reason provided.</span>}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setViewReasonModal({ show: false, email: null, reason: null })}
+                className="btn-secondary"
+                style={{ padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
