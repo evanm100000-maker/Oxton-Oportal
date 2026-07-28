@@ -51,27 +51,46 @@ export default function CalendarPage() {
       });
     }
 
+    const getDateString = (dateVal) => {
+      if (!dateVal) return null;
+      if (typeof dateVal === 'string' && dateVal.length === 10 && dateVal.indexOf('T') === -1 && dateVal.includes('-')) {
+        return dateVal;
+      }
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return null;
+      return formatDateStr(d.getFullYear(), d.getMonth(), d.getDate());
+    };
+
     // Process Flights
     if (flights && Array.isArray(flights)) {
       flights.forEach(f => {
-        if (!map[f.date]) map[f.date] = { flights: [], events: [], meetings: [], unavailable: false };
-        map[f.date].flights.push(f);
+        const dStr = getDateString(f.date);
+        if (dStr) {
+          if (!map[dStr]) map[dStr] = { flights: [], events: [], meetings: [], unavailable: false };
+          map[dStr].flights.push(f);
+        }
       });
     }
 
     // Process Events
     if (events && Array.isArray(events)) {
       events.forEach(e => {
-        if (!map[e.date]) map[e.date] = { flights: [], events: [], meetings: [], unavailable: false };
-        map[e.date].events.push(e);
+        const dStr = getDateString(e.date);
+        if (dStr) {
+          if (!map[dStr]) map[dStr] = { flights: [], events: [], meetings: [], unavailable: false };
+          map[dStr].events.push(e);
+        }
       });
     }
 
     // Process Meetings
     if (meetings && Array.isArray(meetings)) {
       meetings.forEach(m => {
-        if (!map[m.date]) map[m.date] = { flights: [], events: [], meetings: [], unavailable: false };
-        map[m.date].meetings.push(m);
+        const dStr = getDateString(m.date);
+        if (dStr) {
+          if (!map[dStr]) map[dStr] = { flights: [], events: [], meetings: [], unavailable: false };
+          map[dStr].meetings.push(m);
+        }
       });
     }
 
