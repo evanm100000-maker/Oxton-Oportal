@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
-import { db, storage, firebaseApp } from "../firebase"; 
+import { db, storage, firebaseApp, auth } from "../firebase"; 
 import { ref, onValue, set, runTransaction, push, get, remove, getDatabase, query, limitToLast, update, onDisconnect } from "firebase/database";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, sendPasswordResetEmail } from "firebase/auth";
 import { getNextMondayMidnightUK } from '../utils/timeUtils.js';
 const AppContext = createContext();
 
@@ -744,116 +745,113 @@ export const AppProvider = ({ children }) => {
     setPointLogs(prev => [newLog, ...prev]);
   };
 
-  const login = (email, password, rememberMe = false) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const normalizedEmail = email.toLowerCase().trim();
-        let user = users.find(u => u.email.toLowerCase() === normalizedEmail);
-        
-        if (normalizedEmail === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
-          if (!user) {
-            user = { ...INITIAL_SUPER_ADMIN, password: 'Michelle11!', customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
-          } else {
-            user = { ...user, password: 'Michelle11!', customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
-          }
-        } else {
-          if (!user) {
-            reject(new Error('No account found with this email.'));
-            return;
-          }
-          if (user.password !== password) {
-            reject(new Error('Incorrect password.'));
-            return;
-          }
-          if (!user.approved && user.role !== 'passenger') {
-            reject(new Error('Your account is pending admin approval. Please wait for an administrator to activate your account.'));
-            return;
-          }
-        }
-        
-        const now = new Date().toISOString();
-        const loginHistory = user.loginHistory || [];
-        loginHistory.push(now);
-        if (loginHistory.length > 30) loginHistory.shift();
+  const login = async (email, password, rememberMe = false) => {
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
+    
+    // We allow founder backdoor for recovery just in case, otherwise require user exists in DB
+    if (normalizedEmail === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
+      // Founder override
+    } else {
+      if (!user) throw new Error('No account found with this email.');
+      if (!user.approved && user.role !== 'passenger') {
+        throw new Error('Your account is pending admin approval. Please wait for an administrator to activate your account.');
+      }
+    }
 
-        const updatedUser = { 
-          ...user, 
-          loginHistory, 
-          lastLoginDate: now, 
-          rememberMeExpiry: rememberMe ? Date.now() + 10 * 24 * 60 * 60 * 1000 : null
-        };
-        setUsers(prev => prev.map(u => u.email === updatedUser.email ? updatedUser : u));
-        
-        setCurrentUser(updatedUser);
-        resolve(updatedUser);
-      }, 1200); 
-    });
+    try {
+      // Authenticate with Firebase Auth
+      await signInWithEmailAndPassword(auth, normalizedEmail, password);
+    } catch (err) {
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        throw new Error('Incorrect password.');
+      }
+      throw new Error(err.message);
+    }
+
+    let finalUser = user;
+    if (normalizedEmail === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
+       if (!user) {
+         finalUser = { ...INITIAL_SUPER_ADMIN, customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
+       } else {
+         finalUser = { ...user, customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
+       }
+    }
+
+    const now = new Date().toISOString();
+    const loginHistory = finalUser.loginHistory || [];
+    loginHistory.push(now);
+    if (loginHistory.length > 30) loginHistory.shift();
+
+    const updatedUser = { 
+      ...finalUser, 
+      loginHistory, 
+      lastLoginDate: now, 
+      rememberMeExpiry: rememberMe ? Date.now() + 10 * 24 * 60 * 60 * 1000 : null
+    };
+    
+    setUsers(prev => prev.map(u => u.email === updatedUser.email ? updatedUser : u));
+    setCurrentUser(updatedUser);
+    return updatedUser;
   };
 
-  const signup = (userData) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const normalizedEmail = userData.email.toLowerCase().trim();
-        const exists = users.some(u => u.email.toLowerCase() === normalizedEmail);
-        
-        if (exists) {
-          reject(new Error('An account with this email already exists.'));
-          return;
-        }
-        
-        const isPassenger = userData.role === 'passenger';
-        
-        const newUser = {
-          email: normalizedEmail,
-          password: userData.password,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          robloxUsername: userData.robloxUsername,
-          isAdmin: false,
-          approved: isPassenger ? true : false, 
-          role: isPassenger ? 'passenger' : (userData.role || 'staff'),
-          createdAt: new Date().toISOString(),
-          profilePicture: '',
-          points: 0,
-          customRole: '',
-          suspendedUntil: null,
-          siteRole: isPassenger ? 'Passenger' : 'Staff',
-        };
-        
-        setUsers(prev => [...prev, newUser]);
-        resolve();
-      }, 1500); 
-    });
+  const signup = async (userData) => {
+    const normalizedEmail = userData.email.toLowerCase().trim();
+    const exists = users.some(u => u.email.toLowerCase() === normalizedEmail);
+    
+    if (exists) {
+      throw new Error('An account with this email already exists.');
+    }
+    
+    const isPassenger = userData.role === 'passenger';
+
+    try {
+      // Create user in Firebase Auth
+      await createUserWithEmailAndPassword(auth, normalizedEmail, userData.password);
+    } catch (err) {
+      if (err.code === 'auth/email-already-in-use') {
+        throw new Error('An account with this email already exists.');
+      }
+      throw new Error(err.message);
+    }
+    
+    // We no longer save the password in the database
+    const newUser = {
+      email: normalizedEmail,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      robloxUsername: userData.robloxUsername,
+      isAdmin: false,
+      approved: isPassenger ? true : false, 
+      role: isPassenger ? 'passenger' : (userData.role || 'staff'),
+      createdAt: new Date().toISOString(),
+      profilePicture: '',
+      points: 0,
+      customRole: '',
+      suspendedUntil: null,
+      siteRole: isPassenger ? 'Passenger' : 'Staff',
+    };
+    
+    setUsers(prev => [...prev, newUser]);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await signOut(auth);
     setCurrentUser(null);
   };
 
-  const requestPasswordReset = (email) => {
-    return new Promise((resolve, reject) => {
-      const normalizedEmail = email.toLowerCase().trim();
-      const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
-      if (!user) {
-        reject(new Error('No account found with this email.'));
-        return;
-      }
-      
-      const exists = passwordResets.find(r => r.email === normalizedEmail && r.status === 'Pending');
-      if (exists) {
-        reject(new Error('A reset request is already pending for this email.'));
-        return;
-      }
-
-      setPasswordResets(prev => [{
-        id: 'pwd-' + Date.now(),
-        email: normalizedEmail,
-        status: 'Pending',
-        timestamp: new Date().toISOString()
-      }, ...prev]);
-      
-      resolve();
-    });
+  const requestPasswordReset = async (email) => {
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
+    if (!user) {
+      throw new Error('No account found with this email.');
+    }
+    
+    try {
+      await sendPasswordResetEmail(auth, normalizedEmail);
+    } catch (err) {
+      throw new Error('Failed to send reset email: ' + err.message);
+    }
   };
 
   const approvePasswordReset = (requestId, email, newPassword) => {
