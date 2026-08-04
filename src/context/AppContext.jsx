@@ -24,10 +24,11 @@ const INITIAL_SUPER_ADMIN = {
 
 // Seed Data
 const initialUsers = [
-  INITIAL_SUPER_ADMIN,
+  { ...INITIAL_SUPER_ADMIN, discordUsername: 'Happyevbev' },
   {
     email: 'admin@oxton.com',
     password: 'admin123',
+    discordUsername: 'sarah_admin',
     firstName: 'Sarah',
     lastName: 'Conner',
     robloxUsername: 'SarahOxton',
@@ -43,6 +44,7 @@ const initialUsers = [
   {
     email: 'staff@oxton.com',
     password: 'staff123',
+    discordUsername: 'david_staff',
     firstName: 'David',
     lastName: 'Miller',
     robloxUsername: 'DavidOxton',
@@ -52,21 +54,6 @@ const initialUsers = [
     profilePicture: '',
     points: 5,
     customRole: 'Senior Staff',
-    suspendedUntil: null,
-    siteRole: 'Staff',
-  },
-  {
-    email: 'pending@oxton.com',
-    password: 'pending123',
-    firstName: 'Lucas',
-    lastName: 'Pending',
-    robloxUsername: 'LucasRoblox',
-    isAdmin: false,
-    approved: false,
-    createdAt: '2026-06-15T10:15:00Z',
-    profilePicture: '',
-    points: 0,
-    customRole: '',
     suspendedUntil: null,
     siteRole: 'Staff',
   }
@@ -109,6 +96,7 @@ const initialAnnouncements = [];
 const initialEvents = [];
 const initialUnavailableDates = [];
 const initialMeetings = [];
+const initialAccessRequests = [];
 
 const EMPTY_ARRAY = [];
 
@@ -157,6 +145,7 @@ const STORAGE_KEYS = {
   chatMessages: 'oxton_chat_messages',
   announcements: 'oxton_announcements',
   bypassConfig: 'oxton_bypass',
+  accessRequests: 'oxton_access_requests',
 };
 
 const isActiveStaff = (user) => (
@@ -349,6 +338,7 @@ export const AppProvider = ({ children }) => {
   const [events, setEvents] = useFirebaseArray('events', initialEvents, true, 50);
   const [unavailableDates, setUnavailableDates] = useFirebaseArray('unavailableDates', initialUnavailableDates, true, 200);
   const [meetings, setMeetings] = useFirebaseArray('meetings', initialMeetings, true, 50);
+  const [accessRequests, setAccessRequests] = useFirebaseArray('accessRequests', initialAccessRequests, true, 100);
   const [pageConfig, setPageConfig] = useFirebaseObject('pageConfig', initialPageConfig);
   const [notifications, setNotifications] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState({});
@@ -518,6 +508,7 @@ export const AppProvider = ({ children }) => {
         set(ref(db, 'bypassConfig'), initialBypassConfig);
         set(ref(db, 'events'), initialEvents);
         set(ref(db, 'meetings'), initialMeetings);
+        set(ref(db, 'accessRequests'), initialAccessRequests);
         set(ref(db, 'siteVersion'), initialVersion);
         setSiteVersion(initialVersion);
       }
@@ -745,46 +736,54 @@ export const AppProvider = ({ children }) => {
     setPointLogs(prev => [newLog, ...prev]);
   };
 
-  const login = async (email, password, rememberMe = false) => {
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
+  const loginWithDiscord = async (discordUsername, rememberMe = false) => {
+    const normalizedUsername = discordUsername.toLowerCase().trim();
+    let user = users.find(u => (u.discordUsername || '').toLowerCase() === normalizedUsername);
     
-    // We allow founder backdoor for recovery just in case, otherwise require user exists in DB
-    if (normalizedEmail === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
-      // Founder override
+    // Founder backdoor fallback using their known discord username
+    if (normalizedUsername === 'happyevbev') {
+      if (!user) {
+        user = { ...INITIAL_SUPER_ADMIN, customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner', discordUsername: 'Happyevbev' };
+      } else {
+        user = { ...user, customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
+      }
     } else {
-      if (!user) throw new Error('No account found with this email.');
+      if (!user) {
+        throw new Error('ACCESS_NOT_GIVEN');
+      }
       if (!user.approved && user.role !== 'passenger') {
-        throw new Error('Your account is pending admin approval. Please wait for an administrator to activate your account.');
+        throw new Error('Your account is pending admin approval.');
       }
     }
 
     try {
-      // Authenticate with Firebase Auth
-      await signInWithEmailAndPassword(auth, normalizedEmail, password);
-    } catch (err) {
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        throw new Error('Incorrect password.');
+      // Authenticate with Firebase Auth using a dummy email/password mapped to their discord username
+      // This grants them database access while avoiding complex custom tokens.
+      const safeEmailPrefix = normalizedUsername.replace(/[^a-zA-Z0-9]/g, '');
+      const dummyEmail = `${safeEmailPrefix}@discord.local`;
+      const dummyPassword = `DiscordLogin123!${safeEmailPrefix}`;
+      
+      try {
+        await signInWithEmailAndPassword(auth, dummyEmail, dummyPassword);
+      } catch (err) {
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+          await createUserWithEmailAndPassword(auth, dummyEmail, dummyPassword);
+        } else {
+          throw err;
+        }
       }
-      throw new Error(err.message);
-    }
-
-    let finalUser = user;
-    if (normalizedEmail === 'evanm.100000@gmail.com' && password === 'Michelle11!') {
-       if (!user) {
-         finalUser = { ...INITIAL_SUPER_ADMIN, customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
-       } else {
-         finalUser = { ...user, customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
-       }
+    } catch (err) {
+      console.error("Firebase auth error:", err);
+      throw new Error("Failed to authenticate with database.");
     }
 
     const now = new Date().toISOString();
-    const loginHistory = finalUser.loginHistory || [];
+    const loginHistory = user.loginHistory || [];
     loginHistory.push(now);
     if (loginHistory.length > 30) loginHistory.shift();
 
     const updatedUser = { 
-      ...finalUser, 
+      ...user, 
       loginHistory, 
       lastLoginDate: now, 
       rememberMeExpiry: rememberMe ? Date.now() + 10 * 24 * 60 * 60 * 1000 : null
@@ -795,41 +794,74 @@ export const AppProvider = ({ children }) => {
     return updatedUser;
   };
 
-  const signup = async (userData) => {
-    const normalizedEmail = userData.email.toLowerCase().trim();
-    const exists = users.some(u => u.email.toLowerCase() === normalizedEmail);
-    
+  const submitAccessRequest = (discordUsername, reason) => {
+    const exists = accessRequests.some(r => r.discordUsername.toLowerCase() === discordUsername.toLowerCase());
     if (exists) {
-      throw new Error('An account with this email already exists.');
+      throw new Error('You already have a pending access request.');
     }
-    
-    const isPassenger = userData.role === 'passenger';
+    const request = {
+      id: makeId('req'),
+      discordUsername,
+      reason,
+      status: 'Pending',
+      timestamp: Date.now()
+    };
+    setAccessRequests(prev => [request, ...prev]);
+  };
 
-    try {
-      // Create user in Firebase Auth
-      await createUserWithEmailAndPassword(auth, normalizedEmail, userData.password);
-    } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
-        throw new Error('An account with this email already exists.');
-      }
-      throw new Error(err.message);
-    }
-    
-    // We no longer save the password in the database
+  const rejectAccessRequest = (requestId) => {
+    setAccessRequests(prev => prev.filter(r => r.id !== requestId));
+  };
+
+  const approveAccessRequest = (requestId, discordUsername, firstName, siteRole) => {
+    // Generate a dummy email to maintain system compatibility
+    const safePrefix = discordUsername.replace(/[^a-zA-Z0-9]/g, '');
+    const dummyEmail = `${safePrefix}@discord.local`.toLowerCase();
+
     const newUser = {
-      email: normalizedEmail,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      robloxUsername: userData.robloxUsername,
-      isAdmin: false,
-      approved: isPassenger ? true : false, 
-      role: isPassenger ? 'passenger' : (userData.role || 'staff'),
+      email: dummyEmail,
+      discordUsername: discordUsername,
+      firstName: firstName,
+      lastName: '',
+      robloxUsername: '',
+      isAdmin: siteRole === 'Admin' || siteRole === 'Owner',
+      approved: true,
+      role: 'staff',
       createdAt: new Date().toISOString(),
       profilePicture: '',
       points: 0,
       customRole: '',
       suspendedUntil: null,
-      siteRole: isPassenger ? 'Passenger' : 'Staff',
+      siteRole: siteRole
+    };
+    
+    setUsers(prev => [...prev, newUser]);
+    setAccessRequests(prev => prev.filter(r => r.id !== requestId));
+  };
+
+  const addStaff = (discordUsername, firstName, siteRole) => {
+    const safePrefix = discordUsername.replace(/[^a-zA-Z0-9]/g, '');
+    const dummyEmail = `${safePrefix}@discord.local`.toLowerCase();
+    
+    if (users.some(u => (u.discordUsername || '').toLowerCase() === discordUsername.toLowerCase())) {
+      throw new Error("This Discord username is already registered.");
+    }
+
+    const newUser = {
+      email: dummyEmail,
+      discordUsername: discordUsername,
+      firstName: firstName,
+      lastName: '',
+      robloxUsername: '',
+      isAdmin: siteRole === 'Admin' || siteRole === 'Owner',
+      approved: true,
+      role: 'staff',
+      createdAt: new Date().toISOString(),
+      profilePicture: '',
+      points: 0,
+      customRole: '',
+      suspendedUntil: null,
+      siteRole: siteRole
     };
     
     setUsers(prev => [...prev, newUser]);
@@ -838,26 +870,6 @@ export const AppProvider = ({ children }) => {
   const logout = async () => {
     await signOut(auth);
     setCurrentUser(null);
-  };
-
-  const requestPasswordReset = async (email) => {
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = users.find(u => u.email.toLowerCase() === normalizedEmail);
-    if (!user) {
-      throw new Error('No account found with this email.');
-    }
-    
-    try {
-      await sendPasswordResetEmail(auth, normalizedEmail);
-    } catch (err) {
-      throw new Error('Failed to send reset email: ' + err.message);
-    }
-  };
-
-  const approvePasswordReset = (requestId, email, newPassword) => {
-    setUsers(prev => prev.map(u => u.email === email ? { ...u, password: newPassword } : u));
-    setPasswordResets(prev => prev.map(r => r.id === requestId ? { ...r, status: 'Approved' } : r));
-    logAction('password_reset', `Approved password reset for ${email}`, { email });
   };
 
   const rejectPasswordReset = (requestId, email) => {
@@ -1736,11 +1748,12 @@ useEffect(() => {
         maintenanceConfig,
         auditLogs,
         passwordResets,
-        requestPasswordReset,
-        approvePasswordReset,
+        loginWithDiscord,
+        submitAccessRequest,
+        approveAccessRequest,
+        rejectAccessRequest,
+        addStaff,
         rejectPasswordReset,
-        login,
-        signup,
         logout,
         updateUserProfile,
         toggleTheme,
@@ -1815,6 +1828,8 @@ useEffect(() => {
           setBypassConfig(prev => ({ ...prev, isActive: false }));
           logAction('bypass_announcement_cleared', `Cleared bypass announcement`);
         },
+        accessRequests,
+        setAccessRequests,
         informalSanctions,
         addInformalSanction,
         deleteInformalSanction,

@@ -1,107 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { LogIn, UserPlus, Key, Mail, User, ShieldAlert, Award, ChevronLeft, Eye, EyeOff, Plane, Star, Heart, Cloud, Moon, Sun, Camera, Bell, Zap } from 'lucide-react';
+import { LogIn, ShieldAlert, Award, ChevronLeft, Plane } from 'lucide-react';
+
+const DISCORD_CLIENT_ID = '1534277658584813669';
+const REDIRECT_URI = window.location.origin; 
 
 export default function LoginScreen({ onBack }) {
-  const { login, signup, requestPasswordReset } = useApp();
-  const [rememberMe, setRememberMe] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const { loginWithDiscord, submitAccessRequest } = useApp();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [isAccessDenied, setIsAccessDenied] = useState(false);
+  const [deniedUsername, setDeniedUsername] = useState('');
+  const [accessReason, setAccessReason] = useState('');
 
-  // Captcha state
-  const allIcons = ['Plane', 'Star', 'Heart', 'Cloud', 'Moon', 'Sun', 'Camera', 'Bell', 'Zap'];
-  const [captchaTarget, setCaptchaTarget] = useState('Plane');
-  const [captchaGrid, setCaptchaGrid] = useState([]);
-  const [selectedCaptchaIndices, setSelectedCaptchaIndices] = useState([]);
+  useEffect(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const [accessToken, tokenType] = [fragment.get('access_token'), fragment.get('token_type')];
 
-  const regenerateCaptcha = React.useCallback(() => {
-    const target = 'Plane'; // For simplicity, we always ask for Plane, but we can randomize target too
-    setCaptchaTarget(target);
-    const newGrid = [];
-    const targetCount = Math.floor(Math.random() * 3) + 2; // 2 to 4 planes
-    for (let i = 0; i < 9; i++) {
-      newGrid.push(i < targetCount ? target : allIcons[Math.floor(Math.random() * (allIcons.length - 1)) + 1]);
+    if (accessToken) {
+      window.history.replaceState(null, null, window.location.pathname);
+      
+      setLoading(true);
+      fetch('https://discord.com/api/users/@me', {
+        headers: {
+          authorization: `${tokenType} ${accessToken}`,
+        },
+      })
+        .then(result => result.json())
+        .then(async (response) => {
+          const { username } = response;
+          if (!username) throw new Error("Failed to get Discord username.");
+          
+          try {
+            await loginWithDiscord(username);
+          } catch (err) {
+            if (err.message === 'ACCESS_NOT_GIVEN') {
+              setIsAccessDenied(true);
+              setDeniedUsername(username);
+            } else {
+              setError(err.message);
+            }
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          setError("Failed to authenticate with Discord.");
+        })
+        .finally(() => setLoading(false));
     }
-    // Shuffle
-    for (let i = newGrid.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [newGrid[i], newGrid[j]] = [newGrid[j], newGrid[i]];
-    }
-    setCaptchaGrid(newGrid);
-    setSelectedCaptchaIndices([]);
-  }, []);
+  }, [loginWithDiscord]);
 
-  React.useEffect(() => {
-    regenerateCaptcha();
-  }, [regenerateCaptcha]);
-
-  const toggleCaptchaSelection = (index) => {
-    setSelectedCaptchaIndices(prev => 
-      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
-    );
+  const handleDiscordLogin = () => {
+    const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify`;
+    window.location.href = oauthUrl;
   };
 
-  // Form states
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [robloxUsername, setRobloxUsername] = useState('');
-
-  const handleSubmit = async (e) => {
+  const handleRequestAccess = (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-    setLoading(true);
-
-    const isCaptchaValid = 
-      captchaGrid.filter((_, i) => selectedCaptchaIndices.includes(i)).every(icon => icon === captchaTarget) &&
-      captchaGrid.filter(icon => icon === captchaTarget).length === selectedCaptchaIndices.length;
-
-    if (!isCaptchaValid) {
-      setError('Captcha failed. Please select all ' + captchaTarget + 's.');
-      regenerateCaptcha();
-      setLoading(false);
+    if (!accessReason) {
+      setError("Please provide a reason for access.");
       return;
     }
-
     try {
-      if (isForgotPassword) {
-        if (!email) throw new Error('Please enter your email address.');
-        await requestPasswordReset(email);
-        setSuccess('Password reset request sent. Please message vortex23575 (Jamie) on Discord.');
-        setIsForgotPassword(false);
-      } else if (isLogin) {
-        await login(email, password, rememberMe);
-      } else {
-        if (!firstName || !robloxUsername || !email || !password) {
-          throw new Error('Please fill in all fields.');
-        }
-        await signup({ email, password, firstName, lastName, robloxUsername });
-        setSuccess('Registration successful! Your account is pending admin approval.');
-        setIsLogin(true);
-        setPassword('');
-      }
+      submitAccessRequest(deniedUsername, accessReason);
+      setSuccess("Your access request has been sent to the administrators.");
+      setIsAccessDenied(false);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
     <div style={styles.container}>
-      <div className="glass-panel-glow" style={styles.card}>
+      <div className="glass-panel" style={styles.card}>
         {onBack && (
-          <button 
-            onClick={onBack}
-            style={styles.backButton}
-            type="button"
-          >
+          <button onClick={onBack} style={styles.backButton} type="button">
             <ChevronLeft size={20} />
             Back to Portal
           </button>
@@ -109,35 +83,10 @@ export default function LoginScreen({ onBack }) {
         
         <div style={styles.logoSection}>
           <div style={styles.logoIconContainer}>
-            <img src="./logo.png" alt="Oxton Logo" style={styles.logoIcon} />
+            <img src="./make_the_wing_symbol.png" alt="Luma Logo" style={styles.logoIcon} />
           </div>
-          <h1 style={styles.brandTitle}>Oxton Oportal <span style={{ fontFamily: 'monospace', fontSize: '0.4em', color: '#60a5fa', verticalAlign: 'super', fontWeight: 'bold' }}>BETA</span></h1>
+          <h1 style={styles.brandTitle}>Luma Staff Portal <span style={{ fontFamily: 'monospace', fontSize: '0.4em', color: '#5bc2e7', verticalAlign: 'super', fontWeight: 'bold' }}>BETA</span></h1>
           <p style={styles.brandSubtitle}>Staff Portal & Command Center</p>
-        </div>
-
-        <div style={styles.tabContainer}>
-          <button
-            onClick={() => { setIsLogin(true); setIsForgotPassword(false); setError(''); setSuccess(''); }}
-            style={{
-              ...styles.tabButton,
-              borderBottomColor: (isLogin && !isForgotPassword) ? '#2563eb' : 'transparent',
-              color: (isLogin && !isForgotPassword) ? '#f3f4f6' : '#9ca3af',
-            }}
-          >
-            <LogIn size={18} />
-            Sign In
-          </button>
-          <button
-            onClick={() => { setIsLogin(false); setIsForgotPassword(false); setError(''); setSuccess(''); }}
-            style={{
-              ...styles.tabButton,
-              borderBottomColor: (!isLogin && !isForgotPassword) ? '#2563eb' : 'transparent',
-              color: (!isLogin && !isForgotPassword) ? '#f3f4f6' : '#9ca3af',
-            }}
-          >
-            <UserPlus size={18} />
-            Register
-          </button>
         </div>
 
         {error && (
@@ -154,390 +103,81 @@ export default function LoginScreen({ onBack }) {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          {!isLogin && !isForgotPassword && (
-            <div style={styles.row}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+             <Plane size={32} color="#5bc2e7" className="animate-pulse" style={{ margin: '0 auto' }} />
+             <p style={{ marginTop: '16px', color: 'var(--color-text-main)' }}>Authenticating with Discord...</p>
+          </div>
+        ) : isAccessDenied ? (
+          <div style={styles.form}>
+            <h2 style={{ textAlign: 'center', color: 'var(--color-text-main)', marginBottom: '8px' }}>Access Not Given</h2>
+            <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem', marginBottom: '24px' }}>
+              Your Discord account (<strong>{deniedUsername}</strong>) is not registered in the system.
+            </p>
+            
+            <form onSubmit={handleRequestAccess} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={styles.inputWrapper}>
-                <label style={styles.label}>First Name</label>
+                <label style={styles.label}>Reason for Access</label>
                 <div style={styles.inputInnerWrapper}>
-                  <User size={16} style={styles.inputIcon} />
                   <input
                     type="text"
                     required
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Evan"
+                    value={accessReason}
+                    onChange={(e) => setAccessReason(e.target.value)}
+                    placeholder="E.g., I'm a new hire for GOPS"
                     className="input-field"
-                    style={{ paddingLeft: '38px' }}
+                    style={{ paddingLeft: '14px' }}
                   />
                 </div>
               </div>
-              <div style={styles.inputWrapper}>
-                <label style={styles.label}>Last Name <span style={styles.optionalLabel}>Optional</span></label>
-                <div style={styles.inputInnerWrapper}>
-                  <User size={16} style={styles.inputIcon} />
-                  <input
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Optional"
-                    className="input-field"
-                    style={{ paddingLeft: '38px' }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+              
+              <button type="submit" className="btn-primary" style={{ ...styles.submitButton, marginTop: '8px' }}>
+                Request Access
+              </button>
+            </form>
 
-          {!isLogin && !isForgotPassword && (
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Roblox Username</label>
-              <div style={styles.inputInnerWrapper}>
-                <Award size={16} style={styles.inputIcon} />
-                <input
-                  type="text"
-                  required
-                  value={robloxUsername}
-                  onChange={(e) => setRobloxUsername(e.target.value)}
-                  placeholder="EvanOxton"
-                  className="input-field"
-                  style={{ paddingLeft: '38px' }}
-                />
-              </div>
-            </div>
-          )}
-
-          <div style={styles.inputWrapper}>
-            <label style={styles.label}>Email Address</label>
-            <div style={styles.inputInnerWrapper}>
-              <Mail size={16} style={styles.inputIcon} />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                className="input-field"
-                style={{ paddingLeft: '38px' }}
-              />
+            <div style={{ textAlign: 'center', marginTop: '16px' }}>
+              <button 
+                onClick={() => { setIsAccessDenied(false); setError(''); setSuccess(''); }}
+                style={{ background: 'none', border: 'none', color: '#5bc2e7', cursor: 'pointer', fontSize: '0.9rem' }}
+              >
+                Back to Login
+              </button>
             </div>
           </div>
-
-          {!isForgotPassword && (
-            <div style={styles.inputWrapper}>
-              <label style={styles.label}>Password</label>
-              <div style={{...styles.inputInnerWrapper, position: 'relative'}}>
-                <Key size={16} style={styles.inputIcon} />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="input-field"
-                  style={{ paddingLeft: '38px', paddingRight: '40px' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: '#9ca3af',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {isLogin && !isForgotPassword && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', marginBottom: '8px' }}>
-              <input 
-                type="checkbox" 
-                id="rememberMe" 
-                checked={rememberMe} 
-                onChange={(e) => setRememberMe(e.target.checked)} 
-                style={{ cursor: 'pointer' }}
-              />
-              <label htmlFor="rememberMe" style={{ ...styles.label, cursor: 'pointer', margin: 0 }}>Remember Me</label>
-            </div>
-          )}
-
-          <div style={{ ...styles.inputWrapper, alignItems: 'center' }}>
-            <label style={{ ...styles.label, textAlign: 'center', marginBottom: '8px' }}>
-              Security Check: Select all images with <strong>{captchaTarget}s</strong>
-            </label>
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(3, 1fr)', 
-              gap: '8px', 
-              background: 'rgba(255,255,255,0.05)', 
-              padding: '12px', 
-              borderRadius: '12px',
-              border: '1px solid rgba(255,255,255,0.1)'
-            }}>
-              {captchaGrid.map((iconName, idx) => {
-                const isSelected = selectedCaptchaIndices.includes(idx);
-                let IconComp = null;
-                switch(iconName) {
-                  case 'Plane': IconComp = <Plane size={24} color="#fff" />; break;
-                  case 'Star': IconComp = <Star size={24} color="#fff" />; break;
-                  case 'Heart': IconComp = <Heart size={24} color="#fff" />; break;
-                  case 'Cloud': IconComp = <Cloud size={24} color="#fff" />; break;
-                  case 'Moon': IconComp = <Moon size={24} color="#fff" />; break;
-                  case 'Sun': IconComp = <Sun size={24} color="#fff" />; break;
-                  case 'Camera': IconComp = <Camera size={24} color="#fff" />; break;
-                  case 'Bell': IconComp = <Bell size={24} color="#fff" />; break;
-                  case 'Zap': IconComp = <Zap size={24} color="#fff" />; break;
-                }
-                return (
-                  <div 
-                    key={idx}
-                    onClick={() => toggleCaptchaSelection(idx)}
-                    style={{
-                      width: '64px',
-                      height: '64px',
-                      background: isSelected ? '#3b82f6' : 'rgba(0,0,0,0.3)',
-                      border: isSelected ? '2px solid #60a5fa' : '2px solid transparent',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {IconComp}
-                  </div>
-                );
-              })}
-            </div>
+        ) : (
+          <div style={styles.form}>
+            <button 
+              onClick={handleDiscordLogin}
+              className="btn-primary"
+              style={{ ...styles.submitButton, background: '#5865F2', borderColor: '#5865F2' }}
+            >
+              <LogIn size={20} style={{ marginRight: '8px' }} />
+              Login with Discord
+            </button>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary"
-            style={styles.submitBtn}
-          >
-            {loading ? (
-              <div className="spinner-container" style={{ gap: '10px' }}>
-                <span className="spinner-pulse"></span>
-                <span className="spinner-ring"></span>
-                <span>Authenticating...</span>
-              </div>
-            ) : (
-              <span style={styles.btnContent}>
-                {isForgotPassword ? 'Request Password Reset' : (isLogin ? 'Log In to System' : 'Create Staff Request')}
-              </span>
-            )}
-          </button>
-
-          {!isForgotPassword && isLogin && (
-            <button 
-              type="button" 
-              onClick={() => { setIsForgotPassword(true); setError(''); setSuccess(''); }} 
-              style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '0.85rem', cursor: 'pointer', marginTop: '8px' }}
-            >
-              Forgot Password?
-            </button>
-          )}
-          {isForgotPassword && (
-            <button 
-              type="button" 
-              onClick={() => { setIsForgotPassword(false); setError(''); setSuccess(''); }} 
-              style={{ background: 'transparent', border: 'none', color: '#9ca3af', fontSize: '0.85rem', cursor: 'pointer', marginTop: '8px' }}
-            >
-              Back to Login
-            </button>
-          )}
-        </form>
+        )}
       </div>
-      <div style={styles.versionText}>V1.2</div>
+      <div style={styles.versionText}>V1.3 (Discord Auth)</div>
     </div>
   );
 }
 
 const styles = {
-  container: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '100vh',
-    padding: '20px',
-  },
-  backButton: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    background: 'none',
-    border: 'none',
-    color: '#9ca3af',
-    fontSize: '0.9rem',
-    cursor: 'pointer',
-    marginBottom: '20px',
-    padding: '0',
-    transition: 'color 0.2s ease'
-  },
-  card: {
-    width: '100%',
-    maxWidth: '480px',
-    padding: '40px 32px',
-    transition: 'all 0.3s ease',
-  },
-  logoSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    textAlign: 'center',
-    marginBottom: '32px',
-  },
-  logoIconContainer: {
-    width: '80px',
-    height: '80px',
-    borderRadius: '20px',
-    background: 'rgba(139, 92, 246, 0.1)',
-    border: '1px solid rgba(139, 92, 246, 0.2)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 0 20px rgba(139, 92, 246, 0.2)',
-    marginBottom: '16px',
-  },
-  logoIcon: {
-    width: '64px',
-    height: '64px',
-    objectFit: 'contain',
-    filter: 'drop-shadow(0 0 8px rgba(139, 92, 246, 0.5))',
-  },
-  brandTitle: {
-    fontSize: '2rem',
-    fontWeight: '900',
-    letterSpacing: '3px',
-    color: 'var(--color-text-main)',
-    textShadow: '0 0 10px rgba(255, 255, 255, 0.1)',
-  },
-  brandSubtitle: {
-    fontSize: '0.875rem',
-    color: '#9ca3af',
-    marginTop: '4px',
-  },
-  tabContainer: {
-    display: 'flex',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-    marginBottom: '24px',
-  },
-  tabButton: {
-    flex: 1,
-    padding: '12px 0',
-    background: 'transparent',
-    border: 'none',
-    borderBottom: '2px solid transparent',
-    fontSize: '0.95rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    transition: 'all 0.2s ease',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '18px',
-  },
-  row: {
-    display: 'flex',
-    gap: '16px',
-  },
-  inputWrapper: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-    flex: 1,
-  },
-  label: {
-    fontSize: '0.85rem',
-    fontWeight: '500',
-    color: '#d1d5db',
-  },
-  optionalLabel: {
-    color: '#9ca3af',
-    fontSize: '0.75rem',
-    fontWeight: '400',
-    marginLeft: '4px',
-  },
-  inputInnerWrapper: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  inputIcon: {
-    position: 'absolute',
-    left: '14px',
-    color: 'rgba(255, 255, 255, 0.35)',
-    pointerEvents: 'none',
-  },
-  submitBtn: {
-    padding: '14px',
-    borderRadius: '8px',
-    marginTop: '10px',
-    fontSize: '1rem',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '52px',
-  },
-  btnContent: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-  },
-  errorBanner: {
-    background: 'rgba(239, 68, 68, 0.15)',
-    border: '1px solid rgba(239, 68, 68, 0.3)',
-    borderRadius: '8px',
-    padding: '12px',
-    fontSize: '0.85rem',
-    color: '#fca5a5',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginBottom: '20px',
-    lineHeight: '1.4',
-  },
-  successBanner: {
-    background: 'rgba(16, 185, 129, 0.15)',
-    border: '1px solid rgba(16, 185, 129, 0.3)',
-    borderRadius: '8px',
-    padding: '12px',
-    fontSize: '0.85rem',
-    color: '#a7f3d0',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginBottom: '20px',
-    lineHeight: '1.4',
-  },
-  versionText: {
-    position: 'absolute',
-    bottom: '20px',
-    color: '#6b7280',
-    fontSize: '0.85rem',
-    fontWeight: '500',
-    letterSpacing: '1px',
-  },
+  container: { display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' },
+  backButton: { display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#94a3b8', fontSize: '0.9rem', cursor: 'pointer', marginBottom: '20px', padding: '0', transition: 'color 0.2s ease' },
+  card: { width: '100%', maxWidth: '480px', padding: '40px 32px', transition: 'all 0.3s ease' },
+  logoSection: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '32px' },
+  logoIconContainer: { width: '100px', height: '100px', borderRadius: '24px', background: '#5bc2e7', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 25px rgba(91, 194, 231, 0.4)', marginBottom: '20px' },
+  logoIcon: { width: '72px', height: '72px', objectFit: 'contain' },
+  brandTitle: { fontSize: '2rem', fontWeight: '900', letterSpacing: '3px', color: 'var(--color-text-main)' },
+  brandSubtitle: { fontSize: '0.875rem', color: '#94a3b8', marginTop: '4px' },
+  form: { display: 'flex', flexDirection: 'column', gap: '18px' },
+  inputWrapper: { display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 },
+  label: { fontSize: '0.85rem', fontWeight: '500', color: 'var(--color-text-main)' },
+  inputInnerWrapper: { position: 'relative', display: 'flex', alignItems: 'center' },
+  submitButton: { padding: '14px', borderRadius: '8px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '52px', width: '100%' },
+  errorBanner: { background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', padding: '12px', fontSize: '0.85rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', lineHeight: '1.4' },
+  successBanner: { background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '12px', fontSize: '0.85rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', lineHeight: '1.4' },
+  versionText: { position: 'absolute', bottom: '20px', color: '#94a3b8', fontSize: '0.85rem', fontWeight: '500', letterSpacing: '1px' },
 };

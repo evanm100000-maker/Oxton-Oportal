@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Plane, Calendar, Clock, MapPin, ExternalLink, Users, UserPlus, UserMinus, Trash2, Lock, Unlock, Link, Check } from 'lucide-react';
+import { Plane, Calendar, Clock, MapPin, ExternalLink, Users, UserPlus, UserMinus, Trash2, Lock, Unlock, Link, Check, User } from 'lucide-react';
 import { getRankWeight } from '../context/AppContext';
 import { formatFlightTimeLocal, formatFlightDateLocal } from '../utils/timeUtils';
 
 const escapeEmail = (email) => email ? email.replace(/\./g, ',') : '';
 const unescapeEmail = (email) => email ? email.replace(/,/g, '.') : '';
 
-export default function AllocationRequests() {
+export default function AllocationRequests({ showOnlyMyRoster = false }) {
   const { 
     flights, 
     currentUser, 
@@ -38,8 +38,17 @@ export default function AllocationRequests() {
   const day = String(today.getDate()).padStart(2, '0');
   const todayStr = `${year}-${month}-${day}`;
   
-  const upcomingFlights = flights.filter(f => f.date >= todayStr);
-  const previousFlights = flights.filter(f => f.date < todayStr);
+  const filteredFlights = showOnlyMyRoster
+    ? flights.filter(f => {
+        const safeEmail = currentUser.email.replace(/\./g, ',');
+        const isAllocated = (f.allocatedStaff || []).includes(currentUser.email);
+        const status = f.staffStatus ? (f.staffStatus[safeEmail] || f.staffStatus[currentUser.email]) : null;
+        return isAllocated || status === 'Attending';
+      })
+    : flights;
+
+  const upcomingFlights = filteredFlights.filter(f => f.date >= todayStr);
+  const previousFlights = filteredFlights.filter(f => f.date < todayStr);
   const displayedFlights = viewMode === 'upcoming' ? upcomingFlights : previousFlights;
 
   const targetFlightId = new URLSearchParams(window.location.search).get('flightId');
@@ -102,10 +111,10 @@ export default function AllocationRequests() {
     return list;
   };
 
-  const getStaffNameByEmail = (email) => {
+  const getStaffNameByEmail = (email, includeRole = true) => {
     const user = users.find(u => u.email === email);
     if (!user) return email;
-    const rolePart = user.customRole ? ` (${user.customRole})` : '';
+    const rolePart = (includeRole && user.customRole) ? ` (${user.customRole})` : '';
     return `${user.firstName} ${user.lastName} (@${user.robloxUsername})${rolePart}`;
   };
 
@@ -297,9 +306,9 @@ export default function AllocationRequests() {
                     <span style={styles.locationBadge}>
                       <MapPin size={12} /> {flight.location}
                     </span>
-                    {flight.locked && (
-                      <span style={{...styles.locationBadge, background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)'}}>
-                        <Lock size={12} /> Locked
+                    {flight.host && (
+                      <span style={{...styles.locationBadge, background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', borderColor: 'rgba(59, 130, 246, 0.3)'}}>
+                        <User size={12} /> Host: {getStaffNameByEmail(flight.host, false)}
                       </span>
                     )}
                   </div>
@@ -363,21 +372,29 @@ export default function AllocationRequests() {
                       return <p style={styles.emptyCrewText}>No crew responses yet.</p>;
                     }
 
+                    const groupedAttending = attending.reduce((acc, email) => {
+                      const user = activeUsers.find(u => u.email === email);
+                      const role = user?.customRole || 'Staff';
+                      if (!acc[role]) acc[role] = [];
+                      acc[role].push(email);
+                      return acc;
+                    }, {});
+
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {attending.length > 0 && (
-                          <div>
+                        {Object.entries(groupedAttending).map(([role, emails]) => (
+                          <div key={role}>
                             <div style={{ fontSize: '0.8rem', fontWeight: '600', color: '#10b981', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></span>
-                              Attending ({attending.length})
+                              {role.toUpperCase()} ({emails.length})
                             </div>
                             <div style={styles.crewList}>
-                              {attending.map((email) => {
+                              {emails.map((email) => {
                                 const mark = flight.attendanceRecord && flight.attendanceRecord[escapeEmail(email)];
                                 const markDisplay = mark && mark !== 'Pending' ? ` - ${mark}` : '';
                                 return (
                                 <div key={`att-${email}`} style={styles.crewBadge}>
-                                  <span style={styles.crewBadgeText}>{getStaffNameByEmail(email)}{markDisplay}</span>
+                                  <span style={styles.crewBadgeText}>{getStaffNameByEmail(email, false)}{markDisplay}</span>
                                   {currentUser.isAdmin && !flight.locked && (
                                     <button
                                       type="button"
@@ -393,7 +410,7 @@ export default function AllocationRequests() {
                               })}
                             </div>
                           </div>
-                        )}
+                        ))}
 
                         {absent.length > 0 && (
                           <div>

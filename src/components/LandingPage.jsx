@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Plane, Users, Lock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useApp } from '../context/AppContext';
+import { Plane } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function LandingPage({ onSelectPortal }) {
   const [selectedCard, setSelectedCard] = useState(null);
@@ -27,13 +26,10 @@ export default function LandingPage({ onSelectPortal }) {
           style={styles.header}
         >
           <div style={styles.logoContainer}>
-            <img src="./logo.png" alt="Oxton Logo" style={styles.logoIcon} />
+            <img src="./make_the_wing_symbol.png" alt="Luma Logo" style={styles.logoIcon} />
           </div>
-          <h1 style={styles.title}>Oxton Oportal <span style={{ fontFamily: 'monospace', fontSize: '0.4em', color: '#60a5fa', verticalAlign: 'super', fontWeight: 'bold' }}>BETA</span></h1>
-          <p style={styles.subtitle}>Select your portal</p>
-          <div style={{ marginTop: '20px' }}>
-            {/* App downloads removed */}
-          </div>
+          <h1 style={styles.title}>Luma Staff Portal <span style={{ fontFamily: 'monospace', fontSize: '0.4em', color: '#5bc2e7', verticalAlign: 'super', fontWeight: 'bold' }}>BETA</span></h1>
+          <p style={styles.subtitle}>Luma Airways Official Portal</p>
         </motion.div>
 
         <div style={styles.cardsContainer}>
@@ -53,13 +49,13 @@ export default function LandingPage({ onSelectPortal }) {
             onClick={() => handleSelect('staff')}
             style={{
               ...styles.card, 
-              background: 'rgba(139, 92, 246, 0.08)', 
-              borderColor: 'rgba(139, 92, 246, 0.3)'
+              background: 'rgba(255, 255, 255, 0.9)', 
+              borderColor: 'rgba(91, 194, 231, 0.3)'
             }}
           >
             <div style={styles.cardInner}>
-              <div style={{...styles.iconWrapper, background: 'rgba(139, 92, 246, 0.15)'}}>
-                <Plane size={32} color="#c084fc" />
+              <div style={{...styles.iconWrapper, background: 'rgba(91, 194, 231, 0.15)'}}>
+                <Plane size={32} color="#5bc2e7" />
               </div>
               <div style={styles.textContainer}>
                 <h2 style={styles.cardTitle}>Staff Portal</h2>
@@ -85,19 +81,19 @@ const styles = {
     minHeight: '100vh',
     width: '100vw',
     overflow: 'hidden',
-    background: '#020617',
+    background: '#eef4f8',
     fontFamily: "'Inter', sans-serif",
   },
   background: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    background: 'radial-gradient(circle at center, #1e293b 0%, #020617 100%)',
+    background: 'radial-gradient(circle at center, #ffffff 0%, #eef4f8 100%)',
     zIndex: 0,
   },
   gridOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    backgroundImage: `linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)`,
+    backgroundImage: `linear-gradient(rgba(15, 41, 74, 0.01) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 41, 74, 0.01) 1px, transparent 1px)`,
     backgroundSize: '30px 30px',
     zIndex: 1,
     opacity: 0.5
@@ -122,13 +118,13 @@ const styles = {
     width: '70px',
     height: '70px',
     borderRadius: '20px',
-    background: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.9)',
+    border: '1px solid rgba(15, 41, 74, 0.1)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: '20px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+    boxShadow: '0 8px 32px rgba(15, 41, 74, 0.05)',
     backdropFilter: 'blur(10px)',
   },
   logoIcon: {
@@ -139,21 +135,21 @@ const styles = {
   title: {
     fontSize: '2rem',
     fontWeight: '800',
-    color: '#ffffff',
+    color: '#0f294a',
     letterSpacing: '6px',
     margin: '0 0 8px 0',
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: '0.95rem',
-    color: '#94a3b8',
+    color: '#5a6e85',
     margin: 0,
     letterSpacing: '1px',
-    fontWeight: '400',
+    fontWeight: '500',
   },
   cardsContainer: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-    gap: '24px',
+    display: 'flex',
+    justifyContent: 'center',
     width: '100%',
   },
   card: {
@@ -163,10 +159,12 @@ const styles = {
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
+    boxShadow: '0 8px 30px rgba(15, 41, 74, 0.04)',
     padding: 0,
     outline: 'none',
     backdropFilter: 'blur(10px)',
+    cursor: 'pointer',
+    width: '320px',
   },
   cardInner: {
     display: 'flex',
@@ -183,7 +181,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: '24px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+    boxShadow: '0 4px 20px rgba(15, 41, 74, 0.03)',
   },
   textContainer: {
     display: 'flex',
@@ -194,20 +192,20 @@ const styles = {
   cardTitle: {
     fontSize: '1.4rem',
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#0f294a',
     margin: 0,
     letterSpacing: '0.5px',
   },
   cardDesc: {
     fontSize: '0.9rem',
-    color: '#94a3b8',
+    color: '#5a6e85',
     margin: 0,
     lineHeight: '1.5',
   },
   versionText: {
     position: 'absolute',
     bottom: '24px',
-    color: '#475569',
+    color: '#5a6e85',
     fontSize: '0.8rem',
     fontWeight: '500',
     letterSpacing: '1px',

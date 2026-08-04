@@ -58,7 +58,11 @@ export default function AdminPanel() {
     pointLogs,
     unavailableDates,
     addUnavailableDate,
-    removeUnavailableDate
+    removeUnavailableDate,
+    accessRequests = [],
+    approveAccessRequest,
+    rejectAccessRequest,
+    addStaff
   } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('approvals');
@@ -138,6 +142,15 @@ export default function AdminPanel() {
   const [newQuestionText, setNewQuestionText] = useState('');
   const [newQuestionType, setNewQuestionType] = useState('text');
   const [newQuestionOptions, setNewQuestionOptions] = useState('');
+
+  // Access Request approvals
+  const [accessReqFirstNames, setAccessReqFirstNames] = useState({});
+  const [accessReqRoles, setAccessReqRoles] = useState({});
+
+  // Add Staff form
+  const [newStaffDiscord, setNewStaffDiscord] = useState('');
+  const [newStaffFirstName, setNewStaffFirstName] = useState('');
+  const [newStaffRole, setNewStaffRole] = useState('Staff');
 
   // Audit modal state
   const [selectedAuditLog, setSelectedAuditLog] = useState(null);
@@ -347,7 +360,7 @@ export default function AdminPanel() {
       {/* Sub tabs navigation */}
       <div className="admin-sidebar" style={styles.sidebar}>
         <button type="button" onClick={() => setActiveSubTab('approvals')} style={getTabStyle(activeSubTab === 'approvals')}>
-          <UserCheck size={16} /> Approvals ({pendingUsers.length})
+          <UserCheck size={16} /> Access Requests ({accessRequests.length})
         </button>
         <button type="button" onClick={() => setActiveSubTab('staffManagement')} style={getTabStyle(activeSubTab === 'staffManagement')}>
           <Users size={16} /> Staff Management
@@ -394,28 +407,61 @@ export default function AdminPanel() {
       {activeSubTab === 'approvals' && (
 <div id="section-approvals">
         <div style={styles.panelSection}>
-          <h3 style={styles.panelTitle}>Pending User Registrations</h3>
-          {pendingUsers.length === 0 ? (
-            <div style={styles.emptyGrid}><UserCheck size={36} color="rgba(255,255,255,0.15)" /><p style={styles.emptyText}>No pending user accounts.</p></div>
+          <h3 style={styles.panelTitle}>Pending Access Requests</h3>
+          {accessRequests.length === 0 ? (
+            <div style={styles.emptyGrid}><UserCheck size={36} color="rgba(255,255,255,0.15)" /><p style={styles.emptyText}>No pending access requests.</p></div>
           ) : (
             <div style={styles.tableWrapper}>
               <table style={styles.table}>
                 <thead>
                   <tr style={styles.trHead}>
-                    <th style={styles.th}>Name</th>
-                    <th style={styles.th}>Email</th>
+                    <th style={styles.th}>Discord Username</th>
+                    <th style={styles.th}>Reason</th>
+                    <th style={styles.th}>Assignment</th>
                     <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pendingUsers.map(user => (
-                    <tr key={user.email} style={styles.trBody}>
-                      <td style={styles.td}><strong>{user.firstName} {user.lastName}</strong><br/>@{user.robloxUsername}</td>
-                      <td style={styles.td}>{user.email}</td>
+                  {accessRequests.map(request => (
+                    <tr key={request.id} style={styles.trBody}>
+                      <td style={styles.td}><strong>{request.discordUsername}</strong><br/><span style={{fontSize: '0.8rem', color: '#94a3b8'}}>{new Date(request.timestamp).toLocaleString()}</span></td>
+                      <td style={styles.td}>{request.reason}</td>
+                      <td style={styles.td}>
+                        <div style={{display: 'flex', gap: '8px'}}>
+                          <input 
+                            type="text" 
+                            placeholder="First Name" 
+                            value={accessReqFirstNames[request.id] || ''} 
+                            onChange={(e) => setAccessReqFirstNames({...accessReqFirstNames, [request.id]: e.target.value})}
+                            className="input-field"
+                            style={{width: '120px', padding: '6px'}}
+                          />
+                          <select 
+                            value={accessReqRoles[request.id] || 'Staff'} 
+                            onChange={(e) => setAccessReqRoles({...accessReqRoles, [request.id]: e.target.value})}
+                            className="input-field"
+                            style={{padding: '6px'}}
+                          >
+                            <option value="Staff">Staff</option>
+                            <option value="Moderator">Moderator</option>
+                            {getRankWeight(currentUser) >= 60 && <option value="Admin">Admin</option>}
+                            {getRankWeight(currentUser) >= 80 && <option value="Owner">Owner</option>}
+                          </select>
+                        </div>
+                      </td>
                       <td style={styles.td}>
                         <div style={styles.actionRow}>
-                          <button type="button" onClick={() => {approveUser(user.email); displaySuccess('User approved!');}} className="btn-success" style={styles.actionMiniBtn}><Check size={14} /> Approve</button>
-                          <button type="button" onClick={() => {rejectUser(user.email); displaySuccess('User rejected.');}} className="btn-danger" style={styles.actionMiniBtn}><X size={14} /> Reject</button>
+                          <button type="button" onClick={() => {
+                            const fName = accessReqFirstNames[request.id];
+                            if (!fName) { alert('Please enter a First Name before approving.'); return; }
+                            approveAccessRequest(request.id, request.discordUsername, fName, accessReqRoles[request.id] || 'Staff'); 
+                            displaySuccess('Access approved!');
+                          }} className="btn-success" style={styles.actionMiniBtn}><Check size={14} /> Approve</button>
+                          
+                          <button type="button" onClick={() => {
+                            rejectAccessRequest(request.id); 
+                            displaySuccess('Request rejected.');
+                          }} className="btn-danger" style={styles.actionMiniBtn}><X size={14} /> Reject</button>
                         </div>
                       </td>
                     </tr>
@@ -552,15 +598,46 @@ export default function AdminPanel() {
       <div id="section-staffManagement">
         <div style={styles.panelSection}>
           <h3 style={styles.panelTitle}>Staff Management</h3>
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-            <input 
-              type="text" 
-              placeholder="Search staff..." 
-              value={staffSearchQuery} 
-              onChange={(e) => setStaffSearchQuery(e.target.value)} 
-              className="input-field" 
-              style={{ width: '100%', maxWidth: '300px' }} 
-            />
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+              <input 
+                type="text" 
+                placeholder="Search staff..." 
+                value={staffSearchQuery} 
+                onChange={(e) => setStaffSearchQuery(e.target.value)} 
+                className="input-field" 
+                style={{ width: '100%', maxWidth: '300px' }} 
+              />
+            </div>
+            
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              try {
+                addStaff(newStaffDiscord, newStaffFirstName, newStaffRole);
+                displaySuccess('Staff added successfully');
+                setNewStaffDiscord('');
+                setNewStaffFirstName('');
+                setNewStaffRole('Staff');
+              } catch (err) {
+                alert(err.message);
+              }
+            }} style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div>
+                <input required type="text" placeholder="Discord Username" value={newStaffDiscord} onChange={e=>setNewStaffDiscord(e.target.value)} className="input-field" style={{width: '160px'}} />
+              </div>
+              <div>
+                <input required type="text" placeholder="First Name" value={newStaffFirstName} onChange={e=>setNewStaffFirstName(e.target.value)} className="input-field" style={{width: '120px'}} />
+              </div>
+              <div>
+                <select value={newStaffRole} onChange={e=>setNewStaffRole(e.target.value)} className="input-field" style={{width: '110px'}}>
+                  <option value="Staff">Staff</option>
+                  <option value="Moderator">Moderator</option>
+                  {getRankWeight(currentUser) >= 60 && <option value="Admin">Admin</option>}
+                  {getRankWeight(currentUser) >= 80 && <option value="Owner">Owner</option>}
+                </select>
+              </div>
+              <button type="submit" className="btn-primary" style={{padding: '0 16px'}}><Plus size={16} /> Add Staff</button>
+            </form>
           </div>
           {!(currentUser?.siteRole === 'Admin' || currentUser?.siteRole === 'Owner' || currentUser?.email?.toLowerCase() === 'evanm.100000@gmail.com') && (
             <div style={styles.securityAlert}><ShieldAlert size={18} /><span>NOTE: You do not have permission to modify account roles.</span></div>
@@ -1412,36 +1489,36 @@ export default function AdminPanel() {
 
 const getTabStyle = (isActive) => ({
   display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 20px',
-  borderRadius: '12px', border: '1px solid ' + (isActive ? 'rgba(59, 130, 246, 0.5)' : 'transparent'),
+  borderRadius: '12px', border: '1px solid ' + (isActive ? 'rgba(91, 194, 231, 0.5)' : 'transparent'),
   fontSize: '0.9rem', fontWeight: isActive ? '700' : '500', cursor: 'pointer',
-  background: isActive ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-  color: isActive ? '#60a5fa' : '#94a3b8',
+  background: isActive ? 'rgba(91, 194, 231, 0.1)' : 'transparent',
+  color: isActive ? '#0f294a' : '#5a6e85',
   transition: 'all 0.2s ease',
   whiteSpace: 'nowrap'
 });
 
 const styles = {
   layoutContainer: { display: 'flex', gap: '32px', alignItems: 'flex-start', paddingBottom: '40px' },
-  sidebar: { width: '260px', position: 'sticky', top: '24px', display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0, height: 'max-content', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto', background: 'rgba(30, 41, 59, 0.5)', padding: '16px', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' },
+  sidebar: { width: '260px', position: 'sticky', top: '24px', display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0, height: 'max-content', maxHeight: 'calc(100vh - 48px)', overflowY: 'auto', background: '#ffffff', padding: '16px', borderRadius: '16px', border: '1px solid rgba(15, 41, 74, 0.08)', boxShadow: '0 4px 20px rgba(15, 41, 74, 0.04)' },
   mainContent: { flex: 1, display: 'flex', flexDirection: 'column', gap: '64px', minWidth: 0, paddingBottom: '30vh' },
-  subTabContainer: { display: 'flex', gap: '8px', flexWrap: 'wrap', background: 'rgba(0,0,0,0.15)', padding: '6px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)', overflowX: 'auto' },
-  successAlert: { background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '12px 16px', fontSize: '0.9rem', color: '#a7f3d0' },
-  securityAlert: { background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', padding: '12px 16px', fontSize: '0.85rem', color: '#fca5a5', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' },
+  subTabContainer: { display: 'flex', gap: '8px', flexWrap: 'wrap', background: 'rgba(15, 41, 74, 0.04)', padding: '6px', borderRadius: '10px', border: '1px solid rgba(15, 41, 74, 0.08)', overflowX: 'auto' },
+  successAlert: { background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '12px 16px', fontSize: '0.9rem', color: '#10b981' },
+  securityAlert: { background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px', padding: '12px 16px', fontSize: '0.85rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' },
   panelSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
   panelTitle: { fontSize: '1.25rem', fontWeight: '700', color: 'var(--color-text-main)' },
   panelSubtitle: { fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '-8px' },
   emptyGrid: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '60px 0' },
   emptyText: { color: 'var(--color-text-muted)', fontSize: '0.95rem' },
-  tableWrapper: { width: '100%', overflowX: 'auto', background: 'rgba(0,0,0,0.15)', borderRadius: '12px', border: '1px solid var(--color-border)' },
+  tableWrapper: { width: '100%', overflowX: 'auto', background: '#ffffff', borderRadius: '12px', border: '1px solid var(--color-border)', boxShadow: '0 2px 10px rgba(15,41,74,0.02)' },
   table: { width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' },
   trHead: { borderBottom: '1px solid var(--color-border)' },
   th: { padding: '12px 16px', fontWeight: '600', color: 'var(--color-primary)', fontSize: '0.8rem', textTransform: 'uppercase' },
-  trBody: { borderBottom: '1px solid rgba(255,255,255,0.03)' },
+  trBody: { borderBottom: '1px solid var(--color-border)' },
   td: { padding: '12px 16px', color: 'var(--color-text-main)', verticalAlign: 'middle' },
   actionRow: { display: 'flex', gap: '8px' },
   actionMiniBtn: { display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer' },
   roleBtn: { padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' },
-  form: { display: 'flex', flexDirection: 'column', gap: '18px', background: 'rgba(0,0,0,0.15)', border: '1px solid var(--color-border)', padding: '24px', borderRadius: '16px' },
+  form: { display: 'flex', flexDirection: 'column', gap: '18px', background: '#ffffff', border: '1px solid var(--color-border)', padding: '24px', borderRadius: '16px', boxShadow: '0 2px 10px rgba(15,41,74,0.02)' },
   formRow: { display: 'flex', gap: '20px', flexWrap: 'wrap' },
   inputWrapper: { flex: 1, minWidth: '240px', display: 'flex', flexDirection: 'column', gap: '6px' },
   label: { fontSize: '0.85rem', fontWeight: '500', color: 'var(--color-text-muted)' },
