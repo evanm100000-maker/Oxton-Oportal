@@ -29,11 +29,11 @@ export default function LoginScreen({ onBack }) {
       })
         .then(result => result.json())
         .then(async (response) => {
-          const { username } = response;
+          const { username, id } = response;
           if (!username) throw new Error("Failed to get Discord username.");
           
           try {
-            await loginWithDiscord(username);
+            await loginWithDiscord(username, id);
           } catch (err) {
             if (err.message === 'ACCESS_NOT_GIVEN') {
               setIsAccessDenied(true);

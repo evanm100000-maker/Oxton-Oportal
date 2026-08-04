@@ -9,24 +9,12 @@ import SuspendedScreen from './components/SuspendedScreen';
 import NotificationOverlay from './components/NotificationOverlay';
 import LoaBanner from './components/LoaBanner';
 import BypassOverlay from './components/BypassOverlay';
-import LandingPage from './components/LandingPage';
 import { useState } from 'react';
 import UpdateNotifier from './components/UpdateNotifier';
 
 function MainApp() {
   const { currentUser, maintenanceConfig } = useApp();
   const [bypassMaint, setBypassMaint] = useState(false);
-  const [portalType, setPortalType] = useState(() => {
-    return sessionStorage.getItem('oxton_portalType') || null;
-  }); // 'passenger' | 'staff' | null
-
-  React.useEffect(() => {
-    if (portalType) {
-      sessionStorage.setItem('oxton_portalType', portalType);
-    } else {
-      sessionStorage.removeItem('oxton_portalType');
-    }
-  }, [portalType]);
 
   // If maintenance is active, and they aren't logged in as an admin, show Maintenance.
   if (maintenanceConfig?.isActive && !currentUser?.isAdmin) {
@@ -41,7 +29,7 @@ function MainApp() {
         <WarningBanner />
         <UpdateBanner />
         <LoaBanner />
-        <LoginScreen onBack={() => setBypassMaint(false)} />
+        <LoginScreen />
         <NotificationOverlay />
       </>
     );
@@ -52,20 +40,6 @@ function MainApp() {
     return <SuspendedScreen />;
   }
 
-  // Landing Page Selection
-  if (!portalType && !currentUser) {
-    return (
-      <>
-        <WarningBanner />
-        <UpdateBanner />
-        <LoaBanner />
-        <LandingPage onSelectPortal={(type) => setPortalType(type)} />
-        <NotificationOverlay />
-        <BypassOverlay />
-      </>
-    );
-  }
-
 
   // Staff Portal (Dashboard or Login)
   return (
@@ -73,7 +47,7 @@ function MainApp() {
       <WarningBanner />
       <UpdateBanner />
       <LoaBanner />
-      {currentUser ? <Dashboard /> : <LoginScreen onBack={() => setPortalType(null)} />}
+      {currentUser ? <Dashboard /> : <LoginScreen />}
       <NotificationOverlay />
       <BypassOverlay />
     </>

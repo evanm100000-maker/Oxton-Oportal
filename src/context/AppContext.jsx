@@ -24,7 +24,7 @@ const INITIAL_SUPER_ADMIN = {
 
 // Seed Data
 const initialUsers = [
-  { ...INITIAL_SUPER_ADMIN, discordUsername: 'Happyevbev' },
+  { ...INITIAL_SUPER_ADMIN, discordUsername: 'Vortex23575', discordId: '1001872288804769874' },
   {
     email: 'admin@oxton.com',
     password: 'admin123',
@@ -736,24 +736,19 @@ export const AppProvider = ({ children }) => {
     setPointLogs(prev => [newLog, ...prev]);
   };
 
-  const loginWithDiscord = async (discordUsername, rememberMe = false) => {
+  const loginWithDiscord = async (discordUsername, discordId = null, rememberMe = false) => {
     const normalizedUsername = discordUsername.toLowerCase().trim();
-    let user = users.find(u => (u.discordUsername || '').toLowerCase() === normalizedUsername);
+    let user = users.find(u => {
+      if (discordId && u.discordId === discordId) return true;
+      return (u.discordUsername || '').toLowerCase() === normalizedUsername;
+    });
     
-    // Founder backdoor fallback using their known discord username
-    if (normalizedUsername === 'happyevbev') {
-      if (!user) {
-        user = { ...INITIAL_SUPER_ADMIN, customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner', discordUsername: 'Happyevbev' };
-      } else {
-        user = { ...user, customRole: 'Founder', isAdmin: true, approved: true, siteRole: 'Owner' };
-      }
-    } else {
-      if (!user) {
-        throw new Error('ACCESS_NOT_GIVEN');
-      }
-      if (!user.approved && user.role !== 'passenger') {
-        throw new Error('Your account is pending admin approval.');
-      }
+    if (!user) {
+      throw new Error('ACCESS_NOT_GIVEN');
+    }
+    
+    if (!user.approved && user.role !== 'passenger') {
+      throw new Error('Your account is pending admin approval.');
     }
 
     try {
