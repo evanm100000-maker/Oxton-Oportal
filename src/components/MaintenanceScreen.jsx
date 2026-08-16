@@ -53,13 +53,13 @@ const styles = {
   },
   message: {
     fontSize: '1.1rem',
-    color: '#9ca3af',
+    color: '#5a6e85',
     lineHeight: '1.5',
   },
   bypassBtn: {
     background: 'transparent',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    color: '#9ca3af',
+    border: '1px solid rgba(15, 41, 74, 0.2)',
+    color: '#5a6e85',
     padding: '8px 16px',
     borderRadius: '6px',
     fontSize: '0.85rem',

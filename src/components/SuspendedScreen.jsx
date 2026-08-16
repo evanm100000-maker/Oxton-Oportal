@@ -77,7 +77,7 @@ const styles = {
   },
   message: {
     fontSize: '1.1rem',
-    color: '#9ca3af',
+    color: '#5a6e85',
     lineHeight: '1.5',
     marginBottom: '24px',
   },
@@ -95,7 +95,7 @@ const styles = {
   },
   timerLabel: {
     fontSize: '0.9rem',
-    color: '#fca5a5',
+    color: '#b91c1c',
     textTransform: 'uppercase',
     fontWeight: '600',
   },
