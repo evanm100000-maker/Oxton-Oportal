@@ -775,7 +775,7 @@ export default function AdminPanel() {
             </div>
             <div style={styles.formRow}>
               <div style={styles.inputWrapper}><label style={styles.label}>Date *</label><input type="date" required value={date} onChange={e=>setDate(e.target.value)} className="input-field" /></div>
-              <div style={styles.inputWrapper}><label style={styles.label}>Time (LOCAL) *</label><input type="time" required value={time} onChange={e=>setTime(e.target.value)} className="input-field" /></div>
+              <div style={styles.inputWrapper}><label style={styles.label}>Time (UTC) *</label><input type="time" required value={time} onChange={e=>setTime(e.target.value)} className="input-field" /></div>
             </div>
             <div style={styles.formRow}>
               <div style={styles.inputWrapper}>
@@ -812,7 +812,7 @@ export default function AdminPanel() {
                 <thead>
                   <tr style={styles.trHead}>
                     <th style={styles.th}>Flight Code</th>
-                    <th style={styles.th}>Date & Time (LOCAL)</th>
+                    <th style={styles.th}>Date & Time (UTC)</th>
                     <th style={styles.th}>Host</th>
                     <th style={styles.th}>Actions</th>
                   </tr>
@@ -1012,7 +1012,7 @@ export default function AdminPanel() {
                 <textarea value={eventDescription} onChange={e=>setEventDescription(e.target.value)} className="input-field" rows="2" />
               </div>
               <div style={styles.inputWrapper}>
-                <label style={styles.label}>Event Date & Time (LOCAL)</label>
+                <label style={styles.label}>Event Date & Time</label>
                 <input type="datetime-local" value={eventDate} onChange={e=>setEventDate(e.target.value)} className="input-field" required />
               </div>
               <button type="submit" className="btn-primary" style={styles.submitBtn}>Schedule Event</button>
@@ -1049,7 +1049,7 @@ export default function AdminPanel() {
                 <textarea value={meetingDescription} onChange={e=>setMeetingDescription(e.target.value)} className="input-field" rows="2" />
               </div>
               <div style={styles.inputWrapper}>
-                <label style={styles.label}>Meeting Date & Time (LOCAL)</label>
+                <label style={styles.label}>Meeting Date & Time</label>
                 <input type="datetime-local" value={meetingDate} onChange={e=>setMeetingDate(e.target.value)} className="input-field" required />
               </div>
               <button type="submit" className="btn-primary" style={styles.submitBtn}>Schedule Meeting</button>
